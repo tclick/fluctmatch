@@ -2,6 +2,7 @@
 branch = True
 source = Fluctuation Matching/*
 include = Fluctuation Matching/*
-omit = */setup.py
+#omit = tests/*
+#omit = */setup.py
 [report]
 include = Fluctuation Matching/*
