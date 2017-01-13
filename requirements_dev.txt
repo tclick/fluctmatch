@@ -13,3 +13,4 @@ six>=1.8.0
 cryptography>=1.7
 PyYAML>=3.11
 pytest>=2.9.2
+MDAnalysis==0.15.0
