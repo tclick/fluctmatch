@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = Fluctuation Matching/*
+include = Fluctuation Matching/*
+omit = */setup.py
+[report]
+include = Fluctuation Matching/*
