@@ -17,6 +17,8 @@ Fluctuation Matching
      :target: https://pyup.io/repos/github/tclick/fluctmatch/
      :alt: Updates
 
+.. image:: https://coveralls.io/repos/github/tclick/fluctmatch/badge.svg?branch=master
+:target: https://coveralls.io/github/tclick/fluctmatch?branch=master
 
 Fluctuation Matching provides tools for an elastic network model.
 
