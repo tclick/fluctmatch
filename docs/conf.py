@@ -18,6 +18,9 @@ import sys
 import os
 
 # General information about the project.
+project = 'fluctmatch'
+copyright = '2017, Timothy H. Click'
+
 currentdir = os.path.abspath(os.path.dirname(__file__))
 ver_file = os.path.join(currentdir, '..', project, 'version.py')
 with open(ver_file) as f:
