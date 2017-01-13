@@ -29,9 +29,9 @@ install:
             pyenv install pypy-5.4.1
             pyenv global pypy-5.4.1
         fi
-    - pip install tox-travis
+    - pip install tox-travis coveralls
 script: tox -e ${TOXENV}
 
 
 after_success:
-- bash <(curl -s https://codecov.io/bash)
+- coveralls
