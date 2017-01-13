@@ -17,15 +17,14 @@ Fluctuation Matching
      :target: https://pyup.io/repos/github/tclick/fluctmatch/
      :alt: Updates
 
+.. image:: https://coveralls.io/repos/github/tclick/fluctmatch/badge.svg?branch=master
+:target: https://coveralls.io/github/tclick/fluctmatch?branch=master
 
 Fluctuation Matching provides tools for an elastic network model.
 
 
 * Free software: GNU General Public License v3
 * Documentation: https://fluctmatch.readthedocs.io.
-
-.. image:: https://coveralls.io/repos/github/tclick/fluctmatch/badge.svg?branch=master
-:target: https://coveralls.io/github/tclick/fluctmatch?branch=master
 
 Features
 --------
