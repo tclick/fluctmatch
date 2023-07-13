@@ -16,7 +16,6 @@ Also see (1) from http://click.pocoo.org/5/setuptools/#setuptools-integration
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TypeVar
 
 import click
 from click_extra import help_option, version_option
@@ -28,13 +27,11 @@ CONTEXT_SETTINGS = {
     "show_default": True,
 }
 
-TComplexCLI = TypeVar("TComplexCLI", bound="ComplexCLI")
-
 
 class ComplexCLI(click.Group):
     """Complex command-line options with subcommands for fluctmatch."""
 
-    def list_commands(self: TComplexCLI, ctx: click.Context) -> list[str] | None:
+    def list_commands(self: ComplexCLI, ctx: click.Context) -> list[str] | None:
         """List available commands.
 
         Parameters
@@ -55,7 +52,7 @@ class ComplexCLI(click.Group):
         rv.sort()
         return rv
 
-    def get_command(self: TComplexCLI, ctx: click.Context, name: str) -> click.Command | None:
+    def get_command(self: ComplexCLI, ctx: click.Context, name: str) -> click.Command | None:
         """Run the selected command.
 
         Parameters
