@@ -27,8 +27,9 @@ Changelog = "https://github.com/tclick/fluctmatch/releases"
 
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0"
-click-extra = ">=4.2"
+click-extra = ">=4.6"
 loguru = "*"
+MDAnalysis = ">=2.5, <3.0"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"
@@ -204,8 +205,6 @@ select = [
     "ERA",
     # pandas-vet
     "PD",
-    # pylint
-    "PL",
     # NumPy-specific rules
     "NPY",
 ]
@@ -214,6 +213,10 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # Camelcase imported as lower case
+    "N813",
+    # Too many arguments to function call
+    "PLR0913",
 ]
 
 [tool.ruff.per-file-ignores]
