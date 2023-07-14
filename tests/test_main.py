@@ -85,3 +85,20 @@ class TestMain:
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
+
+    def test_main_fails(self, cli_runner: CliRunner) -> None:
+        """Test main with invalid subcommand.
+
+        GIVEN the main command
+        WHEN an invalid subcommand is provided
+        THEN an error will be issued.
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            Command-line cli_runner
+        """
+        result = cli_runner.invoke(main, ["bad_subcommand"])
+
+        assert "Error:" in result.output
+        assert result.exit_code != os.EX_OK
