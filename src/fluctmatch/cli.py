@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -99,13 +99,13 @@ class ComplexCLI(click.Group):
             The chosen command if present
         """
         try:
-            mod = __import__(f"mdsetup.commands.cmd_{name}", None, None, ["cli"])
+            mod = __import__(f"fluctmatch.commands.cmd_{name}", None, None, ["cli"])
         except ImportError:
             return None
         return mod.cli
 
 
-@click.command(name="mdsetup", cls=ComplexCLI, context_settings=CONTEXT_SETTINGS, help=__copyright__)
+@click.command(name="fluctmatch", cls=ComplexCLI, context_settings=CONTEXT_SETTINGS, help=__copyright__)
 @version_option(version=__version__)
 @help_option()
 @click.pass_context

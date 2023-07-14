@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -59,7 +59,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 logger.remove()
 
 
-def config_logger(logfile: str = "mdsetup.log", level: str = "INFO") -> None:
+def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> None:
     """Configure logger.
 
     Parameters
