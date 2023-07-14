@@ -68,6 +68,6 @@ This project was generated from [@cjolowicz]'s [Hypermodern Python Cookiecutter]
 
 <!-- github-only -->
 
-[license]: https://github.com/tclick/fluctmatch/blob/main/LICENSE
+[license]: https://github.com/tclick/fluctmatch/blob/main/LICENSE.md
 [contributor guide]: https://github.com/tclick/fluctmatch/blob/main/CONTRIBUTING.md
 [command-line reference]: https://fluctmatch.readthedocs.io/en/latest/usage.html
