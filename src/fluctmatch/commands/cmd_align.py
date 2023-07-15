@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,25 +30,24 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-"""Prepare subdirectories for fluctuation matching."""
+"""Align a trajectory to its first frame or to a reference structure."""
 from __future__ import annotations
 
-import csv
-from itertools import zip_longest
 from pathlib import Path
 
 import click
 import MDAnalysis as mda
+import numpy as np
 from click_extra import help_option, timer_option
+from MDAnalysis.analysis.align import AlignTraj
 
 from .. import __copyright__, config_logger
-from . import FILE_MODE
 
 
 @click.command(
-    "setup",
-    help=f"{__copyright__}\nCreate simulation subdirectories.",
-    short_help="Create subdirectories for fluctuation matching",
+    "align",
+    help=f"{__copyright__}\nAlign a trajectory.",
+    short_help="Align a trajectory to the first frame or to a reference structure",
 )
 @click.option(
     "-s",
@@ -69,10 +68,20 @@ from . import FILE_MODE
     help="Trajectory file",
 )
 @click.option(
+    "-r",
+    "--ref",
+    "reference",
+    metavar="FILE",
+    default=Path.cwd() / "ref.pdb",
+    show_default=True,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Reference file",
+)
+@click.option(
     "-o",
     "--outdir",
     metavar="DIR",
-    default=Path.cwd() / "fluctmatch",
+    default=Path.cwd(),
     show_default=True,
     type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
     help="Parent directory",
@@ -87,23 +96,15 @@ from . import FILE_MODE
     help="Log file",
 )
 @click.option(
-    "-w",
-    "--winsize",
-    metavar="WINSIZE",
+    "-t",
+    "--select",
+    metavar="TYPE",
     show_default=True,
-    default=10000,
-    type=click.IntRange(min=2, max_open=True, clamp=True),
-    help="Size of each window",
+    default="ca",
+    type=click.Choice("all ca cab backbone".split()),
+    help="Atom selection for alignment",
 )
-@click.option(
-    "--csv",
-    "windows_output",
-    metavar="CSV",
-    show_default=True,
-    default=Path("setup.csv"),
-    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
-    help="CSV file",
-)
+@click.option("--mass", is_flag=True, help="Mass-weighted alignment")
 @click.option(
     "-v",
     "--verbose",
@@ -116,7 +117,14 @@ from . import FILE_MODE
 @help_option()
 @timer_option()
 def cli(
-    topology: Path, trajectory: Path, outdir: Path, logfile: Path, winsize: int, windows_output: Path, verbose: str
+    topology: Path,
+    trajectory: Path,
+    reference: Path,
+    outdir: Path,
+    logfile: Path,
+    select: str,
+    mass: bool,
+    verbose: str,
 ) -> None:
     """Create simulation subdirectories.
 
@@ -126,49 +134,42 @@ def cli(
         Topology file
     trajectory : Path
         Trajectory file
+    reference : Path
+        Reference structure
     outdir : Path
         Output directory
     logfile : Path
         Location of log file
-    winsize : int
-        Window size
-    windows_output : Path
-        CSV file
+    select : str
+        Atom selection
+    mass : bool
+        Mass-weighted alignment
     verbose : str
         Level of verbosity for logging output
     """
     logger = config_logger(logfile=logfile.as_posix(), level=verbose)
     click.echo(__copyright__)
 
-    n_frames = mda.Universe(topology, trajectory).trajectory.n_frames
-    if winsize > n_frames:
-        msg = f"Window size is larger than the number of frames. ({winsize} > {n_frames})"
-        raise ValueError(msg)
-    if winsize == n_frames:
-        logger.warning("Window size is equivalent to the number of frames. You will only have one subdirectory.")
+    # Setup variables
+    selection = {"all": "all", "ca": "name CA", "cab": "name CA CB", "backbone": "backbone or nucleicbackbone"}
+    weight = "mass" if mass else None
+    prefix = outdir / "rmsfit_"
 
-    half_size = winsize // 2
-    total_windows = (n_frames // half_size) - 1
+    # Load universe and reference
+    universe = mda.Universe(topology, trajectory)
+    ref = mda.Universe(topology, reference) if reference.exists() else universe
 
-    start = 1 if trajectory.suffix == ".trr" or trajectory.suffix == ".xtc" or trajectory.suffix == ".tng" else 0
-    stop = n_frames + 1
-    beginning = range(start, stop, half_size)
-    end = range(start + winsize, stop, half_size)
-    logger.debug(f"start: {start}; stop: {stop}; half_size: {half_size}; total_windows: {total_windows}")
+    # Setup alignment
+    align = AlignTraj(universe, ref, select=selection[select], prefix=prefix.as_posix(), weights=weight, verbose=True)
+    if align.filename is None:
+        return
 
-    # Create subdirectories for fluctuation matching
-    trajectory_range = zip_longest(beginning, end)
-    ranges = []
-    for n, (i, j) in enumerate(trajectory_range, 1):
-        if j is not None:
-            ranges.append((n, i, j))
+    # Align trajectory
+    filename = Path(align.filename)
+    logger.info(f"Aligning the trajectory and saving to {filename}")
+    align.run()
 
-            subdir = outdir / f"{n:d}"
-            logger.debug(f"Making {subdir}")
-            subdir.mkdir(mode=FILE_MODE, parents=True, exist_ok=True)
-
-    # Create the parent subdirectory
-    outdir.mkdir(mode=FILE_MODE, parents=True, exist_ok=True)
-    with open(windows_output, mode="w", newline="") as csv_file:
-        writer = csv.writer(csv_file, quoting=csv.QUOTE_MINIMAL)
-        writer.writerows(ranges)
+    # Save r.m.s.d data
+    rmsd_file = filename.with_suffix(".txt")
+    logger.info(f"Saving r.m.s.d. information to {rmsd_file}")
+    np.savetxt(rmsd_file, align.results.rmsd, fmt="%.4f")

@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,63 +30,18 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-"""Test cases for the __main__ module."""
-import os
-
+"""Setup global fixtures for pytest."""
+import pytest
 from click.testing import CliRunner
-from fluctmatch.cli import main
 
 
-class TestMain:
-    """Run test for main command."""
+@pytest.fixture()
+def cli_runner() -> CliRunner:
+    """Fixture for testing `click` commands.
 
-    def test_help(self, cli_runner: CliRunner) -> None:
-        """Test help output.
-
-        GIVEN the main command
-        WHEN the help option is invoked
-        THEN the help output should be displayed
-
-        Parameters
-        ----------
-        runner : CliRunner
-            Command-line runner
-        """
-        result = cli_runner.invoke(main, ["-h"])
-
-        assert "Usage:" in result.output
-        assert result.exit_code == os.EX_OK
-
-    def test_main_succeeds(self, cli_runner: CliRunner) -> None:
-        """Test main output.
-
-        GIVEN the main command
-        WHEN the help option is invoked
-        THEN the help output should be displayed
-
-        Parameters
-        ----------
-        runner : CliRunner
-            Command-line runner
-        """
-        result = cli_runner.invoke(main)
-
-        assert "Usage:" in result.output
-        assert result.exit_code == os.EX_OK
-
-    def test_main_fails(self, cli_runner: CliRunner) -> None:
-        """Test main with invalid subcommand.
-
-        GIVEN the main command
-        WHEN an invalid subcommand is provided
-        THEN an error will be issued.
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
-        """
-        result = cli_runner.invoke(main, ["bad_subcommand"])
-
-        assert "Error:" in result.output
-        assert result.exit_code != os.EX_OK
+    Returns
+    -------
+    CliRunner
+        CLI runner
+    """
+    return CliRunner()

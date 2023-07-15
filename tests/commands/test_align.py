@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,63 +30,61 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-"""Test cases for the __main__ module."""
+"""Test for mdsetup.commands.cmd_align subcommand."""
+from __future__ import annotations
+
 import os
+from pathlib import Path
 
 from click.testing import CliRunner
-from fluctmatch.cli import main
+from fluctmatch.commands.cmd_align import cli
+
+from ..datafile import TPR, XTC
 
 
-class TestMain:
-    """Run test for main command."""
+class TestAlign:
+    """Run test for align subcommand."""
 
-    def test_help(self, cli_runner: CliRunner) -> None:
+    def test_help(self: TestAlign, cli_runner: CliRunner) -> None:
         """Test help output.
 
-        GIVEN the main command
+        GIVEN the align subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        runner : CliRunner
-            Command-line runner
-        """
-        result = cli_runner.invoke(main, ["-h"])
-
-        assert "Usage:" in result.output
-        assert result.exit_code == os.EX_OK
-
-    def test_main_succeeds(self, cli_runner: CliRunner) -> None:
-        """Test main output.
-
-        GIVEN the main command
-        WHEN the help option is invoked
-        THEN the help output should be displayed
-
-        Parameters
-        ----------
-        runner : CliRunner
-            Command-line runner
-        """
-        result = cli_runner.invoke(main)
-
-        assert "Usage:" in result.output
-        assert result.exit_code == os.EX_OK
-
-    def test_main_fails(self, cli_runner: CliRunner) -> None:
-        """Test main with invalid subcommand.
-
-        GIVEN the main command
-        WHEN an invalid subcommand is provided
-        THEN an error will be issued.
 
         Parameters
         ----------
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, ["bad_subcommand"])
+        result = cli_runner.invoke(cli, ["-h"])
 
-        assert "Error:" in result.output
-        assert result.exit_code != os.EX_OK
+        assert "Usage:" in result.output
+        assert result.exit_code == os.EX_OK
+
+    def test_align(self, cli_runner: CliRunner) -> None:
+        """Test the alignment of a trajectory.
+
+        GIVEN the align subcommand
+        WHEN a topology and trajectory file are provided
+        THEN a new trajectory file should be written
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            Command-line cli_runner
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            logfile = tmp_path / "align.log"
+            align = tmp_path / ("rmsfit_" + Path(XTC).name)
+
+            result = cli_runner.invoke(
+                cli, ["-s", TPR, "-f", XTC, "-o", ifs, "-l", logfile.as_posix(), "-t", "backbone", "--mass"]
+            )
+
+            assert result.exit_code == os.EX_OK
+            assert logfile.exists()
+            assert logfile.stat().st_size > 0
+            assert align.exists()
+            assert align.stat().st_size > 0
