@@ -34,30 +34,21 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 from fluctmatch.commands.cmd_align import cli
 
+from ..datafile import TPR, XTC
 
-class TestSetup:
-    """Run test for setup subcommand."""
 
-    @pytest.fixture()
-    def cli_runner(self: TestSetup) -> CliRunner:
-        """Fixture for testing `click` commands.
+class TestAlign:
+    """Run test for align subcommand."""
 
-        Returns
-        -------
-        CliRunner
-            CLI runner
-        """
-        return CliRunner()
-
-    def test_help(self: TestSetup, cli_runner: CliRunner) -> None:
+    def test_help(self: TestAlign, cli_runner: CliRunner) -> None:
         """Test help output.
 
-        GIVEN the init subcommand
+        GIVEN the align subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
 
@@ -70,3 +61,30 @@ class TestSetup:
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
+
+    def test_align(self, cli_runner: CliRunner) -> None:
+        """Test the alignment of a trajectory.
+
+        GIVEN the align subcommand
+        WHEN a topology and trajectory file are provided
+        THEN a new trajectory file should be written
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            Command-line cli_runner
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            logfile = tmp_path / "align.log"
+            align = tmp_path / ("rmsfit_" + Path(XTC).name)
+
+            result = cli_runner.invoke(
+                cli, ["-s", TPR, "-f", XTC, "-o", ifs, "-l", logfile.as_posix(), "-t", "backbone", "--mass"]
+            )
+
+            assert result.exit_code == os.EX_OK
+            assert logfile.exists()
+            assert logfile.stat().st_size > 0
+            assert align.exists()
+            assert align.stat().st_size > 0
