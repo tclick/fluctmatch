@@ -36,7 +36,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import click
+import MDAnalysis as mda
+import numpy as np
 from click_extra import help_option, timer_option
+from MDAnalysis.analysis.align import AlignTraj
 
 from .. import __copyright__, config_logger
 
@@ -45,6 +48,43 @@ from .. import __copyright__, config_logger
     "align",
     help=f"{__copyright__}\nAlign a trajectory.",
     short_help="Align a trajectory to the first frame or to a reference structure",
+)
+@click.option(
+    "-s",
+    "--topology",
+    metavar="FILE",
+    default=Path.cwd() / "input.parm7",
+    show_default=True,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Topology file",
+)
+@click.option(
+    "-f",
+    "--trajectory",
+    metavar="FILE",
+    default=Path.cwd() / "input.nc",
+    show_default=True,
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Trajectory file",
+)
+@click.option(
+    "-r",
+    "--ref",
+    "reference",
+    metavar="FILE",
+    default=Path.cwd() / "ref.pdb",
+    show_default=True,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Reference file",
+)
+@click.option(
+    "-o",
+    "--outdir",
+    metavar="DIR",
+    default=Path.cwd(),
+    show_default=True,
+    type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
+    help="Parent directory",
 )
 @click.option(
     "-l",
@@ -56,6 +96,16 @@ from .. import __copyright__, config_logger
     help="Log file",
 )
 @click.option(
+    "-t",
+    "--select",
+    metavar="TYPE",
+    show_default=True,
+    default="ca",
+    type=click.Choice("all ca cab backbone".split()),
+    help="Atom selection for alignment",
+)
+@click.option("--mass", is_flag=True, help="Mass-weighted alignment")
+@click.option(
     "-v",
     "--verbose",
     metavar="VERBOSE",
@@ -66,7 +116,16 @@ from .. import __copyright__, config_logger
 )
 @help_option()
 @timer_option()
-def cli(logfile: Path, verbose: str) -> None:
+def cli(
+    topology: Path,
+    trajectory: Path,
+    reference: Path,
+    outdir: Path,
+    logfile: Path,
+    select: str,
+    mass: bool,
+    verbose: str,
+) -> None:
     """Create simulation subdirectories.
 
     Parameters
@@ -75,12 +134,42 @@ def cli(logfile: Path, verbose: str) -> None:
         Topology file
     trajectory : Path
         Trajectory file
+    reference : Path
+        Reference structure
     outdir : Path
         Output directory
     logfile : Path
         Location of log file
+    select : str
+        Atom selection
+    mass : bool
+        Mass-weighted alignment
     verbose : str
         Level of verbosity for logging output
     """
-    config_logger(logfile=logfile.as_posix(), level=verbose)
+    logger = config_logger(logfile=logfile.as_posix(), level=verbose)
     click.echo(__copyright__)
+
+    # Setup variables
+    selection = {"all": "all", "ca": "name CA", "cab": "name CA CB", "backbone": "backbone or nucleicbackbone"}
+    weight = "mass" if mass else None
+    prefix = outdir / "rmsfit_"
+
+    # Load universe and reference
+    universe = mda.Universe(topology, trajectory)
+    ref = mda.Universe(topology, reference) if reference.exists() else universe
+
+    # Setup alignment
+    align = AlignTraj(universe, ref, select=selection[select], prefix=prefix.as_posix(), weights=weight, verbose=True)
+    if align.filename is None:
+        return
+
+    # Align trajectory
+    filename = Path(align.filename)
+    logger.info(f"Aligning the trajectory and saving to {filename}")
+    align.run()
+
+    # Save r.m.s.d data
+    rmsd_file = filename.with_suffix(".txt")
+    logger.info(f"Saving r.m.s.d. information to {rmsd_file}")
+    np.savetxt(rmsd_file, align.results.rmsd, fmt="%.4f")

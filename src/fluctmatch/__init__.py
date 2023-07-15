@@ -59,7 +59,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 logger.remove()
 
 
-def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> None:
+def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> logger:
     """Configure logger.
 
     Parameters
@@ -68,11 +68,15 @@ def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> None:
         name of log file
     level : str
         minimum level for logging
+
+    Returns
+    -------
+    logger
     """
     config = {
         "handlers": [
             {
-                "sink": sys.stdout,
+                "sink": sys.stderr,
                 "format": "{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
                 "colorize": True,
                 "level": level,
@@ -84,3 +88,4 @@ def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> None:
         "extra": {"user": f"{getpass.getuser()}"},
     }
     logger.configure(**config)
+    return logger

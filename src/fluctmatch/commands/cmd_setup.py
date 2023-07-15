@@ -40,7 +40,6 @@ from pathlib import Path
 import click
 import MDAnalysis as mda
 from click_extra import help_option, timer_option
-from loguru import logger
 
 from .. import __copyright__, config_logger
 from . import FILE_MODE
@@ -138,7 +137,7 @@ def cli(
     verbose : str
         Level of verbosity for logging output
     """
-    config_logger(logfile=logfile.as_posix(), level=verbose)
+    logger = config_logger(logfile=logfile.as_posix(), level=verbose)
     click.echo(__copyright__)
 
     n_frames = mda.Universe(topology, trajectory).trajectory.n_frames
