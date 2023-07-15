@@ -34,9 +34,14 @@
 
 import getpass
 import sys
-from typing import ParamSpec, TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from loguru import logger
+
+if TYPE_CHECKING:
+    from loguru import Logger
+else:
+    from loguru import logger as Logger  # noqa: N812
 
 T = TypeVar("T")
 P = ParamSpec("P")
@@ -59,7 +64,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 logger.remove()
 
 
-def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> logger:
+def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> Logger:
     """Configure logger.
 
     Parameters
