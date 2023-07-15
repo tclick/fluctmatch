@@ -145,7 +145,7 @@ def cli(
         msg = f"Window size is larger than the number of frames. ({winsize} > {n_frames})"
         raise ValueError(msg)
     if winsize == n_frames:
-        logger.warning("Window size is equivalent to the number of frames. You will only have two subdirectories.")
+        logger.warning("Window size is equivalent to the number of frames. You will only have one subdirectory.")
 
     half_size = winsize // 2
     total_windows = (n_frames // half_size) - 1
