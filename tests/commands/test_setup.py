@@ -36,6 +36,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 from fluctmatch.commands.cmd_setup import cli
 
@@ -62,7 +63,8 @@ class TestSetup:
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
 
-    def test_setup(self, cli_runner: CliRunner) -> None:
+    @pytest.mark.parametrize("winsize", [5, 10, 100])
+    def test_setup(self, cli_runner: CliRunner, winsize: int) -> None:
         """Test subcommand in an isolated filesystem.
 
         GIVEN an output subdirectory
@@ -73,6 +75,8 @@ class TestSetup:
         ----------
         cli_runner : CliRunner
             CLI runner
+        winsize : int
+            window size
         """
         with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
@@ -94,7 +98,7 @@ class TestSetup:
                     "--csv",
                     csv_file.as_posix(),
                     "-w",
-                    "5",
+                    f"{winsize}",
                     "-v",
                     "DEBUG",
                 ],
