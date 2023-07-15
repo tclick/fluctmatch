@@ -36,7 +36,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import pytest
 from click.testing import CliRunner
 from fluctmatch.commands.cmd_setup import cli
 
@@ -45,17 +44,6 @@ from ..datafile import TPR, XTC
 
 class TestSetup:
     """Run test for setup subcommand."""
-
-    @pytest.fixture()
-    def cli_runner(self: TestSetup) -> CliRunner:
-        """Fixture for testing `click` commands.
-
-        Returns
-        -------
-        CliRunner
-            CLI runner
-        """
-        return CliRunner()
 
     def test_help(self: TestSetup, cli_runner: CliRunner) -> None:
         """Test help output.
