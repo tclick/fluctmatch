@@ -30,6 +30,7 @@ python = ">=3.10, <4.0"
 click-extra = ">=4.6"
 loguru = "*"
 MDAnalysis = ">=2.5, <3.0"
+phx-class-registry = "*"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"

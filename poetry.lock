@@ -348,19 +348,19 @@ colorama = {version = "*", markers = "platform_system == \"Windows\""}
 
 [[package]]
 name = "click-extra"
-version = "4.6.1"
+version = "4.6.3"
 description = "🌈 Extra colorization and configuration loading for Click."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "click_extra-4.6.1-py3-none-any.whl", hash = "sha256:b793489031ac80ed05129f4b639c8a3bb577d5a5c098e5dbd0b6c0e208b94f0c"},
-    {file = "click_extra-4.6.1.tar.gz", hash = "sha256:2c54dd4cb5905394dfb48af3d22059efc3112dcdeb40fe17c7a9303f37cbf377"},
+    {file = "click_extra-4.6.3-py3-none-any.whl", hash = "sha256:01f85f06bd939dfc627079c7c231fffb8315b6e53a7248a3d5ac9caf8ff1b7e1"},
+    {file = "click_extra-4.6.3.tar.gz", hash = "sha256:7302e49c2670a6a36e4fa02e8e59ae6b4ce620ddaeb9fc98933c22497ac25751"},
 ]
 
 [package.dependencies]
 boltons = ">=23.0.0,<24.0.0"
 click = ">=8.1.4,<9.0.0"
-cloup = ">=2.1.1,<3.0.0"
+cloup = ">=3.0.0,<4.0.0"
 commentjson = ">=0.9.0,<0.10.0"
 mergedeep = ">=1.3.4,<2.0.0"
 Pallets-Sphinx-Themes = ">=2.1.1,<3.0.0"
@@ -377,13 +377,13 @@ xmltodict = ">=0.13.0,<0.14.0"
 
 [[package]]
 name = "cloup"
-version = "2.1.2"
+version = "3.0.0"
 description = "Adds features to Click: option groups, constraints, subcommand sections and help themes."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "cloup-2.1.2-py2.py3-none-any.whl", hash = "sha256:2e2e5040f1e85f7f391487c1aeeb0cce3e7cfed3493e67fc2aabc683551ba7b7"},
-    {file = "cloup-2.1.2.tar.gz", hash = "sha256:43f10e944056f3a1eea714cb67373beebebbefc3f4551428750392f3e04ac964"},
+    {file = "cloup-3.0.0-py2.py3-none-any.whl", hash = "sha256:77bf7bbff6cfcd3f4053583f2307dea4806c9c3e0492ad5ca90e66b5a1bc0682"},
+    {file = "cloup-3.0.0.tar.gz", hash = "sha256:babd4bdcfd274f86779d6d3ce39b9ea0f6cc5ab3d4efe35ba6841e6d6d037893"},
 ]
 
 [package.dependencies]
@@ -601,13 +601,13 @@ graph = ["objgraph (>=1.7.2)"]
 
 [[package]]
 name = "distlib"
-version = "0.3.6"
+version = "0.3.7"
 description = "Distribution utilities"
 optional = false
 python-versions = "*"
 files = [
-    {file = "distlib-0.3.6-py2.py3-none-any.whl", hash = "sha256:f35c4b692542ca110de7ef0bea44d73981caeb34ca0b9b6b2e6d7790dda8f80e"},
-    {file = "distlib-0.3.6.tar.gz", hash = "sha256:14bad2d9b04d3a36127ac97f30b12a19268f211063d8f8ee4f47108896e11b46"},
+    {file = "distlib-0.3.7-py2.py3-none-any.whl", hash = "sha256:2e24928bc811348f0feb63014e97aaae3037f2cf48712d51ae61df7fd6075057"},
+    {file = "distlib-0.3.7.tar.gz", hash = "sha256:9dafe54b34a028eafd95039d5e5d4851a13734540f1331060d31c9916e7147a8"},
 ]
 
 [[package]]
@@ -1672,6 +1672,22 @@ files = [
 flake8 = ">=5.0.0"
 
 [[package]]
+name = "phx-class-registry"
+version = "4.0.6"
+description = "Factory+Registry pattern for Python classes"
+optional = false
+python-versions = ">=3"
+files = [
+    {file = "phx-class-registry-4.0.6.tar.gz", hash = "sha256:66e9818de0a9d62e8cfe311587fcd3853ba941b71c11a7a73e5808d6550db125"},
+    {file = "phx_class_registry-4.0.6-py3-none-any.whl", hash = "sha256:90f8c44b9840ac1cb350876157669bf0d1f9d3be614a4f21d739a219a0640601"},
+]
+
+[package.extras]
+build-system = ["build", "twine"]
+docs-builder = ["sphinx", "sphinx-rtd-theme"]
+test-runner = ["tox"]
+
+[[package]]
 name = "pillow"
 version = "10.0.0"
 description = "Python Imaging Library (Fork)"
@@ -1740,13 +1756,13 @@ tests = ["check-manifest", "coverage", "defusedxml", "markdown2", "olefile", "pa
 
 [[package]]
 name = "platformdirs"
-version = "3.8.1"
+version = "3.9.1"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a \"user data dir\"."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "platformdirs-3.8.1-py3-none-any.whl", hash = "sha256:cec7b889196b9144d088e4c57d9ceef7374f6c39694ad1577a0aab50d27ea28c"},
-    {file = "platformdirs-3.8.1.tar.gz", hash = "sha256:f87ca4fcff7d2b0f81c6a748a77973d7af0f4d526f98f308477c3c436c74d528"},
+    {file = "platformdirs-3.9.1-py3-none-any.whl", hash = "sha256:ad8291ae0ae5072f66c16945166cb11c63394c7a3ad1b1bc9828ca3162da8c2f"},
+    {file = "platformdirs-3.9.1.tar.gz", hash = "sha256:1b42b450ad933e981d56e59f1b97495428c9bd60698baab9f3eb3d00d5822421"},
 ]
 
 [package.extras]
@@ -2866,13 +2882,13 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "virtualenv"
-version = "20.23.1"
+version = "20.24.0"
 description = "Virtual Python Environment builder"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "virtualenv-20.23.1-py3-none-any.whl", hash = "sha256:34da10f14fea9be20e0fd7f04aba9732f84e593dac291b757ce42e3368a39419"},
-    {file = "virtualenv-20.23.1.tar.gz", hash = "sha256:8ff19a38c1021c742148edc4f81cb43d7f8c6816d2ede2ab72af5b84c749ade1"},
+    {file = "virtualenv-20.24.0-py3-none-any.whl", hash = "sha256:18d1b37fc75cc2670625702d76849a91ebd383768b4e91382a8d51be3246049e"},
+    {file = "virtualenv-20.24.0.tar.gz", hash = "sha256:e2a7cef9da880d693b933db7654367754f14e20650dc60e8ee7385571f8593a3"},
 ]
 
 [package.dependencies]
@@ -3050,4 +3066,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <4.0"
-content-hash = "0e4f93590cc5bd651514d4ca20d7016403bb6c3fbe2b0215e3f899911b1a635f"
+content-hash = "79a85d0d0e109465d06944c71e854de9f488ae73591bcecee3c43386b45ac035"
