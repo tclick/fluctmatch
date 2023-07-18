@@ -30,4 +30,411 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
 """Base class for all core."""
+import abc
+import itertools
+import string
+from collections.abc import Iterable
+from itertools import zip_longest
+from types import MappingProxyType
+from typing import TypeVar
+
+import MDAnalysis as mda
+import numpy as np
+from class_registry import AutoRegister, ClassRegistry
+from loguru import logger
+from MDAnalysis import transformations
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysis.topology import base as topbase
+from MDAnalysis.topology import guessers
+from numpy.typing import NDArray
+
+MDUniverse = TypeVar("MDUniverse", mda.Universe, Iterable[mda.Universe])
+TModels = TypeVar("TModels", bound="ModelBase")
+models = ClassRegistry("model")
+
+
+class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
+    """Base class for creating coarse-grain core.
+
+    Parameters
+    ----------
+    extended : bool, optional
+        Renames the residues and atoms according to the extended CHARMM PSF
+        format. Standard CHARMM PSF limits the residue and atom names to four
+        characters, but the extended CHARMM PSF permits eight characters. The
+        residues and atoms are renamed according to the number of segments
+        (1: A, 2: B, etc.) and then the residue number or atom index number.
+    xplor : bool, optional
+        Assigns the atom type as either a numerical or an alphanumerical
+        designation. CHARMM normally assigns a numerical designation, but the
+        XPLOR version permits an alphanumerical designation with a maximum
+        size of 4. The numerical form corresponds to the atom index number plus
+        a factor of 100, and the alphanumerical form will be similar the
+        standard CHARMM atom name.
+    com : bool, optional
+        Calculates the bead coordinates using either the center of mass
+        (default) or center of geometry.
+    guess_angles : bool, optional
+        Once Universe has been created, attempt to guess the connectivity
+        between atoms.  This will populate the .angles, .dihedrals, and
+        .impropers attributes of the Universe.
+    rmin : float, optional
+        Minimum cutoff for bond lengths
+    rmax : float, optional
+        Maximum cutoff for bond lengths
+
+    Attributes
+    ----------
+    _universe : :class:`~MDAnalysis.Universe`
+        The transformed universe
+    """
+
+    def __init__(
+        self: TModels,
+        *,
+        xplor: bool = True,
+        extended: bool = True,
+        com: bool = True,
+        guess_angles: bool = False,
+        rmin: float = 0.0,
+        rmax: float = 10.0,
+    ) -> None:
+        """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
+
+        Mapping must be a dictionary with atom names as keys.
+        Each name must then correspond to a selection string,
+        signifying how to split up a single residue into many beads.
+        eg:
+        mapping = {"CA":"protein and name CA",
+                   "CB":"protein and not name N HN H HT* H1 H2 H3 CA HA* C O OXT
+                   OT*"}
+        would split residues into 2 beads containing the C-alpha atom and the
+        sidechain.
+        """
+        # Coarse grained Universe
+        # Make a blank Universe for myself.
+        super().__init__()
+
+        self._universe: mda.Universe
+        self._xplor = xplor
+        self._extended = extended
+        self._com = com
+        self._guess = guess_angles
+        self._rmin = np.clip(rmin, 0.0, None)
+        self._rmax = np.clip(rmax, self._rmin + 0.1, None)
+
+        # Named tuple for specific bead selections. This is primarily used to
+        # determine positions.
+        self._mapping: MappingProxyType
+
+        # Named tuple for all-atom to bead selection. This is particularly
+        # useful for mass, charge, velocity, and force topology attributes.
+        self._selection: MappingProxyType
+
+        # Named tuple translating beads from an all-atom selection.
+        self._beads: MappingProxyType
+
+    def create_topology(self: TModels, universe: mda.Universe, /) -> None:
+        """Determine the topology attributes and initialize the universe.
+
+        Parameters
+        ----------
+        universe : :class:`~MDAnalysis.Universe`
+            An all-atom universe
+        """
+        # Allocate arrays
+        residues: mda.ResidueGroup = universe.residues
+
+        beads: list[mda.AtomGroup] = []
+        atomnames: list[str] = []
+        selections = itertools.product(residues.resnames, self._mapping.items())
+
+        for residue, (key, selection) in selections:
+            value = selection.get(residue.resname) if isinstance(selection, dict) else selection
+            bead = residue.atoms.select_atoms(value)
+            if bead:
+                beads.append(bead)
+                atomnames.append(key)
+
+        attributes: dict[str, NDArray] = {}
+
+        # Atom
+        atomids = np.arange(len(beads), dtype=int)
+        attributes["names"] = np.asarray(atomnames, dtype=object)
+        attributes["radii"] = np.zeros_like(atomids, dtype=float)
+        attributes["ids"] = np.zeros_like(atomids, dtype=float)
+
+        # Residue
+        resids = np.asarray([bead.resids[0] for bead in beads], dtype=int)
+        resnames = np.asarray([bead.resnames[0] for bead in beads], dtype=object)
+        segids = np.asarray([bead.segids[0].split("_")[-1] for bead in beads], dtype=object)
+        residx, (new_resids, new_resnames, perres_segids) = topbase.change_squash(
+            (resids, resnames, segids), (resids, resnames, segids)
+        )
+
+        # transform from atom:Rid to atom:Rix
+        attributes["resids"] = new_resids
+        attributes["resnums"] = new_resids
+        attributes["resnames"] = new_resnames
+
+        # Segment
+        segidx, perseg_segids = topbase.squash_by(perres_segids)[:2]
+        attributes["segids"] = perseg_segids
+
+        # Create universe and add attributes
+        self._universe = mda.Universe.empty(
+            len(atomids),
+            n_residues=len(new_resids),
+            n_segments=len(perseg_segids),
+            atom_resindex=residx,
+            residue_segindex=segidx,
+            trajectory=universe.trajectory.ts.has_positions,
+            velocities=universe.trajectory.ts.has_velocities,
+            forces=universe.trajectory.ts.has_forces,
+        )
+
+        # Add additonal attributes
+        for attr, value in attributes.items():
+            self._universe.add_TopologyAttr(topologyattr=attr, values=value)
+        self._add_masses(universe)
+        self._add_charges(universe)
+
+    def generate_bonds(self: TModels) -> None:
+        """Generate connectivity information for the new system."""
+        if not hasattr(self, "_universe"):
+            message = "Topologies need to be created before bonds can be added."
+            raise AttributeError(message)
+
+        self._add_bonds()
+        if self._guess:
+            self._add_angles()
+            self._add_dihedrals()
+            self._add_impropers()
+
+    def add_trajectory(self: TModels, universe: mda.Universe, /) -> None:
+        """Add coordinates to the new system.
+
+        Parameters
+        ----------
+        universe: :class:`~MDAnalysis.Universe`
+            An all-atom universe
+        """
+        if not hasattr(self, "_universe"):
+            message = "Topologies need to be created before bonds can be added."
+            raise AttributeError(message)
+
+        if not hasattr(universe, "trajectory"):
+            message = "The provided universe does not have coordinates defined."
+            raise AttributeError(message)
+
+        selections = itertools.product(universe.residues.resnames, self._mapping.items())
+        beads: list[mda.AtomGroup] = []
+        total_beads: list[mda.AtomGroup] = []
+        for residue, (key, selection) in selections:
+            value = selection.get(residue.resname) if isinstance(selection, dict) else selection
+            if residue.atoms.select_atoms(value):
+                beads.append(residue.atoms.select_atoms(value))
+
+            other_selection = getattr(self._selection, key)
+            total_beads.append(residue.atoms.select_atoms(other_selection))
+
+        position_array: list[NDArray] = []
+        universe.trajectory.rewind()
+        for _ts in universe.trajectory:
+            # Positions
+            try:
+                positions = np.asarray(
+                    [_.center_of_mass() if self._com else _.center_of_geometry() for _ in beads if _]
+                )
+                position_array.append(positions)
+            except (AttributeError, mda.NoDataError):
+                pass
+
+            # Velocities
+        if self._universe.trajectory.ts.has_positions:
+            dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
+            transform = transformations.boxdimensions.set_dimensions(dim)
+            self._universe.load_new(
+                position_array,
+                format=MemoryReader,
+            )
+            self._universe.trajectory.add_transformations(transform)
+        universe.trajectory.rewind()
+
+    def transform(self: TModels, universe: mda.Universe, /) -> mda.Universe:
+        """Convert an all-atom universe to a coarse-grain model.
+
+        Topologies are generated, bead connections are determined, and positions
+        are read. This is a wrapper for the other three methods.
+
+        Parameters
+        ----------
+        universe: :class:`~MDAnalysis.Universe`
+            An all-atom universe
+
+        Returns
+        -------
+        A coarse-grain model
+        """
+        self.create_topology(universe)
+        self.generate_bonds()
+        self.add_trajectory(universe)
+        return self._universe
+
+    def _add_masses(self: TModels, universe: mda.Universe, /) -> None:
+        residues = universe.residues
+        atoms = residues.atoms
+        selections = itertools.product(residues.resnames, self._selection)
+
+        try:
+            masses = np.asarray(
+                [
+                    residue.atoms.select_atoms(selection).total_mass()
+                    for residue, selection in selections
+                    if residue.atoms.select_atoms(selection)
+                ],
+                dtype=atoms.masses.dtype,
+            )
+        except (AttributeError, mda.NoDataError):
+            masses = np.zeros(self._universe.atoms.n_atoms, dtype=atoms.masses.dtype)
+
+        self._universe.add_TopologyAttr("masses", masses)
+
+    def _add_charges(self: TModels, universe: mda.Universe, /) -> None:
+        residues = universe.residues
+        atoms = residues.atoms
+        selections = itertools.product(universe.residues.resnames, self._selection)
+
+        try:
+            charges = np.asarray(
+                [
+                    residue.atoms.select_atoms(selection).total_charge()
+                    for residue, selection in selections
+                    if residue.atoms.select_atoms(selection)
+                ],
+                dtype=atoms.masses.dtype,
+            )
+        except (AttributeError, mda.NoDataError):
+            charges = np.zeros(self._universe.atoms.n_atoms)
+
+        self._universe.add_TopologyAttr("charges", charges)
+
+    @abc.abstractmethod
+    def _add_bonds(self: TModels) -> None:
+        pass
+
+    def _add_angles(self: TModels) -> None:
+        try:
+            angles = guessers.guess_angles(self._universe.bonds)
+            self._universe.add_TopologyAttr("angles", angles)
+        except AttributeError:
+            pass
+
+    def _add_dihedrals(self: TModels) -> None:
+        try:
+            dihedrals = guessers.guess_dihedrals(self._universe.angles)
+            self._universe.add_TopologyAttr("dihedrals", dihedrals)
+        except AttributeError:
+            pass
+
+    def _add_impropers(self: TModels) -> None:
+        try:
+            impropers = guessers.guess_improper_dihedrals(self._universe.angles)
+            self._universe.add_TopologyAttr("impropers", impropers)
+        except AttributeError:
+            pass
+
+
+def merge(*args: mda.Universe) -> mda.Universe:
+    """Combine multiple coarse-grain systems into one.
+
+    Parameters
+    ----------
+    args : iterable of :class:`~MDAnalysis.Universe`
+
+    Returns
+    -------
+    :class:`~MDAnalysis.Universe`
+        A merged universe.
+    """
+    logger.warning("This might take a while depending upon the number of trajectory frames.")
+
+    # Merge universes
+    multiverse: list[mda.Universe] = []
+    for _, u in enumerate(args, 1):
+        multiverse.append(u.atoms)
+    universe = mda.Merge(*multiverse)
+    trajectory = universe.trajectory
+    atoms = universe.atoms
+
+    universe1: mda.Universe = args[0]
+    trajectory1 = universe1.trajectory
+    frames = np.fromiter([u.trajectory.n_frames == trajectory1.n_frames for u in args], dtype=bool)
+    if not all(frames):
+        msg = "The trajectories are not the same length."
+        logger.exception(msg)
+        raise ValueError(msg)
+
+    trajectory1.rewind()
+    if trajectory1.n_frames > 1:
+        # Accumulate coordinates, velocities, and forces.
+        positions: list[NDArray] = [np.asarray(ts.positions for ts in u.trajectory if ts.has_positions) for u in args]
+
+        if trajectory.ts.has_positions:
+            pos = np.concatenate(positions, axis=1)
+            if atoms.n_atoms != pos.shape[1]:
+                msg = "The number of sites does not match the number of coordinates."
+                logger.exception(msg)
+                raise RuntimeError(msg)
+            n_frames, n_beads, _ = pos.shape
+            logger.info(f"The new universe has {n_beads:d} beads in " f"{n_frames:d} frames.")
+            universe.load_new(positions, format=MemoryReader)
+
+            dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
+            transform = transformations.boxdimensions.set_dimensions(dim)
+            universe.trajectory.add_transformations(transform)
+
+    return universe
+
+
+def rename_universe(universe: mda.Universe, /) -> None:
+    """Rename the atoms and residues within a universe.
+
+    Standardizes naming of the universe by renaming atoms and residues based
+    upon the number of segments. Atoms are labeled as 'A001', 'A002', 'A003',
+    ..., 'A999' for the first segment, and 'B001', 'B002', 'B003', ..., 'B999'
+    for the second segment. Residues are named in a similar fashion according to
+    their segment.
+
+    Parameters
+    ----------
+    universe : :class:`~MDAnalysis.Universe`
+        A collection of atoms in a universe.
+    """
+    logger.info("Renaming atom names and atom core within the universe.")
+    atoms = universe.atoms
+    types = atoms.types
+    segments = universe.segments
+    segids = segments.segids
+
+    atom_names = np.array(
+        [
+            f"{letter}{i:0>3d}"
+            for letter, segment in filter(lambda x: None not in x, zip_longest(string.ascii_uppercase, segids))
+            for i, _ in enumerate(segment.atoms, 1)
+        ]
+    )
+    resnames = np.array(
+        [
+            f"{letter}{i:0>3d}"
+            for letter, segment in filter(lambda x: None not in x, zip_longest(string.ascii_uppercase, segids))
+            for i, _ in enumerate(segment.residues, 1)
+        ]
+    )
+
+    universe.add_TopologyAttr("names", atom_names)
+    universe.add_TopologyAttr("resnames", resnames)
+    if not np.issubdtype(types.dtype, np.int64):
+        universe.add_TopologyAttr("types", atom_names)
