@@ -32,6 +32,7 @@
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
 # pyright: reportOptionalIterable=false
+# flake8: noqa
 """Elastic network model using C-alpha atoms of a protein."""
 
 from types import MappingProxyType
@@ -40,6 +41,7 @@ from typing import ClassVar, TypeVar
 from MDAnalysis.core.topologyattrs import Bonds
 
 from ..base import ModelBase
+from ..selection import *
 
 TModel = TypeVar("TModel", bound="Model")
 
@@ -77,7 +79,7 @@ class Model(ModelBase):
 
         # Create bonds between C-alphas in adjacent residues
         for segment in self._universe.segments:
-            atom_selection: str = getattr(self._mapping, self._mapping.items()[0])
+            atom_selection: str = self._mapping[list(self._mapping.keys())[0]]
             atoms = segment.atoms.select_atoms(atom_selection)
             bonds.extend(tuple(zip(atoms.ix_array[1:], atoms.ix_array[:-1], strict=False)))  # ignore: PD007
         self._universe.add_TopologyAttr(Bonds(bonds))
