@@ -35,7 +35,7 @@
 """Elastic network model using C-alpha atoms of a protein."""
 
 from types import MappingProxyType
-from typing import TypeVar
+from typing import ClassVar, TypeVar
 
 from MDAnalysis.core.topologyattrs import Bonds
 
@@ -47,8 +47,8 @@ TModel = TypeVar("TModel", bound="Model")
 class Model(ModelBase):
     """Universe defined by the protein C-alpha."""
 
-    model = "CALPHA"
-    description = "C-alpha of a protein"
+    model: ClassVar[str] = "CALPHA"
+    description: ClassVar[str] = "C-alpha of a protein"
 
     def __init__(
         self: TModel,
