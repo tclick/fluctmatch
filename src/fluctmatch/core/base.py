@@ -127,14 +127,14 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
         # Named tuple for specific bead selections. This is primarily used to
         # determine positions.
-        self._mapping: MappingProxyType
+        self._mapping: MappingProxyType = MappingProxyType({})
 
         # Named tuple for all-atom to bead selection. This is particularly
         # useful for mass, charge, velocity, and force topology attributes.
-        self._selection: MappingProxyType
+        self._selection: MappingProxyType = MappingProxyType({})
 
         # Named tuple translating beads from an all-atom selection.
-        self._beads: MappingProxyType
+        self._beads: MappingProxyType = MappingProxyType({})
 
     def create_topology(self: TModels, universe: mda.Universe, /) -> None:
         """Determine the topology attributes and initialize the universe.
@@ -149,7 +149,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
         beads: list[mda.AtomGroup] = []
         atomnames: list[str] = []
-        selections = itertools.product(residues.resnames, self._mapping.items())
+        selections = itertools.product(residues, self._mapping.items())
 
         for residue, (key, selection) in selections:
             value = selection.get(residue.resname) if isinstance(selection, dict) else selection
@@ -229,15 +229,15 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
             message = "The provided universe does not have coordinates defined."
             raise AttributeError(message)
 
-        selections = itertools.product(universe.residues.resnames, self._mapping.items())
+        selections = itertools.product(universe.residues, self._mapping.items())
         beads: list[mda.AtomGroup] = []
         total_beads: list[mda.AtomGroup] = []
         for residue, (key, selection) in selections:
-            value = selection.get(residue.resname) if isinstance(selection, dict) else selection
+            value = selection.get(residue) if isinstance(selection, dict) else selection
             if residue.atoms.select_atoms(value):
                 beads.append(residue.atoms.select_atoms(value))
 
-            other_selection = getattr(self._selection, key)
+            other_selection = self._selection[key]
             total_beads.append(residue.atoms.select_atoms(other_selection))
 
         position_array: list[NDArray] = []
@@ -257,7 +257,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
             dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
             transform = transformations.boxdimensions.set_dimensions(dim)
             self._universe.load_new(
-                position_array,
+                np.asarray(position_array),
                 format=MemoryReader,
             )
             self._universe.trajectory.add_transformations(transform)
