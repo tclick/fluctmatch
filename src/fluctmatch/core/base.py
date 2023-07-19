@@ -151,6 +151,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
         atomnames: list[str] = []
         selections = itertools.product(residues, self._mapping.items())
 
+        logger.debug("Creating the coarse-grain topology.")
         for residue, (key, selection) in selections:
             value = selection.get(residue.resname) if isinstance(selection, dict) else selection
             bead = residue.atoms.select_atoms(value)
@@ -229,6 +230,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
             message = "The provided universe does not have coordinates defined."
             raise AttributeError(message)
 
+        logger.debug("Creating the coarse-grain trajectory.")
         selections = itertools.product(universe.residues, self._mapping.items())
         beads: list[mda.AtomGroup] = []
         total_beads: list[mda.AtomGroup] = []
@@ -278,6 +280,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
         -------
         A coarse-grain model
         """
+        logger.debug("Transforming an all-atom system to an elastic network model.")
         self.create_topology(universe)
         self.generate_bonds()
         self.add_trajectory(universe)
@@ -286,9 +289,10 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
     def _add_masses(self: TModels, universe: mda.Universe, /) -> None:
         residues = universe.residues
         atoms = residues.atoms
-        selections = itertools.product(residues.resnames, self._selection)
+        selections = itertools.product(residues, self._selection.values())
 
         try:
+            logger.debug("Assigning masses to each bead.")
             masses = np.asarray(
                 [
                     residue.atoms.select_atoms(selection).total_mass()
@@ -305,9 +309,10 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
     def _add_charges(self: TModels, universe: mda.Universe, /) -> None:
         residues = universe.residues
         atoms = residues.atoms
-        selections = itertools.product(universe.residues.resnames, self._selection)
+        selections = itertools.product(universe.residues.resnames, self._selection.values())
 
         try:
+            logger.debug("Assigning charges to the beads.")
             charges = np.asarray(
                 [
                     residue.atoms.select_atoms(selection).total_charge()
@@ -327,6 +332,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
     def _add_angles(self: TModels) -> None:
         try:
+            logger.debug("Guessing the angles.")
             angles = guessers.guess_angles(self._universe.bonds)
             self._universe.add_TopologyAttr("angles", angles)
         except AttributeError:
@@ -334,6 +340,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
     def _add_dihedrals(self: TModels) -> None:
         try:
+            logger.debug("Guessing the dihedral angles.")
             dihedrals = guessers.guess_dihedrals(self._universe.angles)
             self._universe.add_TopologyAttr("dihedrals", dihedrals)
         except AttributeError:
@@ -341,6 +348,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
     def _add_impropers(self: TModels) -> None:
         try:
+            logger.debug("Guessing the improper dihedral angles.")
             impropers = guessers.guess_improper_dihedrals(self._universe.angles)
             self._universe.add_TopologyAttr("impropers", impropers)
         except AttributeError:
@@ -362,39 +370,35 @@ def merge(*args: mda.Universe) -> mda.Universe:
     logger.warning("This might take a while depending upon the number of trajectory frames.")
 
     # Merge universes
-    multiverse: list[mda.Universe] = []
-    for _, u in enumerate(args, 1):
-        multiverse.append(u.atoms)
+    multiverse: list[mda.AtomGroup] = [u.atoms for u in args]
     universe = mda.Merge(*multiverse)
-    trajectory = universe.trajectory
     atoms = universe.atoms
 
     universe1: mda.Universe = args[0]
     trajectory1 = universe1.trajectory
     frames = np.fromiter([u.trajectory.n_frames == trajectory1.n_frames for u in args], dtype=bool)
     if not all(frames):
-        msg = "The trajectories are not the same length."
-        logger.exception(msg)
-        raise ValueError(msg)
+        message = "The trajectories are not the same length."
+        logger.exception(message)
+        raise ValueError(message)
 
     trajectory1.rewind()
     if trajectory1.n_frames > 1:
         # Accumulate coordinates, velocities, and forces.
         positions: list[NDArray] = [np.asarray(ts.positions for ts in u.trajectory if ts.has_positions) for u in args]
 
-        if trajectory.ts.has_positions:
-            pos = np.concatenate(positions, axis=1)
-            if atoms.n_atoms != pos.shape[1]:
-                msg = "The number of sites does not match the number of coordinates."
-                logger.exception(msg)
-                raise RuntimeError(msg)
-            n_frames, n_beads, _ = pos.shape
-            logger.info(f"The new universe has {n_beads:d} beads in " f"{n_frames:d} frames.")
-            universe.load_new(positions, format=MemoryReader)
+        pos = np.concatenate(positions, axis=1)
+        if atoms.n_atoms != pos.shape[1]:
+            message = "The number of sites does not match the number of coordinates."
+            logger.exception(message)
+            raise RuntimeError(message)
+        n_frames, n_beads, _ = pos.shape
+        logger.info(f"The new universe has {n_beads:d} beads in {n_frames:d} frames.")
+        universe.load_new(positions, format=MemoryReader)
 
-            dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
-            transform = transformations.boxdimensions.set_dimensions(dim)
-            universe.trajectory.add_transformations(transform)
+        dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
+        transform = transformations.boxdimensions.set_dimensions(dim)
+        universe.trajectory.add_transformations(transform)
 
     return universe
 
