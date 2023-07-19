@@ -74,7 +74,7 @@ class Model(ModelBase):
         self._mapping = MappingProxyType({"CA": "calpha", "CB": "hsidechain and not name H*", "ions": "bioion"})
         self._selection = MappingProxyType({"CA": "hbackbone", "CB": "hsidechain", "ions": "bioion"})
 
-    def _add_bonds(self: TModel) -> NoReturn:
+    def _add_bonds(self: TModel) -> None:
         bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue C-alpha and C-beta atoms.

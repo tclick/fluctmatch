@@ -85,7 +85,7 @@ class Model(ModelBase):
         )
 
     def _add_bonds(self: TModel) -> None:
-        bonds: List[Tuple[int, int]] = []
+        bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue atoms
         residues = self._universe.select_atoms("protein").residues
