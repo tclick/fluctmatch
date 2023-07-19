@@ -81,5 +81,5 @@ class Model(ModelBase):
         for segment in self._universe.segments:
             atom_selection: str = self._mapping[list(self._mapping.keys())[0]]
             atoms = segment.atoms.select_atoms(atom_selection)
-            bonds.extend(tuple(zip(atoms.ix_array[1:], atoms.ix_array[:-1], strict=False)))  # ignore: PD007
+            bonds.extend(tuple(zip(atoms.ix_array[1:], atoms.ix_array[:-1], strict=True)))  # ignore: PD007
         self._universe.add_TopologyAttr(Bonds(bonds))
