@@ -71,8 +71,8 @@ class Model(ModelBase):
             rmax=rmax,
         )
 
-        self._mapping = MappingProxyType({"CA": "calpha", "ions": "bioion"})
-        self._selection = MappingProxyType({"CA": "protein", "ions": "bioion"})
+        self._mapping: MappingProxyType[str, str] = MappingProxyType({"CA": "calpha", "ions": "bioion"})
+        self._selection: MappingProxyType[str, str] = MappingProxyType({"CA": "protein", "ions": "bioion"})
 
     def _add_bonds(self: TModel) -> None:
         bonds: list[tuple[int, int]] = []

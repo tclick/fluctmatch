@@ -40,6 +40,8 @@ from types import MappingProxyType
 from typing import ClassVar, TypeVar
 
 import numpy as np
+from numpy.typing import NDArray
+
 from MDAnalysis.core.topologyattrs import Atomtypes, Bonds
 
 from ..base import ModelBase
@@ -74,11 +76,11 @@ class Model(ModelBase):
         )
 
         self._guess: bool = False
-        self._mapping = MappingProxyType({"ions": "bioion"})
-        self._selection = self._mapping.copy()
+        self._mapping: MappingProxyType[str, str] = MappingProxyType({"ions": "bioion"})
+        self._selection: MappingProxyType[str, str] = self._mapping.copy()
 
     def _add_atomtypes(self: TModel) -> None:
-        resnames = np.unique(self._universe.residues.resnames)
+        resnames: NDArray = np.unique(self._universe.residues.resnames)
         restypes: MutableMapping[str, int] = dict(zip(resnames, np.arange(resnames.size) + 20, strict=False))
 
         atomtypes: list[int] = [restypes[atom.name] for atom in self._universe.atoms]

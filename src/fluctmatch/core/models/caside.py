@@ -36,8 +36,9 @@
 """Class definition for beads using C-alpha and C-beta positions"""
 
 from types import MappingProxyType
-from typing import TypeVar
+from typing import TypeVar, ClassVar
 
+from MDAnalysis import AtomGroup, ResidueGroup
 from MDAnalysis.core.topologyattrs import Bonds
 
 from ..base import ModelBase
@@ -49,8 +50,8 @@ TModel = TypeVar("TModel", bound="Model")
 class Model(ModelBase):
     """Universe consisting of the C-alpha and sidechains of a protein."""
 
-    model = "CASIDE"
-    description = "C-alpha and sidechain (c.o.m./c.o.g.) of protein"
+    model: ClassVar[str] = "CASIDE"
+    description: ClassVar[str] = "C-alpha and sidechain (c.o.m./c.o.g.) of protein"
 
     def __init__(
         self: TModel,
@@ -71,14 +72,18 @@ class Model(ModelBase):
             rmax=rmax,
         )
 
-        self._mapping = MappingProxyType({"CA": "calpha", "CB": "hsidechain and not name H*", "ions": "bioion"})
-        self._selection = MappingProxyType({"CA": "hbackbone", "CB": "hsidechain", "ions": "bioion"})
+        self._mapping: MappingProxyType[str, str] = MappingProxyType(
+            {"CA": "calpha", "CB": "hsidechain and not name H*", "ions": "bioion"}
+        )
+        self._selection: MappingProxyType[str, str] = MappingProxyType(
+            {"CA": "hbackbone", "CB": "hsidechain", "ions": "bioion"}
+        )
 
     def _add_bonds(self: TModel) -> None:
         bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue C-alpha and C-beta atoms.
-        residues = self._universe.select_atoms("protein and not resname GLY").residues
+        residues: ResidueGroup = self._universe.select_atoms("protein and not resname GLY").residues
         atom1: AtomGroup = residues.atoms.select_atoms("calpha")
         atom2: AtomGroup = residues.atoms.select_atoms("cbeta")
         bonds.extend(tuple(zip(atom1.ix_array, atom2.ix_array, strict=True)))

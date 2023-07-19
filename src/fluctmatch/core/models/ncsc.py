@@ -36,9 +36,11 @@
 """Class definition for beads using N, carboxyl oxygens, and sidechains."""
 
 from types import MappingProxyType
-from typing import TypeVar
+from typing import TypeVar, ClassVar
 
 import MDAnalysis as mda
+from MDAnalysis import AtomGroup, ResidueGroup
+
 from MDAnalysis.core.topologyattrs import Bonds
 
 from ..base import ModelBase
@@ -50,8 +52,8 @@ TModel = TypeVar("TModel", bound="Model")
 class Model(ModelBase):
     """Universe consisting of the amine, carboxyl, and sidechain regions."""
 
-    model = "NCSC"
-    description = "c.o.m./c.o.g. of N, O, and sidechain of protein"
+    model: ClassVar[str] = "NCSC"
+    description: ClassVar[str] = "c.o.m./c.o.g. of N, O, and sidechain of protein"
 
     def __init__(
         self: TModel,
@@ -72,7 +74,7 @@ class Model(ModelBase):
             rmax=rmax,
         )
 
-        self._mapping: MappingProxyType = MappingProxyType(
+        self._mapping: MappingProxyType[str, str] = MappingProxyType(
             {
                 "N": "protein and name N",
                 "CB": "hsidechain and not name H*",
@@ -80,7 +82,7 @@ class Model(ModelBase):
                 "ions": "bioion",
             }
         )
-        self._selection: MappingProxyType = MappingProxyType(
+        self._selection: MappingProxyType[str, str] = MappingProxyType(
             {"N": "amine", "CB": "hsidechain", "O": "carboxyl", "ions": "bioion"}
         )
 
@@ -88,7 +90,7 @@ class Model(ModelBase):
         bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue atoms
-        residues = self._universe.select_atoms("protein").residues
+        residues: ResidueGroup = self._universe.select_atoms("protein").residues
         atom1: AtomGroup = residues.atoms.select_atoms("name N")
         atom2: AtomGroup = residues.atoms.select_atoms("name O")
         bonds.extend(tuple(zip(atom1.ix_array, atom2.ix_array, strict=True)))
