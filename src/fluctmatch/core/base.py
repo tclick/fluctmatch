@@ -235,7 +235,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
         beads: list[mda.AtomGroup] = []
         total_beads: list[mda.AtomGroup] = []
         for residue, (key, selection) in selections:
-            value = selection.get(residue) if isinstance(selection, dict) else selection
+            value = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
             if residue.atoms.select_atoms(value):
                 beads.append(residue.atoms.select_atoms(value))
 
