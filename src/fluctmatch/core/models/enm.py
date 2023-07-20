@@ -49,7 +49,9 @@ from MDAnalysis.core.topologyattrs import (
 )
 from MDAnalysis.lib import distances
 
-from ..base import ModelBase, rename_universe
+from ..base import ModelBase
+from ..utils import rename_universe
+
 from ..selection import *
 
 TModel = TypeVar("TModel", bound="Model")
