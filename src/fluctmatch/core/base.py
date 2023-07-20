@@ -153,7 +153,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
 
         logger.debug("Creating the coarse-grain topology.")
         for residue, (key, selection) in selections:
-            value = selection.get(residue.resname) if isinstance(selection, dict) else selection
+            value = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
             bead = residue.atoms.select_atoms(value)
             if bead:
                 beads.append(bead)
@@ -287,8 +287,8 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
         return self._universe
 
     def _add_masses(self: TModels, universe: mda.Universe, /) -> None:
-        residues = universe.residues
-        atoms = residues.atoms
+        residues: mda.ResidueGroup = universe.residues
+        atoms: mda.AtomGroup = residues.atoms
         selections = itertools.product(residues, self._selection.values())
 
         try:
