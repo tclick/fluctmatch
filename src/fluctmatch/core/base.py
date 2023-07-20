@@ -51,10 +51,10 @@ from numpy.typing import NDArray
 
 MDUniverse = TypeVar("MDUniverse", mda.Universe, Iterable[mda.Universe])
 TModels = TypeVar("TModels", bound="ModelBase")
-models = ClassRegistry("model")
+_MODELS = ClassRegistry("model")
 
 
-class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
+class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
     """Base class for creating coarse-grain core.
 
     Parameters
