@@ -74,7 +74,7 @@ class Model(ModelBase):
             rmax=rmax,
         )
 
-        self._mapping: MappingProxyType[str, str] = MappingProxyType(
+        self._mapping: MappingProxyType[str, str:MappingProxyType] = MappingProxyType(
             {
                 "N": "protein and name N",
                 "CB": "hsidechain and not name H*",
@@ -93,33 +93,39 @@ class Model(ModelBase):
         residues: ResidueGroup = self._universe.select_atoms("protein").residues
         atom1: AtomGroup = residues.atoms.select_atoms("name N")
         atom2: AtomGroup = residues.atoms.select_atoms("name O")
-        bonds.extend(tuple(zip(atom1.ix_array, atom2.ix_array, strict=True)))
+        bonds.extend(tuple(zip(atom1.ix, atom2.ix, strict=True)))
 
-        residues = residues.atoms.select_atoms("not resname GLY").residues
+        residues = self._universe.select_atoms("protein and not resname GLY").residues
         atom1: AtomGroup = residues.atoms.select_atoms("name N")
         atom2: AtomGroup = residues.atoms.select_atoms("name O")
         atom3: AtomGroup = residues.atoms.select_atoms("cbeta")
-        bonds.extend(tuple(zip(atom1.ix_array, atom2.ix_array, strict=True)))
-        bonds.extend(tuple(zip(atom2.ix_array, atom3.ix_array, strict=True)))
+        bonds.extend(tuple(zip(atom1.ix, atom3.ix, strict=True)))
+        bonds.extend(tuple(zip(atom2.ix, atom3.ix, strict=True)))
 
         # Create interresidue bonds
         for segment in self._universe.segments:
             atom1: AtomGroup = segment.atoms.select_atoms("name O")
             atom2: AtomGroup = segment.atoms.select_atoms("name N")
-            bonds.extend(tuple(zip(atom1.ix_array[:-1], atom2.ix_array[1:], strict=True)))
+            bonds.extend(tuple(zip(atom1.ix[:-1], atom2.ix[1:], strict=True)))
 
         self._universe.add_TopologyAttr(Bonds(bonds))
 
     def _add_masses(self: TModel, universe: mda.Universe) -> None:
         super()._add_masses(universe)
-        amine: AtomGroup = self._universe.select_atoms(self._mapping["N"])
-        carboxyl: AtomGroup = self._universe.select_atoms(self._mapping["O"])
-        amine.masses += 0.5 * self._universe.select_atoms("hcalpha").total_mass()
-        carboxyl.masses += 0.5 * self._universe.select_atoms("hcalpha").total_mass()
+        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):
+            amine: AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
+            carboxyl: AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
+            if aa.atoms.select_atoms("hcalpha"):
+                ca_mass = 0.5 * aa.atoms.select_atoms("hcalpha").total_mass()
+                amine.masses += ca_mass
+                carboxyl.masses += ca_mass
 
     def _add_charges(self: TModel, universe: mda.Universe) -> None:
         super()._add_charges(universe)
-        amine: AtomGroup = self._universe.select_atoms(self._mapping["N"])
-        carboxyl: AtomGroup = self._universe.select_atoms(self._mapping["O"])
-        amine.charges += 0.5 * self._universe.select_atoms("hcalpha").total_charge()
-        carboxyl.charges += 0.5 * self._universe.select_atoms("hcalpha").total_charge()
+        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):
+            amine: AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
+            carboxyl: AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
+            if aa.atoms.select_atoms("hcalpha"):
+                ca_charge = 0.5 * aa.atoms.select_atoms("hcalpha").total_charge()
+                amine.charges += ca_charge
+                carboxyl.charges += ca_charge

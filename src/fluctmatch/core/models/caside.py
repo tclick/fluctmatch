@@ -86,11 +86,11 @@ class Model(ModelBase):
         residues: ResidueGroup = self._universe.select_atoms("protein and not resname GLY").residues
         atom1: AtomGroup = residues.atoms.select_atoms("calpha")
         atom2: AtomGroup = residues.atoms.select_atoms("cbeta")
-        bonds.extend(tuple(zip(atom1.ix_array, atom2.ix_array, strict=True)))
+        bonds.extend(tuple(zip(atom1.ix, atom2.ix, strict=True)))
 
         # Create interresidue C-alpha bonds within a segment
         for segment in self._universe.segments:
             atoms: AtomGroup = segment.atoms.select_atoms("calpha")
-            bonds.extend(tuple(zip(atoms.ix_array[1:], atoms.ix_array[:-1], strict=True)))
+            bonds.extend(tuple(zip(atoms.ix[1:], atoms.ix[:-1], strict=True)))
 
         self._universe.add_TopologyAttr(Bonds(bonds))
