@@ -38,6 +38,8 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
 from loguru import logger
 
+from fluctmatch.core.base import _MODELS  # noqa: F401
+
 if TYPE_CHECKING:
     from loguru import Logger
 else:
