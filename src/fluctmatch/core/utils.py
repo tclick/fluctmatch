@@ -30,4 +30,52 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportGeneralTypeIssues=false
 """Various utilities for the models."""
+
+from pathlib import Path
+from typing import TypeVar
+
+import MDAnalysis as mda
+from loguru import logger
+
+from .. import _MODELS
+from .base import ModelBase, merge
+
+T = TypeVar("T")
+
+
+def modeller(*args: str | Path, **kwargs: T) -> mda.Universe:
+    """Create coarse-grain model from universe selection.
+
+    Parameters
+    ----------
+    topology : Path or str
+        A topology file containing atomic information about a system.
+    trajectory : Path or str
+        A trajectory file with coordinates of atoms
+    model : list[str], optional
+        Name(s) of coarse-grain core
+
+    Returns
+    -------
+    A coarse-grain model
+    """
+    models: list[str] = [_.upper() for _ in kwargs.pop("model", ["polar"])]
+    try:
+        if "ENM" in models:
+            logger.warning("ENM model detected. All other core are being ignored.")
+            model: ModelBase = _MODELS.get("ENM", **kwargs)
+            return model.transform(mda.Universe(*args, **kwargs))
+    except Exception as exc:
+        logger.exception("An error occurred while trying to create the universe.")
+        raise RuntimeError from exc
+
+    try:
+        universe: list[mda.Universe] = [_MODELS.get(_, **kwargs).transform(mda.Universe(*args)) for _ in models]
+    except KeyError as err:
+        message: str = f"One of the core is not implemented. Please try {_MODELS.keys()}"
+        logger.exception(message)
+        raise KeyError(message) from err
+    else:
+        return merge(*universe)
