@@ -168,7 +168,7 @@ class HBackboneSelection(BackboneSelection):
         resnames = group.universe._topology.resnames
 
         # filter by atom names
-        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm in self.hbb_atoms]
+        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm in self.bb_atoms]
         nmidx = atomnames.nmidx[group.ix]
         group = group[np.in1d(nmidx, name_matches)]
 
@@ -222,40 +222,14 @@ class HCalphaSelection(CalphaSelection):
     hcalpha: ClassVar[set[str]] = set("HA HA1 HA2 1HA 2HA".split())
     calpha: ClassVar[set[str]] = CalphaSelection.calpha.union(hcalpha)
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
-        """Apply selection to atom group.
-
-        Parameters
-        ----------
-        group : AtomGroup
-            Group of atoms for selection
-
-        Returns
-        -------
-        NDArray
-            Selection of atom names
-        """
-        atomnames = group.universe._topology.names
-        resnames = group.universe._topology.resnames
-
-        # filter by atom names
-        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm in self.calpha]
-        nmidx = atomnames.nmidx[group.ix]
-        group = group[np.in1d(nmidx, name_matches)]
-
-        # filter by resnames
-        resname_matches = [ix for (nm, ix) in resnames.namedict.items() if nm in self.prot_res]
-        nmidx = resnames.nmidx[group.resindices]
-        group = group[np.in1d(nmidx, resname_matches)]
-
-        return group.unique
-
 
 class CbetaSelection(selection.ProteinSelection):
     """Contains only the beta-carbon of a protein."""
 
     token: ClassVar[str] = "cbeta"
-    cbeta: ClassVar[set[str]] = set("CB")
+    cbeta: ClassVar[set[str]] = {
+        "CB",
+    }
 
     def apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
@@ -374,9 +348,20 @@ class HSidechainSelection(HBackboneSelection):
         NDArray
             Selection of atom names
         """
-        mask = np.in1d(group.names, HBackboneSelection.bb_atoms, invert=True)
-        mask &= np.in1d(group.resnames, self.prot_res)
-        return group[mask].unique
+        atomnames = group.universe._topology.names
+        resnames = group.universe._topology.resnames
+
+        # filter by atom names
+        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm not in self.bb_atoms]
+        nmidx = atomnames.nmidx[group.ix]
+        group = group[np.in1d(nmidx, name_matches)]
+
+        # filter by resnames
+        resname_matches = [ix for (nm, ix) in resnames.namedict.items() if nm in self.prot_res]
+        nmidx = resnames.nmidx[group.resindices]
+        group = group[np.in1d(nmidx, resname_matches)]
+
+        return group.unique
 
 
 class AdditionalNucleicSelection(selection.NucleicSelection):
@@ -387,27 +372,6 @@ class AdditionalNucleicSelection(selection.NucleicSelection):
     def __init__(self: Self, parser: str, tokens: Iterable[str]) -> None:
         super().__init__(parser, tokens)
         self.nucl_res = self.nucl_res.union("OXG ABNP HPX DC35".split())
-
-    def apply(self: Self, group: AtomGroup) -> NDArray:
-        """Apply selection to atom group.
-
-        Parameters
-        ----------
-        group : AtomGroup
-            Group of atoms for selection
-
-        Returns
-        -------
-        NDArray
-            Selection of atom names
-        """
-        resnames = group.universe._topology.resnames
-        nmidx = resnames.nmidx[group.resindices]
-
-        matches = [ix for (nm, ix) in resnames.namedict.items() if nm in self.nucl_res]
-        mask = np.in1d(nmidx, matches)
-
-        return group[mask]
 
 
 class HNucleicSugarSelection(AdditionalNucleicSelection, selection.NucleicSugarSelection):
