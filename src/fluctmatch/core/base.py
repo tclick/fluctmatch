@@ -36,7 +36,6 @@ import abc
 import itertools
 import string
 from collections.abc import Iterable
-from itertools import zip_longest
 from types import MappingProxyType
 from typing import TypeVar
 
@@ -166,6 +165,8 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(models)):
         attributes["names"] = np.asarray(atomnames, dtype=object)
         attributes["radii"] = np.zeros_like(atomids, dtype=float)
         attributes["ids"] = np.zeros_like(atomids, dtype=float)
+        if not np.issubdtype(universe.atoms.types.dtype, np.int64):
+            attributes["types"] = np.asarray(atomnames, dtype=object)
 
         # Residue
         resids = np.asarray([bead.resids[0] for bead in beads], dtype=int)
@@ -418,27 +419,27 @@ def rename_universe(universe: mda.Universe, /) -> None:
         A collection of atoms in a universe.
     """
     logger.info("Renaming atom names and atom core within the universe.")
-    atoms = universe.atoms
-    types = atoms.types
-    segments = universe.segments
-    segids = segments.segids
+    atoms: mda.AtomGroup = universe.atoms
+    types: NDArray = atoms.types
+    segments: mda.SegmentGroup = universe.segments
+    attributes: dict[str, NDArray] = {}
 
-    atom_names = np.array(
+    attributes["names"] = np.array(
         [
             f"{letter}{i:0>3d}"
-            for letter, segment in filter(lambda x: None not in x, zip_longest(string.ascii_uppercase, segids))
+            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
             for i, _ in enumerate(segment.atoms, 1)
         ]
     )
-    resnames = np.array(
+    attributes["resnames"] = np.array(
         [
             f"{letter}{i:0>3d}"
-            for letter, segment in filter(lambda x: None not in x, zip_longest(string.ascii_uppercase, segids))
+            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
             for i, _ in enumerate(segment.residues, 1)
         ]
     )
-
-    universe.add_TopologyAttr("names", atom_names)
-    universe.add_TopologyAttr("resnames", resnames)
     if not np.issubdtype(types.dtype, np.int64):
-        universe.add_TopologyAttr("types", atom_names)
+        attributes["types"] = attributes["names"]
+
+    for attr, value in attributes.items():
+        universe.add_TopologyAttr(topologyattr=attr, values=value)
