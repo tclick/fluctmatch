@@ -30,8 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false
 # flake8: noqa
 """Elastic network model using C-alpha atoms of a protein."""
 
@@ -77,13 +76,13 @@ class Model(ModelBase):
 
         self._guess: bool = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"ions": "bioion"})
-        self._selection: MappingProxyType[str, str] = self._mapping.copy()
+        self._selection: MappingProxyType[str, str] = self._mapping
 
     def _add_atomtypes(self: TModel) -> None:
-        resnames: NDArray = np.unique(self._universe.residues.resnames)
+        resnames: NDArray = np.unique(self._universe.residues.resnames)  # type: ignore
         restypes: MutableMapping[str, int] = dict(zip(resnames, np.arange(resnames.size) + 20, strict=False))
 
-        atomtypes: list[int] = [restypes[atom.name] for atom in self._universe.atoms]
+        atomtypes: list[int] = [restypes[atom.name] for atom in self._universe.atoms]  # type: ignore
         self._universe.add_TopologyAttr(Atomtypes(atomtypes))
 
     def _add_bonds(self: TModel) -> None:

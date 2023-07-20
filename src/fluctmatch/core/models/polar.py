@@ -30,9 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
-# flake8: noqa
+# pyright: reportInvalidTypeVarUse=false
 """Class definition for beads using N, carboxyl oxygens, and polar sidechains."""
 from types import MappingProxyType
 from typing import ClassVar, TypeVar
@@ -95,4 +93,4 @@ class Model(ncsc.Model):
                 "VAL": "protein and name CG1 CG2",
             }
         )
-        self._mapping = mapping.copy()
+        self._mapping = MappingProxyType(mapping)

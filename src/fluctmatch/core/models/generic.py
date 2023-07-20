@@ -30,22 +30,19 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
 # flake8: noqa
 """Model a generic system of all atoms."""
 import itertools
 from types import MappingProxyType
-
-from typing import TypeVar, ClassVar
-
-import numpy as np
-from numpy.typing import NDArray
+from typing import ClassVar, TypeVar
 
 import MDAnalysis as mda
+import numpy as np
 from MDAnalysis import transformations
 from MDAnalysis.coordinates.memory import MemoryReader
 from MDAnalysis.topology import guessers
+from numpy.typing import NDArray
 
 from .. import base
 from ..selection import *
@@ -81,7 +78,7 @@ class Model(base.ModelBase):
         self._mapping: MappingProxyType[str, str] = MappingProxyType(
             {"bead": "not (protein or nucleic or bioion or water)"}
         )
-        self._selection: MappingProxyType[str, str] = self._mapping.copy()
+        self._selection: MappingProxyType[str, str] = self._mapping
 
     def create_topology(self: TModel, universe: mda.Universe, /) -> None:
         """Determine the topology attributes and initialize the universe.
@@ -92,7 +89,7 @@ class Model(base.ModelBase):
             An all-atom universe
         """
         atom_group: list[AtomGroup] = [universe.select_atoms(_) for _ in self._mapping.values()]
-        self._universe: mda.Universe = mda.Merge(*atom_group)
+        self._universe: mda.Universe = mda.Merge(*atom_group)  # type: ignore
 
         float_type = universe.atoms.masses.dtype
         int_type = universe.atoms.resids.dtype
@@ -118,14 +115,16 @@ class Model(base.ModelBase):
             An all-atom universe
         """
         if not hasattr(self, "_universe"):
-            raise AttributeError("Topologies need to be created before bonds can be added.")
+            msg = "Topologies need to be created before bonds can be added."
+            raise AttributeError(msg)
 
         if not hasattr(universe, "trajectory"):
-            raise AttributeError("The provided universe does not have coordinates defined.")
+            msg = "The provided universe does not have coordinates defined."
+            raise AttributeError(msg)
 
-        selections = itertools.product(universe.residues, self._mapping.items())
-        beads: list[AtomGroup] = []
-        total_beads: list[AtomGroup] = []
+        selections = itertools.product(universe.residues, self._mapping.items())  # type: ignore
+        beads: list[AtomGroup] = []  # type: ignore
+        total_beads: list[AtomGroup] = []  # type: ignore
         for residue, (key, selection) in selections:
             value = selection.get(residue.resname) if isinstance(selection, dict) else selection
             if residue.atoms.select_atoms(value):

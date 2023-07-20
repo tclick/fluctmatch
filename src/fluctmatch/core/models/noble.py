@@ -30,9 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
-# flake8: noqa
+# pyright: reportInvalidTypeVarUse=false
 """Class defining noble gases."""
 
 from types import MappingProxyType
@@ -70,7 +68,7 @@ class Model(ModelBase):
 
         self._guess: bool = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"noble": "name HE NE KR XE"})
-        self._selection: MappingProxyType[str, str] = self._mapping.copy()
+        self._selection: MappingProxyType[str, str] = self._mapping
 
     def _add_bonds(self: TModel) -> None:
         self._universe.add_TopologyAttr("bonds", [])

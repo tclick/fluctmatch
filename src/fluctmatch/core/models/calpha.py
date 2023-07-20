@@ -30,8 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false
 # flake8: noqa
 """Elastic network model using C-alpha atoms of a protein."""
 
@@ -78,7 +77,7 @@ class Model(ModelBase):
         bonds: list[tuple[int, int]] = []
 
         # Create bonds between C-alphas in adjacent residues
-        for segment in self._universe.segments:
+        for segment in self._universe.segments:  # type: ignore
             atom_selection: str = self._mapping[list(self._mapping.keys())[0]]
             atoms = segment.atoms.select_atoms(atom_selection)
             bonds.extend(tuple(zip(atoms.ix[1:], atoms.ix[:-1], strict=True)))  # ignore: PD007

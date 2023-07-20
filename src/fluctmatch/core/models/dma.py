@@ -30,14 +30,11 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
-# flake8: noqa
+# pyright: reportInvalidTypeVarUse=false
 """Tests for DMA solvent model."""
 
 from types import MappingProxyType
-
-from typing import TypeVar, ClassVar
+from typing import ClassVar, TypeVar
 
 from MDAnalysis.core.groups import AtomGroup
 from MDAnalysis.core.topologyattrs import Bonds
@@ -80,7 +77,7 @@ class Model(ModelBase):
                 "C3": "resname DMA and name C3 H3*",
             }
         )
-        self._selection: MappingProxyType[str, str] = self._mapping.copy()
+        self._selection: MappingProxyType[str, str] = self._mapping
 
         self._types: MappingProxyType[str, int] = MappingProxyType(
             {key: value + 4 for key, value in zip(self._mapping.keys(), range(len(self._mapping)), strict=True)}

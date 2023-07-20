@@ -30,8 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false
 # flake8: noqa
 """Class for 6-bead nucleic acid."""
 
@@ -117,12 +116,12 @@ class Model(ModelBase):
         """
         super().create_topology(universe)
 
-        charges = np.zeros(self._universe.atoms.n_atoms, dtype=np.float32)
+        charges = np.zeros(self._universe.atoms.n_atoms, dtype=np.float32)  # type: ignore
         self._universe.add_TopologyAttr(Charges(charges))
 
     def _add_bonds(self: TModel) -> None:
         bonds: list[tuple[int, int]] = []
-        for segment in self._universe.segments:
+        for segment in self._universe.segments:  # type: ignore
             atom1 = segment.atoms.select_atoms("name P")
             atom2 = segment.atoms.select_atoms("name C4")
             atom3 = segment.atoms.select_atoms("name C2")

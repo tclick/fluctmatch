@@ -30,8 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false
 # flake8: noqa
 """Class definition for beads using N, carboxyl oxygens, and sidechains."""
 
@@ -74,7 +73,7 @@ class Model(ModelBase):
             rmax=rmax,
         )
 
-        self._mapping: MappingProxyType[str, str:MappingProxyType] = MappingProxyType(
+        self._mapping: MappingProxyType[str, str | MappingProxyType[str, str]] = MappingProxyType(
             {
                 "N": "protein and name N",
                 "CB": "hsidechain and not name H*",
@@ -103,7 +102,7 @@ class Model(ModelBase):
         bonds.extend(tuple(zip(atom2.ix, atom3.ix, strict=True)))
 
         # Create interresidue bonds
-        for segment in self._universe.segments:
+        for segment in self._universe.segments:  # type: ignore
             atom1: AtomGroup = segment.atoms.select_atoms("name O")
             atom2: AtomGroup = segment.atoms.select_atoms("name N")
             bonds.extend(tuple(zip(atom1.ix[:-1], atom2.ix[1:], strict=True)))
@@ -112,20 +111,20 @@ class Model(ModelBase):
 
     def _add_masses(self: TModel, universe: mda.Universe) -> None:
         super()._add_masses(universe)
-        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):
+        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):  # type: ignore
             amine: AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
             carboxyl: AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
             if aa.atoms.select_atoms("hcalpha"):
-                ca_mass = 0.5 * aa.atoms.select_atoms("hcalpha").total_mass()
-                amine.masses += ca_mass
-                carboxyl.masses += ca_mass
+                ca_mass: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_mass()
+                amine.masses += ca_mass  # type: ignore
+                carboxyl.masses += ca_mass  # type: ignore
 
     def _add_charges(self: TModel, universe: mda.Universe) -> None:
         super()._add_charges(universe)
-        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):
+        for cg, aa in zip(self._universe.residues, universe.residues, strict=False):  # type: ignore
             amine: AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
             carboxyl: AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
             if aa.atoms.select_atoms("hcalpha"):
-                ca_charge = 0.5 * aa.atoms.select_atoms("hcalpha").total_charge()
-                amine.charges += ca_charge
-                carboxyl.charges += ca_charge
+                ca_charge: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_charge()
+                amine.charges += ca_charge  # type: ignore
+                carboxyl.charges += ca_charge  # type: ignore

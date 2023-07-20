@@ -30,13 +30,12 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportOptionalMemberAccess=false, reportGeneralTypeIssues=false
-# pyright: reportOptionalIterable=false
+# pyright: reportInvalidTypeVarUse=false
 # flake8: noqa
-"""Class definition for beads using C-alpha and C-beta positions"""
+"""Class definition for beads using C-alpha and C-beta positions."""
 
 from types import MappingProxyType
-from typing import TypeVar, ClassVar
+from typing import ClassVar, TypeVar
 
 from MDAnalysis import AtomGroup, ResidueGroup
 from MDAnalysis.core.topologyattrs import Bonds
@@ -89,7 +88,7 @@ class Model(ModelBase):
         bonds.extend(tuple(zip(atom1.ix, atom2.ix, strict=True)))
 
         # Create interresidue C-alpha bonds within a segment
-        for segment in self._universe.segments:
+        for segment in self._universe.segments:  # type: ignore
             atoms: AtomGroup = segment.atoms.select_atoms("calpha")
             bonds.extend(tuple(zip(atoms.ix[1:], atoms.ix[:-1], strict=True)))
 
