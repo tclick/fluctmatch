@@ -30,7 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false
+# pyright: reportInvalidTypeVarUse=false, reportOptionalIterable=false
 """Tests for DMA solvent model."""
 
 from types import MappingProxyType
