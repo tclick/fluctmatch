@@ -309,7 +309,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
     def _add_charges(self: TModel, universe: mda.Universe, /) -> None:
         residues = universe.residues
         atoms = residues.atoms
-        selections = itertools.product(universe.residues.resnames, self._selection.values())
+        selections = itertools.product(universe.residues, self._selection.values())
 
         try:
             logger.debug("Assigning charges to the beads.")
