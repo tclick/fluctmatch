@@ -71,7 +71,7 @@ with resources.as_file(_data_ref / "dna.pdb") as f:
 with resources.as_file(_data_ref / "trex1.xtc") as f:
     XTC: str = f.as_posix()
 
-with resources.as_file(_data_ref / "scp215.gro") as f:
+with resources.as_file(_data_ref / "spc216.gro") as f:
     TIP3P: str = f.as_posix()
 
 with resources.as_file(_data_ref / "tip4p.gro") as f:
