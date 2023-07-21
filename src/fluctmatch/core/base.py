@@ -49,7 +49,7 @@ from MDAnalysis.topology import guessers
 from numpy.typing import NDArray
 
 MDUniverse = TypeVar("MDUniverse", mda.Universe, Iterable[mda.Universe])
-TModels = TypeVar("TModels", bound="ModelBase")
+TModel = TypeVar("TModel", bound="ModelBase")
 _MODELS = ClassRegistry("model")
 
 
@@ -90,7 +90,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
     """
 
     def __init__(
-        self: TModels,
+        self: TModel,
         *,
         xplor: bool = True,
         extended: bool = True,
@@ -134,7 +134,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         # Named tuple translating beads from an all-atom selection.
         self._beads: MappingProxyType = MappingProxyType({})
 
-    def create_topology(self: TModels, universe: mda.Universe, /) -> None:
+    def create_topology(self: TModel, universe: mda.Universe, /) -> None:
         """Determine the topology attributes and initialize the universe.
 
         Parameters
@@ -202,7 +202,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         self._add_masses(universe)
         self._add_charges(universe)
 
-    def generate_bonds(self: TModels) -> None:
+    def generate_bonds(self: TModel) -> None:
         """Generate connectivity information for the new system."""
         if not hasattr(self, "_universe"):
             message = "Topologies need to be created before bonds can be added."
@@ -214,7 +214,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
             self._add_dihedrals()
             self._add_impropers()
 
-    def add_trajectory(self: TModels, universe: mda.Universe, /) -> None:
+    def add_trajectory(self: TModel, universe: mda.Universe, /) -> None:
         """Add coordinates to the new system.
 
         Parameters
@@ -265,7 +265,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
             self._universe.trajectory.add_transformations(transform)
         universe.trajectory.rewind()
 
-    def transform(self: TModels, universe: mda.Universe, /) -> mda.Universe:
+    def transform(self: TModel, universe: mda.Universe, /) -> mda.Universe:
         """Convert an all-atom universe to a coarse-grain model.
 
         Topologies are generated, bead connections are determined, and positions
@@ -286,7 +286,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         self.add_trajectory(universe)
         return self._universe
 
-    def _add_masses(self: TModels, universe: mda.Universe, /) -> None:
+    def _add_masses(self: TModel, universe: mda.Universe, /) -> None:
         residues: mda.ResidueGroup = universe.residues
         atoms: mda.AtomGroup = residues.atoms
         selections = itertools.product(residues, self._selection.values())
@@ -306,7 +306,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
 
         self._universe.add_TopologyAttr("masses", masses)
 
-    def _add_charges(self: TModels, universe: mda.Universe, /) -> None:
+    def _add_charges(self: TModel, universe: mda.Universe, /) -> None:
         residues = universe.residues
         atoms = residues.atoms
         selections = itertools.product(universe.residues.resnames, self._selection.values())
@@ -327,10 +327,10 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         self._universe.add_TopologyAttr("charges", charges)
 
     @abc.abstractmethod
-    def _add_bonds(self: TModels) -> None:
+    def _add_bonds(self: TModel) -> None:
         pass
 
-    def _add_angles(self: TModels) -> None:
+    def _add_angles(self: TModel) -> None:
         try:
             logger.debug("Guessing the angles.")
             angles = guessers.guess_angles(self._universe.bonds)
@@ -338,7 +338,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         except AttributeError:
             pass
 
-    def _add_dihedrals(self: TModels) -> None:
+    def _add_dihedrals(self: TModel) -> None:
         try:
             logger.debug("Guessing the dihedral angles.")
             dihedrals = guessers.guess_dihedrals(self._universe.angles)
@@ -346,7 +346,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         except AttributeError:
             pass
 
-    def _add_impropers(self: TModels) -> None:
+    def _add_impropers(self: TModel) -> None:
         try:
             logger.debug("Guessing the improper dihedral angles.")
             impropers = guessers.guess_improper_dihedrals(self._universe.angles)
