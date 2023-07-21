@@ -55,26 +55,9 @@ class Model(ModelBase):
     model: ClassVar[str] = "BIOIONS"
     description: ClassVar[str] = "Common ions found near proteins (Mg Ca Mn Fe Cu Zn Ag)"
 
-    def __init__(
-        self: TModel,
-        *,
-        xplor: bool = True,
-        extended: bool = True,
-        com: bool = True,
-        guess_angles: bool = False,
-        rmin: float = 0.0,
-        rmax: float = 10.0,
-    ) -> None:
-        super().__init__(
-            xplor=xplor,
-            extended=extended,
-            com=com,
-            guess_angles=guess_angles,
-            rmin=rmin,
-            rmax=rmax,
-        )
+    def __init__(self: TModel, *, com: bool = True, guess_angles: bool = False) -> None:
+        super().__init__(com=com, guess_angles=guess_angles)
 
-        self._guess: bool = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"ions": "bioion"})
         self._selection: MappingProxyType[str, str] = self._mapping
 

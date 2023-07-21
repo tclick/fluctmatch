@@ -47,23 +47,10 @@ class Model(ModelBase):
     model: ClassVar[str] = "NOBLE"
     description: ClassVar[str] = "Noble gases (He Ne Kr Xe)"
 
-    def __init__(
-        self: TModel,
-        *,
-        xplor: bool = True,
-        extended: bool = True,
-        com: bool = True,
-        guess_angles: bool = False,
-        rmin: float = 0.0,
-        rmax: float = 10.0,
-    ) -> None:
+    def __init__(self: TModel, *, com: bool = True, guess_angles: bool = False) -> None:
         super().__init__(
-            xplor=xplor,
-            extended=extended,
             com=com,
             guess_angles=guess_angles,
-            rmin=rmin,
-            rmax=rmax,
         )
 
         self._guess: bool = False

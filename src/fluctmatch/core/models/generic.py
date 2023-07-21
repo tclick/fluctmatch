@@ -56,24 +56,8 @@ class Model(base.ModelBase):
     model: ClassVar[str] = "GENERIC"
     description: ClassVar[str] = "all heavy atoms excluding proteins and nucleic acids"
 
-    def __init__(
-        self: TModel,
-        *,
-        xplor: bool = True,
-        extended: bool = True,
-        com: bool = True,
-        guess_angles: bool = False,
-        rmin: float = 0.0,
-        rmax: float = 10.0,
-    ) -> None:
-        super().__init__(
-            xplor=xplor,
-            extended=extended,
-            com=com,
-            guess_angles=guess_angles,
-            rmin=rmin,
-            rmax=rmax,
-        )
+    def __init__(self: TModel, *, com: bool = True, guess_angles: bool = False) -> None:
+        super().__init__(com=com, guess_angles=guess_angles)
 
         self._mapping: MappingProxyType[str, str] = MappingProxyType(
             {"bead": "not (protein or nucleic or bioion or water)"}

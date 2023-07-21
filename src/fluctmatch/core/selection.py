@@ -50,10 +50,7 @@ class BioIonSelection(selection.Selection):
     token: ClassVar[str] = "bioion"
     ion_atoms: ClassVar[set[str]] = set("MG CAL MN FE CU ZN AG".split())
 
-    def __init__(self: Self, parser: str, tokens: Iterable[str]) -> None:
-        pass
-
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -82,10 +79,7 @@ class WaterSelection(selection.Selection):
     token: ClassVar[str] = "water"
     water_atoms: ClassVar[set[str]] = set("OW HW1 HW2 MW".split())
 
-    def __init__(self: Self, parser: str, tokens: Iterable[str]) -> None:
-        pass
-
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -115,7 +109,7 @@ class BackboneSelection(selection.BackboneSelection):
     oxy_atoms: ClassVar[set[str]] = set("OXT OT1 OT2".split())
     bb_atoms: ClassVar[set[str]] = selection.BackboneSelection.bb_atoms.union(oxy_atoms)
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -151,7 +145,7 @@ class HBackboneSelection(BackboneSelection):
     hbb_atoms: ClassVar[set[str]] = set("H HN H1 H2 H3 HT1 HT2 HT3 HA HA1 HA2 1HA 2HA".split())
     bb_atoms: ClassVar[set[str]] = BackboneSelection.bb_atoms.union(hbb_atoms)
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -186,7 +180,7 @@ class CalphaSelection(selection.ProteinSelection):
     token: ClassVar[str] = "calpha"
     calpha: ClassVar[set[str]] = {"CA"}
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -231,7 +225,7 @@ class CbetaSelection(selection.ProteinSelection):
         "CB",
     }
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -266,7 +260,7 @@ class AmineSelection(selection.ProteinSelection):
     token: ClassVar[str] = "amine"
     amine: ClassVar[set[str]] = set("N HN H H1 H2 H3 HT1 HT2 HT3".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -301,7 +295,7 @@ class CarboxylSelection(selection.ProteinSelection):
     token: ClassVar[str] = "carboxyl"
     carboxyl: ClassVar[set[str]] = set("C O OXT OT1 OT2".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -335,7 +329,7 @@ class HSidechainSelection(HBackboneSelection):
 
     token: ClassVar[str] = "hsidechain"
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -383,7 +377,7 @@ class HNucleicSugarSelection(AdditionalNucleicSelection, selection.NucleicSugarS
         super().__init__(parser, tokens)
         self.sug_atoms = self.sug_atoms.union("H1' O1' O2' H2' H2'' O3' H3' H3T H4'".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -414,7 +408,7 @@ class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
         super().__init__(parser, tokens)
         self.base_atoms = self.base_atoms.union("O8 H8 H21 H22 H2 O6 H6 H61 H62 H41 H42 H5 H51 H52 H53 H3 H7".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -449,7 +443,7 @@ class NucleicPhosphateSelection(AdditionalNucleicSelection):
     token: ClassVar[str] = "nucleicphosphate"
     phos_atoms: ClassVar[set[str]] = set("P O1P O2P O5' C5' H5' H5'' O5T H5T".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -484,7 +478,7 @@ class NucleicC2Selection(AdditionalNucleicSelection):
     token: ClassVar[str] = "sugarC2"
     c3_atoms: ClassVar[set[str]] = set("C1' H1' C2' O2' H2' H2''".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -519,7 +513,7 @@ class NucleicC4Selection(AdditionalNucleicSelection):
     token: ClassVar[str] = "sugarC4"
     c3_atoms: ClassVar[set[str]] = set("C3' O3' H3' H3T C4' O4' H4'".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters
@@ -554,7 +548,7 @@ class BaseCenterSelection(AdditionalNucleicSelection):
     token: ClassVar[str] = "nucleiccenter"
     center_atoms: ClassVar[set[str]] = set("C4 C5".split())
 
-    def apply(self: Self, group: AtomGroup) -> NDArray:
+    def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
 
         Parameters

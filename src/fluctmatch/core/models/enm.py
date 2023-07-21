@@ -116,15 +116,13 @@ class Model(ModelBase):
         charges: bool = True,
     ) -> None:
         super().__init__(
-            xplor=xplor,
-            extended=extended,
             com=com,
             guess_angles=guess_angles,
-            rmin=rmin,
-            rmax=rmax,
         )
         self._universe: mda.Universe
         self._charges: bool = charges
+        self._rmin = np.clip(rmin, 0.0, None)
+        self._rmax = np.clip(rmax, self._rmin + 0.1, None)
 
     def create_topology(self, universe: mda.Universe, /) -> None:
         """Determine the topology attributes and initialize the universe.

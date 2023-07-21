@@ -58,19 +58,6 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
 
     Parameters
     ----------
-    extended : bool, optional
-        Renames the residues and atoms according to the extended CHARMM PSF
-        format. Standard CHARMM PSF limits the residue and atom names to four
-        characters, but the extended CHARMM PSF permits eight characters. The
-        residues and atoms are renamed according to the number of segments
-        (1: A, 2: B, etc.) and then the residue number or atom index number.
-    xplor : bool, optional
-        Assigns the atom type as either a numerical or an alphanumerical
-        designation. CHARMM normally assigns a numerical designation, but the
-        XPLOR version permits an alphanumerical designation with a maximum
-        size of 4. The numerical form corresponds to the atom index number plus
-        a factor of 100, and the alphanumerical form will be similar the
-        standard CHARMM atom name.
     com : bool, optional
         Calculates the bead coordinates using either the center of mass
         (default) or center of geometry.
@@ -78,10 +65,6 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         Once Universe has been created, attempt to guess the connectivity
         between atoms.  This will populate the .angles, .dihedrals, and
         .impropers attributes of the Universe.
-    rmin : float, optional
-        Minimum cutoff for bond lengths
-    rmax : float, optional
-        Maximum cutoff for bond lengths
 
     Attributes
     ----------
@@ -89,16 +72,7 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         The transformed universe
     """
 
-    def __init__(
-        self: TModel,
-        *,
-        xplor: bool = True,
-        extended: bool = True,
-        com: bool = True,
-        guess_angles: bool = False,
-        rmin: float = 0.0,
-        rmax: float = 10.0,
-    ) -> None:
+    def __init__(self: TModel, *, com: bool = True, guess_angles: bool = False) -> None:
         """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
 
         Mapping must be a dictionary with atom names as keys.
@@ -115,13 +89,9 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
         # Make a blank Universe for myself.
         super().__init__()
 
-        self._universe: mda.Universe
-        self._xplor = xplor
-        self._extended = extended
+        self._universe: mda.Universe = mda.Universe.empty(0)
         self._com = com
         self._guess = guess_angles
-        self._rmin = np.clip(rmin, 0.0, None)
-        self._rmax = np.clip(rmax, self._rmin + 0.1, None)
 
         # Named tuple for specific bead selections. This is primarily used to
         # determine positions.
@@ -254,7 +224,6 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
             except (AttributeError, mda.NoDataError):
                 pass
 
-            # Velocities
         if self._universe.trajectory.ts.has_positions:
             dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
             transform = transformations.boxdimensions.set_dimensions(dim)

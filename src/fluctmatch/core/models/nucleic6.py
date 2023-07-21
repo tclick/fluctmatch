@@ -51,24 +51,8 @@ class Model(ModelBase):
     model: ClassVar[str] = "NUCLEIC6"
     description: ClassVar[str] = "Phosphate, C2', C4', and 3 sites on the nucleotide"
 
-    def __init__(
-        self: TModel,
-        *,
-        xplor: bool = True,
-        extended: bool = True,
-        com: bool = True,
-        guess_angles: bool = False,
-        rmin: float = 0.0,
-        rmax: float = 10.0,
-    ) -> None:
-        super().__init__(
-            xplor=xplor,
-            extended=extended,
-            com=com,
-            guess_angles=guess_angles,
-            rmin=rmin,
-            rmax=rmax,
-        )
+    def __init__(self: TModel, *, com: bool = True, guess_angles: bool = False) -> None:
+        super().__init__(com=com, guess_angles=guess_angles)
 
         self._mapping: MappingProxyType[str, str | tuple[str, ...]] = MappingProxyType(
             {
