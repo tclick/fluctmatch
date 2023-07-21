@@ -126,11 +126,11 @@ class Model(base.ModelBase):
         beads: list[AtomGroup] = []  # type: ignore
         total_beads: list[AtomGroup] = []  # type: ignore
         for residue, (key, selection) in selections:
-            value = selection.get(residue.resname) if isinstance(selection, dict) else selection
+            value = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
             if residue.atoms.select_atoms(value):
                 beads.append(residue.atoms.select_atoms(value))
 
-            other_selection = getattr(self._selection, key)
+            other_selection = self._selection.get(key)
             total_beads.append(residue.atoms.select_atoms(other_selection))
 
         position_array: list[NDArray] = []
