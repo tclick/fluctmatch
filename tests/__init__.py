@@ -31,3 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Test suite for the fluctmatch package."""
+
+from typing import TypeVar
+
+Self = TypeVar("Self")
