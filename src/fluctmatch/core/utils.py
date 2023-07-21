@@ -41,6 +41,7 @@ import MDAnalysis as mda
 import numpy as np
 from loguru import logger
 from MDAnalysis import transformations
+from MDAnalysis.analysis.base import AnalysisFromFunction
 from MDAnalysis.coordinates.memory import MemoryReader
 from numpy.typing import NDArray
 
@@ -50,7 +51,7 @@ from .base import ModelBase
 T = TypeVar("T")
 
 
-def modeller(*args: str | Path, **kwargs: T) -> mda.Universe:
+def modeller(*args: str | Path, **kwargs: list[str]) -> mda.Universe:
     """Create coarse-grain model from universe selection.
 
     Parameters
@@ -73,8 +74,9 @@ def modeller(*args: str | Path, **kwargs: T) -> mda.Universe:
             model: ModelBase = _MODELS.get("ENM", **kwargs)
             return model.transform(mda.Universe(*args, **kwargs))
     except Exception as exc:
-        logger.exception("An error occurred while trying to create the universe.")
-        raise RuntimeError from exc
+        message = "An error occurred while trying to create the universe."
+        logger.exception(message)
+        raise RuntimeError(message) from exc
 
     try:
         universe: list[mda.Universe] = [_MODELS.get(_, **kwargs).transform(mda.Universe(*args)) for _ in models]
@@ -116,14 +118,15 @@ def merge(*args: mda.Universe) -> mda.Universe:
     trajectory1.rewind()
     if trajectory1.n_frames > 1:
         # Accumulate coordinates, velocities, and forces.
-        positions: list[NDArray] = [np.asarray(ts.positions for ts in u.trajectory if ts.has_positions) for u in args]
-
-        pos = np.concatenate(positions, axis=1)
-        if atoms.n_atoms != pos.shape[1]:
+        positions = [
+            AnalysisFromFunction(lambda ag: ag.positions.copy(), _).run().results["timeseries"] for _ in multiverse
+        ]
+        positions = np.concatenate(positions, axis=1)
+        if atoms.n_atoms != positions.shape[1]:
             message = "The number of sites does not match the number of coordinates."
             logger.exception(message)
             raise RuntimeError(message)
-        n_frames, n_beads, _ = pos.shape
+        n_frames, n_beads, _ = positions.shape
         logger.info(f"The new universe has {n_beads:d} beads in {n_frames:d} frames.")
         universe.load_new(positions, format=MemoryReader)
 
