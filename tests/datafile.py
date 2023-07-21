@@ -77,7 +77,7 @@ with resources.as_file(_data_ref / "scp215.gro") as f:
 with resources.as_file(_data_ref / "tip4p.gro") as f:
     TIP4P: str = f.as_posix()
 
-with resources.as_file(_data_ref / "ions.gro") as f:
+with resources.as_file(_data_ref / "ions.pdb") as f:
     IONS: str = f.as_posix()
 
 with resources.as_file(_data_ref / "dma.gro") as f:
