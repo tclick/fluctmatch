@@ -37,10 +37,7 @@
 from types import MappingProxyType
 from typing import ClassVar, TypeVar
 
-import MDAnalysis as mda
-import numpy as np
-
-from MDAnalysis.core.topologyattrs import Bonds, Charges
+from MDAnalysis.core.topologyattrs import Bonds
 
 from ..base import ModelBase
 from ..selection import *
@@ -105,19 +102,6 @@ class Model(ModelBase):
                 "H3": "nucleic and name C2'",
             }
         )
-
-    def create_topology(self: TModel, universe: mda.Universe, /) -> None:
-        """Deteremine the topology attributes and initialize the universe.
-
-        Parameters
-        ----------
-        universe : :class:`~MDAnalysis.Universe`
-            An all-atom universe
-        """
-        super().create_topology(universe)
-
-        charges = np.zeros(self._universe.atoms.n_atoms, dtype=np.float32)  # type: ignore
-        self._universe.add_TopologyAttr(Charges(charges))
 
     def _add_bonds(self: TModel) -> None:
         bonds: list[tuple[int, int]] = []
