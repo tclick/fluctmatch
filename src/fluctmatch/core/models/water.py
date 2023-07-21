@@ -31,12 +31,14 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false
+# flake8: noqa
 """Tests for a united atom water model."""
 
 from types import MappingProxyType
 from typing import ClassVar, TypeVar
 
 from MDAnalysis.core.topologyattrs import Bonds
+from ..selection import *
 
 from ..base import ModelBase
 

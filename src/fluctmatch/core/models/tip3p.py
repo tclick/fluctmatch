@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false, reportOptionalIterable=false
+# flake8: noqa
 """Model for TIP3P water."""
 from itertools import combinations
 from types import MappingProxyType
@@ -39,6 +40,7 @@ from typing import ClassVar, TypeVar
 from MDAnalysis.core.topologyattrs import Bonds
 
 from ..base import ModelBase
+from ..selection import *
 
 TModel = TypeVar("TModel", bound="Model")
 
