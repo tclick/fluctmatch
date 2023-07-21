@@ -115,12 +115,12 @@ class Model(base.ModelBase):
             An all-atom universe
         """
         if not hasattr(self, "_universe"):
-            msg = "Topologies need to be created before bonds can be added."
-            raise AttributeError(msg)
+            message = "Topologies need to be created before bonds can be added."
+            raise AttributeError(message)
 
         if not hasattr(universe, "trajectory"):
-            msg = "The provided universe does not have coordinates defined."
-            raise AttributeError(msg)
+            message = "The provided universe does not have coordinates defined."
+            raise AttributeError(message)
 
         selections = itertools.product(universe.residues, self._mapping.items())  # type: ignore
         beads: list[AtomGroup] = []  # type: ignore
@@ -146,12 +146,10 @@ class Model(base.ModelBase):
             except (AttributeError, mda.NoDataError):
                 pass
 
-        self._universe.trajectory.dimensions_array = np.asarray(dimension_array)
-        if self._universe.trajectory.ts.has_positions:
-            dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
-            transform = transformations.boxdimensions.set_dimensions(dim)
-            self._universe.load_new(np.asarray(position_array), format=MemoryReader)
-            self._universe.trajectory.add_transformations(transform)
+        dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
+        transform = transformations.boxdimensions.set_dimensions(dim)
+        self._universe.load_new(np.asarray(position_array), format=MemoryReader)
+        self._universe.trajectory.add_transformations(transform)
         universe.trajectory.rewind()
 
     def _add_masses(self: TModel, universe: mda.Universe, /) -> None:
