@@ -49,21 +49,25 @@ from .. import Self
 class TestEnm:
     """Tests for the elastic network model."""
 
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         universe = mda.Universe(PSF, DCD)
         return mda.Merge(universe.residues[:6].atoms)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self, universe: mda.Universe) -> enm.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model(universe: mda.Universe) -> enm.Model:
         return enm.Model()
 
-    @pytest.fixture(scope="class")
-    def model_nocharge(self: Self, universe: mda.Universe) -> enm.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model_nocharge(universe: mda.Universe) -> enm.Model:
         return enm.Model(charges=False)
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: enm.Model) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: enm.Model) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(self: Self, universe: mda.Universe, system: mda.Universe) -> None:

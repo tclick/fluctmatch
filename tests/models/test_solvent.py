@@ -50,16 +50,19 @@ from .. import Self
 
 
 class TestWater:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(TIP3P)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> water.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> water.Model:
         return water.Model()
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: water.Model) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: water.Model) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(self: Self, universe: mda.Universe, model: water.Model, system: mda.Universe) -> None:
@@ -127,8 +130,9 @@ class TestWater:
 
 
 class TestTip3p(TestWater):
-    @pytest.fixture(scope="class")
-    def model(self: Self, universe: mda.Universe) -> tip3p.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model(universe: mda.Universe) -> tip3p.Model:
         return tip3p.Model(guess_angles=True)
 
     def test_bonds(self: Self, system: mda.Universe) -> None:
@@ -145,12 +149,14 @@ class TestTip3p(TestWater):
 
 
 class TestDma(TestTip3p):
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(DMA)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> dma.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> dma.Model:
         return dma.Model(guess_angles=True)
 
     def test_impropers(self: Self, system: mda.Universe) -> None:

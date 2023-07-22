@@ -46,8 +46,9 @@ from ..datafile import TPR, XTC
 
 
 class TestMerge:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(TPR, XTC)
 
     def test_creation(self: Self, universe: mda.Universe) -> None:
@@ -81,16 +82,19 @@ class TestMerge:
 
 
 class TestModeller:
-    @pytest.fixture(scope="class")
-    def u(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def u() -> mda.Universe:
         return mda.Universe(TPR, XTC)
 
-    @pytest.fixture(scope="class")
-    def u2(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def u2() -> mda.Universe:
         return utils.modeller(TPR, XTC, "polar")
 
-    @pytest.fixture(scope="class")
-    def system(self: Self) -> polar.Model:
+    @staticmethod
+    @pytest.fixture()
+    def system() -> polar.Model:
         return polar.Model()
 
     def test_creation(self: Self, u: mda.Universe, u2: mda.Universe, system: polar.Model):
@@ -101,8 +105,9 @@ class TestModeller:
 
 
 class TestRename:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(TPR, XTC)
 
     def test_rename_universe(self: Self, universe: mda.Universe) -> None:

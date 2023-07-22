@@ -52,16 +52,19 @@ N_RESIDUES = 6
 
 
 class TestUnited:
+    @staticmethod
     @pytest.fixture()
-    def universe(self: Self) -> mda.Universe:
+    def universe() -> mda.Universe:
         return mda.Universe(TPR, XTC)
 
+    @staticmethod
     @pytest.fixture()
-    def model(self: Self) -> united.Model:
+    def model() -> united.Model:
         return united.Model(guess_angles=True)
 
+    @staticmethod
     @pytest.fixture()
-    def system(self: Self, universe: mda.Universe, model: united.Model) -> mda.Universe:
+    def system(universe: mda.Universe, model: united.Model) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(self: Self, universe: mda.Universe, model: united.Model, system: mda.Universe) -> None:

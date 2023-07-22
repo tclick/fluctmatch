@@ -49,16 +49,19 @@ from ..datafile import DMA
 
 
 class TestGeneric:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(DMA)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> generic.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> generic.Model:
         return generic.Model(guess_angles=True)
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: generic.TModel) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: generic.TModel) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(

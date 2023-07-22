@@ -44,8 +44,9 @@ from ..datafile import GRO
 
 
 class TestProteinSelections:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(GRO)
 
     def test_backbone(self: Self, universe: mda.Universe) -> None:
@@ -82,8 +83,9 @@ class TestProteinSelections:
 
 
 class TestSolvent:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(GRO)
 
     def test_bioions(self: Self, universe: mda.Universe) -> None:
@@ -96,8 +98,9 @@ class TestSolvent:
 
 
 class TestNucleic:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(GRO)
 
     def test_nucleic(self: Self, universe: mda.Universe) -> None:

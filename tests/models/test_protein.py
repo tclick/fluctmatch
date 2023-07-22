@@ -53,17 +53,20 @@ N_RESIDUES = 6
 
 
 class TestCalpha:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         u = mda.Universe(TPR, XTC)
         return mda.Merge(u.residues[:N_RESIDUES].atoms)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> calpha.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> calpha.Model:
         return calpha.Model(guess_angles=True)
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: calpha.Model) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: calpha.Model) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(
@@ -132,8 +135,9 @@ class TestCalpha:
 
 
 class TestCaside(TestCalpha):
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> caside.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> caside.Model:
         return caside.Model(guess_angles=True)
 
     def test_impropers(self: Self, system: mda.Universe) -> None:
@@ -141,8 +145,9 @@ class TestCaside(TestCalpha):
 
 
 class TestNcsc(TestCaside):
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> ncsc.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> ncsc.Model:
         return ncsc.Model(guess_angles=True)
 
     def test_masses(self: Self, universe: mda.Universe, system: mda.Universe, model: calpha.Model) -> None:
@@ -173,21 +178,21 @@ class TestNcsc(TestCaside):
 
         testing.assert_allclose(system.atoms.charges, charges, err_msg="The charges do not match.")
 
-    def test_impropers(self: Self, system: mda.Universe) -> None:
-        assert len(system.impropers) > 0, "Number of improper angles should be > 0."
-
 
 class TestPolar(TestNcsc):
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> polar.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> polar.Model:
         return polar.Model(guess_angles=True)
 
-    @pytest.fixture(scope="class")
-    def other(self: Self) -> ncsc.Model:
+    @staticmethod
+    @pytest.fixture()
+    def other() -> ncsc.Model:
         return ncsc.Model(guess_angles=True)
 
-    @pytest.fixture(scope="class")
-    def other_system(self: Self, universe: mda.Universe, other: ncsc.Model) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def other_system(universe: mda.Universe, other: ncsc.Model) -> mda.Universe:
         return other.transform(universe)
 
     def test_ncsc_polar_positions(self: Self, system: mda.Universe, other_system: mda.Universe) -> None:

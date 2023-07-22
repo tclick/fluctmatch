@@ -49,16 +49,19 @@ from ..datafile import IONS
 
 
 class TestIons:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         return mda.Universe(IONS)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> solventions.TModel:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> solventions.TModel:
         return solventions.Model()
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: solventions.TModel) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: solventions.TModel) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(

@@ -49,17 +49,20 @@ from ..datafile import TPR, XTC
 
 
 class TestNucleic3:
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
         u = mda.Universe(TPR, XTC)
         return mda.Merge(u.residues.atoms)
 
-    @pytest.fixture(scope="class")
-    def model(self: Self, universe: mda.Universe) -> nucleic3.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model(universe: mda.Universe) -> nucleic3.Model:
         return nucleic3.Model(guess_angles=True)
 
-    @pytest.fixture(scope="class")
-    def system(self: Self, universe: mda.Universe, model: nucleic3.Model) -> mda.Universe:
+    @staticmethod
+    @pytest.fixture()
+    def system(universe: mda.Universe, model: nucleic3.Model) -> mda.Universe:
         return model.transform(universe)
 
     def test_creation(
@@ -126,12 +129,14 @@ class TestNucleic3:
 
 
 class TestNucleic4(TestNucleic3):
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> nucleic4.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> nucleic4.Model:
         return nucleic4.Model(guess_angles=True)
 
 
 class TestNucleic6(TestNucleic3):
-    @pytest.fixture(scope="class")
-    def model(self: Self) -> nucleic6.Model:
+    @staticmethod
+    @pytest.fixture()
+    def model() -> nucleic6.Model:
         return nucleic6.Model(guess_angles=True)
