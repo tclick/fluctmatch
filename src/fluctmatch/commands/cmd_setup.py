@@ -100,7 +100,7 @@ from . import FILE_MODE
     "windows_output",
     metavar="CSV",
     show_default=True,
-    default=Path("setup.csv"),
+    default=Path.cwd() / "setup.csv",
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="CSV file",
 )
@@ -122,19 +122,19 @@ def cli(
 
     Parameters
     ----------
-    topology : Path
+    topology : Path, default=$CWD/input.parm7
         Topology file
-    trajectory : Path
+    trajectory : Path, default=$CWD/input.nc
         Trajectory file
-    outdir : Path
+    outdir : Path, default=$CWD/fluctmatch
         Output directory
-    logfile : Path
+    logfile : Path, default=$CWD/setup.log
         Location of log file
-    winsize : int
+    winsize : int, default=10000
         Window size
-    windows_output : Path
+    windows_output : Path, default=$CWD/setup.csv
         CSV file
-    verbose : str
+    verbose : str, default=INFO
         Level of verbosity for logging output
     """
     logger = config_logger(logfile=logfile.as_posix(), level=verbose)

@@ -130,21 +130,21 @@ def cli(
 
     Parameters
     ----------
-    topology : Path
+    topology : Path, default=$CWD/input.parm7
         Topology file
-    trajectory : Path
+    trajectory : Path, default=$CWD/input.nc
         Trajectory file
-    reference : Path
+    reference : Path, default=$CWD/ref.pdb
         Reference structure
-    outdir : Path
+    outdir : Path, default=$CWD
         Output directory
-    logfile : Path
+    logfile : Path, default=align.log
         Location of log file
-    select : str
+    select : str, default=ca
         Atom selection
     mass : bool
         Mass-weighted alignment
-    verbose : str
+    verbose : str, default=INFO
         Level of verbosity for logging output
     """
     logger = config_logger(logfile=logfile.as_posix(), level=verbose)

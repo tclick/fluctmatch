@@ -31,10 +31,10 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Command-line interface."""
-from __future__ import annotations
 
 import logging
 import sys
+from typing import TypeVar
 
 from loguru import logger
 
@@ -45,11 +45,13 @@ if not sys.warnoptions:
 
     warnings.simplefilter("ignore")
 
+Self = TypeVar("Self", bound="InterceptHandler")
+
 
 class InterceptHandler(logging.Handler):
     """Intercept standard logging."""
 
-    def emit(self: InterceptHandler, record: logging.LogRecord) -> None:
+    def emit(self: Self, record: logging.LogRecord) -> None:
         """Emit standard logging to loguru.
 
         Parameters

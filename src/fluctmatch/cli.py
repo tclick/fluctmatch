@@ -73,6 +73,7 @@ class ComplexCLI(click.Group):
 
         Returns
         -------
+        list of str, optional
             List of available commands
         """
         rv = []
@@ -96,6 +97,7 @@ class ComplexCLI(click.Group):
 
         Returns
         -------
+        Command, optional
             The chosen command if present
         """
         try:

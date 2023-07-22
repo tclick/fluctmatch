@@ -78,7 +78,8 @@ def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> Logge
 
     Returns
     -------
-    logger
+    Logger
+        logging object
     """
     config = {
         "handlers": [
