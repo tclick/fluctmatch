@@ -121,8 +121,8 @@ class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
 
         logger.debug("Creating the coarse-grain topology.")
         for residue, (key, selection) in selections:
-            value = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
-            bead = residue.atoms.select_atoms(value)
+            value: str = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
+            bead: mda.AtomGroup = residue.atoms.select_atoms(value)
             if bead:
                 beads.append(bead)
                 atomnames.append(key)
