@@ -30,6 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportInvalidTypeVarUse=false
 """Command-line interface."""
 
 import logging
@@ -45,13 +46,13 @@ if not sys.warnoptions:
 
     warnings.simplefilter("ignore")
 
-Self = TypeVar("Self", bound="InterceptHandler")
+TInterceptHandler = TypeVar("TInterceptHandler", bound="InterceptHandler")
 
 
 class InterceptHandler(logging.Handler):
     """Intercept standard logging."""
 
-    def emit(self: Self, record: logging.LogRecord) -> None:
+    def emit(self: TInterceptHandler, record: logging.LogRecord) -> None:
         """Emit standard logging to loguru.
 
         Parameters
