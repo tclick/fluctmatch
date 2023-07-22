@@ -51,7 +51,7 @@ from .base import ModelBase
 T = TypeVar("T")
 
 
-def modeller(*args: str | Path, **kwargs: list[str]) -> mda.Universe:
+def modeller(topology: str | Path, trajectory: str | Path, *model_type: str) -> mda.Universe:
     """Create coarse-grain model from universe selection.
 
     Parameters
@@ -60,32 +60,40 @@ def modeller(*args: str | Path, **kwargs: list[str]) -> mda.Universe:
         A topology file containing atomic information about a system.
     trajectory : Path or str
         A trajectory file with coordinates of atoms
-    model : list[str], optional
+    model_type : list of str, default=polar
         Name(s) of coarse-grain core
 
     Returns
     -------
-    A coarse-grain model
+    Universe
+        A coarse-grain model
+
+    Raises
+    ------
+    RuntimeError
+        if an exception is raised while creating the elastic network model
+    KeyError
+        if a specified model is not found within the available registry of models
     """
-    models: list[str] = [_.upper() for _ in kwargs.pop("model", ["polar"])]
+    models: list[str] = [_.upper() for _ in model_type]
     try:
         if "ENM" in models:
             logger.warning("ENM model detected. All other core are being ignored.")
-            model: ModelBase = _MODELS.get("ENM", **kwargs)
-            return model.transform(mda.Universe(*args, **kwargs))
+            model: ModelBase = _MODELS["ENM"]
+            return model.transform(mda.Universe(topology, trajectory))
     except Exception as exc:
         message = "An error occurred while trying to create the universe."
         logger.exception(message)
         raise RuntimeError(message) from exc
 
     try:
-        universe: list[mda.Universe] = [_MODELS.get(_, **kwargs).transform(mda.Universe(*args)) for _ in models]
+        universe: list[mda.Universe] = [_MODELS[_].transform(mda.Universe(topology, trajectory)) for _ in models]
     except KeyError as err:
         message: str = f"One of the core is not implemented. Please try {_MODELS.keys()}"
         logger.exception(message)
         raise KeyError(message) from err
-    else:
-        return merge(*universe)
+
+    return merge(*universe)
 
 
 def merge(*args: mda.Universe) -> mda.Universe:
@@ -97,8 +105,13 @@ def merge(*args: mda.Universe) -> mda.Universe:
 
     Returns
     -------
-    :class:`~MDAnalysis.Universe`
-        A merged universe.
+    Universe
+        A merged universe
+
+    Raises
+    ------
+    ValueError
+        if trajectory size or total atom numbers differ
     """
     logger.warning("This might take a while depending upon the number of trajectory frames.")
 
@@ -125,10 +138,11 @@ def merge(*args: mda.Universe) -> mda.Universe:
         if atoms.n_atoms != positions.shape[1]:
             message = "The number of sites does not match the number of coordinates."
             logger.exception(message)
-            raise RuntimeError(message)
+            raise ValueError(message)
+
         n_frames, n_beads, _ = positions.shape
         logger.info(f"The new universe has {n_beads:d} beads in {n_frames:d} frames.")
-        universe.load_new(positions, format=MemoryReader)
+        universe.load_new([positions], format=MemoryReader)
 
         dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
         transform = transformations.boxdimensions.set_dimensions(dim)
