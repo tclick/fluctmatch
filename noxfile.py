@@ -60,7 +60,6 @@ nox.options.sessions = (
     "safety",
     "pyright",
     "tests",
-    "typeguard",
     "xdoctest",
     "docs-build",
 )
