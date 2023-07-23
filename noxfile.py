@@ -183,7 +183,7 @@ def pyright(sessions: Session) -> None:
     """
     args = sessions.posargs or ["src", "tests", "docs/conf.py"]
     sessions.install(".")
-    sessions.install("pyright", "pytest", "pytest-mock")
+    sessions.install("pyright", "pytest", "pytest-mock", "MDAnalysisTests")
     sessions.run("pyright", *args)
     if not sessions.posargs:
         sessions.run("pyright", f"--pythonpath={sys.executable}", "noxfile.py")
@@ -193,7 +193,7 @@ def pyright(sessions: Session) -> None:
 def tests(sessions: Session) -> None:
     """Run the test suite."""
     sessions.install(".")
-    sessions.install("coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock")
+    sessions.install("coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
     try:
         sessions.run(
             "coverage",
@@ -227,7 +227,7 @@ def coverage(session: Session) -> None:
 def typeguard(sessions: Session) -> None:
     """Runtime type checking using Typeguard."""
     sessions.install(".")
-    sessions.install("pytest", "typeguard", "pygments", "pytest-random-order", "pytest-mock")
+    sessions.install("pytest", "typeguard", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
     sessions.run(
         "pytest", f"--typeguard-packages={package}", "--random-order", "--disable-pytest-warnings", *sessions.posargs
     )
