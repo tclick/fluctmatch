@@ -42,6 +42,7 @@ darglint = "*"
 flake8 = "*"
 flake8-pyproject = "*"
 furo = "*"
+MDAnalysisTESTS = ">=2.5, <3.0"
 myst-parser = {version = "*"}
 nox-poetry = "*"
 pep8-naming = "*"
