@@ -33,11 +33,18 @@
 """Fluctuation matching."""
 
 import getpass
+import importlib
+import pkgutil
 import sys
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
+import MDAnalysis as mda
 from loguru import logger
 
+import fluctmatch.parsers.parsers
+import fluctmatch.parsers.readers
+import fluctmatch.parsers.writers
 from fluctmatch.core.base import _MODELS  # noqa: F401
 
 if TYPE_CHECKING:
@@ -97,3 +104,48 @@ def config_logger(logfile: str = "fluctmatch.log", level: str = "INFO") -> Logge
     }
     logger.configure(**config)
     return logger
+
+
+def iter_namespace(ns_pkg) -> Iterator[pkgutil.ModuleInfo]:  # noqa: ANN001
+    """Iterate over a namespace package. [1]_.
+
+    Parameters
+    ----------
+    ns_pkg : namespace
+
+    References
+    ----------
+    .. [1] https://packaging.python.org/guides/creating-and-discovering-plugins/
+    """
+    # Specifying the second argument (prefix) to iter_modules makes the
+    # returned name an absolute name instead of a relative one. This allows
+    # import_module to work without having to do additional modification to
+    # the name.
+    return pkgutil.iter_modules(ns_pkg.__path__, ns_pkg.__name__ + ".")
+
+
+# Update the parsers in MDAnalysis
+mda._PARSERS.update(
+    {
+        name.split(".")[-1].upper(): importlib.import_module(name).Reader
+        for _, name, _ in iter_namespace(fluctmatch.parsers.parsers)
+    }
+)
+
+mda._PARSERS["COR"] = mda._PARSERS["CRD"]
+
+# Update the readers in MDAnalysis
+mda._READERS.update(
+    {
+        name.split(".")[-1].upper(): importlib.import_module(name).Reader
+        for _, name, _ in iter_namespace(fluctmatch.parsers.readers)
+    }
+)
+
+# Update the writers in MDAnalysis
+mda._SINGLEFRAME_WRITERS.update(
+    {
+        name.split(".")[-1].upper(): importlib.import_module(name).Writer
+        for _, name, _ in iter_namespace(fluctmatch.parsers.writers)
+    }
+)
