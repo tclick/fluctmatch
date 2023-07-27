@@ -34,15 +34,23 @@
 # flake8: noqa
 """Test PSF reader and writer."""
 
+from pathlib import Path
 from typing import TypeVar
+from unittest.mock import patch
+
+import pytest
+from numpy.testing import assert_equal
 
 import fluctmatch.parsers.parsers.PSFParser as PSFParser
 import MDAnalysis as mda
 from MDAnalysis.core.topologyobjects import TopologyObject
 from MDAnalysisTests.topology.base import ParserBase
 
-from ..datafile import PSF
+# from MDAnalysisTests.datafiles import CRD, PSF
 
+from ..datafile import COR, PSF
+
+TTestPSFParser = TypeVar("TTestPSFParser", bound="TestPSFParser")
 TTestPSFParser = TypeVar("TTestPSFParser", bound="TestPSFParser")
 
 
@@ -93,3 +101,43 @@ class TestPSFParser(ParserBase):
         vals = top.dihedrals.values
         for b in ((0, 1, 2, 3), (0, 2, 3, 4), (0, 2, 3, 5), (1, 0, 2, 3)):
             assert (b in vals) or (b[::-1] in vals)
+
+
+class TestPSFWriter:
+    @staticmethod
+    @pytest.fixture()
+    def universe() -> mda.Universe:
+        return mda.Universe(PSF, COR)
+
+    def test_writer(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
+        filename = tmp_path / "temp.xplor.psf"
+        with patch("fluctmatch.parsers.writers.PSF.Writer.write") as writer, mda.Writer(filename) as w:
+            w.write(universe.atoms)
+            writer.assert_called()
+
+    def test_roundtrip(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
+        # Write out a copy of the Universe, and compare this against the
+        # original. This is more rigorous than simply checking the coordinates
+        # as it checks all formatting
+        filename = (tmp_path / "temp.xplor.psf").as_posix()
+        with mda.Writer(filename) as w:
+            w.write(universe.atoms)
+
+        def psf_iter(fn: str) -> str:
+            with open(fn) as inf:
+                for line in inf:
+                    if not line.startswith("*"):
+                        yield line
+
+        for ref, other in zip(psf_iter(PSF), psf_iter(filename), strict=True):
+            assert ref == other
+
+    def test_write_atoms(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
+        # Test that written file when read gives same coordinates
+        filename = tmp_path / "temp.xplor.psf"
+        with mda.Writer(filename) as w:
+            w.write(universe.atoms)
+
+        u2 = mda.Universe(filename, COR)
+
+        assert_equal(universe.atoms.charges, u2.atoms.charges)
