@@ -36,7 +36,7 @@
 
 from collections.abc import Callable, Mapping
 from types import MappingProxyType
-from typing import TextIO, TypeVar
+from typing import TextIO, TypeVar, ClassVar
 
 import numpy as np
 from loguru import logger
@@ -60,6 +60,8 @@ from MDAnalysis.lib.util import FORTRANReader
 from MDAnalysis.topology import PSFParser
 from MDAnalysis.topology.base import change_squash
 from numpy.typing import NDArray
+
+from ...libs.safe_format import safe_format
 
 Self = TypeVar("Self", bound="Reader")
 
@@ -85,7 +87,7 @@ class Reader(PSFParser.PSFParser):
     .. _PSF: http://www.charmm.org/documentation/c35b1/struct.html
     """
 
-    format = "PSF"
+    format: ClassVar[str] = "PSF"
 
     def parse(self: Self, **kwargs: Mapping) -> Topology:
         """Parse PSF file into Topology.
@@ -98,7 +100,7 @@ class Reader(PSFParser.PSFParser):
         with open(self.filename) as psffile:
             header = next(psffile)
             if not header.startswith("PSF"):
-                err = f"{self.filename} is not valid PSF file (header = {header})"
+                err = safe_format("{} is not valid PSF file (header = {})", self.filename, header)
                 logger.error(err)
                 raise ValueError(err)
             header_flags: list[str] = header[3:].split()
@@ -120,7 +122,7 @@ class Reader(PSFParser.PSFParser):
                 raise ValueError(err)
             for _ in range(int(title[0])):
                 next(psffile)
-            logger.info(f"PSF file {psffile.name}: format {self._format}")
+            logger.info(safe_format("PSF file {}: format {}", psffile.name, self._format))
 
             # Atoms first and mandatory
             top: Topology = self._parse_sec(psffile, ("NATOM", 1, 1, self._parseatoms))
@@ -195,7 +197,7 @@ class Reader(PSFParser.PSFParser):
         atom_parsers: MappingProxyType[str, str] = MappingProxyType(
             {
                 "STANDARD": "I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
-                "STANDARD_XPLOR": "'(I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
+                "STANDARD_XPLOR": "I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,A4,1X,2F14.6,I8",
                 "EXTENDED": "I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2F14.6,I8",
                 "EXTENDED_XPLOR": "I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A6,1X,2F14.6,I8",
                 "NAMD": "I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2F14.6,I8",
@@ -204,20 +206,20 @@ class Reader(PSFParser.PSFParser):
         atom_parser = FORTRANReader(atom_parsers[self._format])
 
         # Allocate arrays
-        atom_ids: NDArray = np.zeros(numlines, dtype=np.int32)
-        seg_ids: NDArray = np.zeros(numlines, dtype=object)
-        res_ids: NDArray = np.zeros(numlines, dtype=np.int32)
-        res_names: NDArray = np.zeros(numlines, dtype=object)
-        atom_names: NDArray = np.zeros(numlines, dtype=object)
-        atom_types: NDArray = np.zeros(numlines, dtype=object)
-        charges_: NDArray = np.zeros(numlines, dtype=np.float32)
-        masses_: NDArray = np.zeros(numlines, dtype=np.float64)
+        atom_ids: NDArray = np.empty(numlines, dtype=np.int32)
+        seg_ids: NDArray = np.empty(numlines, dtype=object)
+        res_ids: NDArray = np.empty(numlines, dtype=np.int32)
+        res_names: NDArray = np.empty(numlines, dtype=object)
+        atom_names: NDArray = np.empty(numlines, dtype=object)
+        atom_types: NDArray = np.empty(numlines, dtype=object)
+        charges_: NDArray = np.empty(numlines, dtype=float)
+        masses_: NDArray = np.empty(numlines, dtype=float)
 
         for i in range(numlines):
             try:
                 line = lines()
             except StopIteration as exc:
-                err = f"{self.filename} is not valid PSF file"
+                err = safe_format("{} is not valid PSF file", self.filename)
                 logger.error(err)
                 raise ValueError(err) from exc
             try:
@@ -229,16 +231,16 @@ class Reader(PSFParser.PSFParser):
                     atom_parser = FORTRANReader(atom_parsers["NAMD"])
                     values: list[str] = atom_parser.read(line)
                     logger.warning(
-                        "Guessing that this is actually a NAMD-type " "PSF file... continuing with fingers " "crossed!"
+                        "Guessing that this is actually a NAMD-type PSF file... continuing with fingers crossed!"
                     )
-                    logger.info("First NAMD-type line: %s: %s", i, line.rstrip())
+                    logger.info(safe_format("First NAMD-type line: {}: {}", i, line.rstrip()))
                 except ValueError:
                     atom_parser = FORTRANReader(atom_parsers[self._format].replace("A6", "A4"))
                     values: list[str] = atom_parser.read(line)
                     logger.warning(
-                        "Guessing that this is actually a pre CHARMM36 PSF file... continuing with " "fingers crossed!"
+                        "Guessing that this is actually a pre-CHARMM36 PSF file... continuing with fingers crossed!"
                     )
-                    logger.info(f"First NAMD-type line: {i}: {line.rstrip()}")
+                    logger.info(safe_format("First PSF-type line: {}: {}", i, self.filename))
 
             atom_ids[i]: int = values[0]
             seg_ids[i]: str = values[1] if values[1] else "SYSTEM"
