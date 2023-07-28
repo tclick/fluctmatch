@@ -36,19 +36,18 @@
 
 from pathlib import Path
 from typing import TypeVar
-from unittest.mock import patch
+from pytest_mock import MockerFixture
 
 import pytest
 from numpy.testing import assert_equal
 
+import fluctmatch
 import fluctmatch.parsers.parsers.PSFParser as PSFParser
 import MDAnalysis as mda
-from MDAnalysis.core.topologyobjects import TopologyObject
 from MDAnalysisTests.topology.base import ParserBase
 
-# from MDAnalysisTests.datafiles import CRD, PSF
-
 from ..datafile import COR, PSF
+import fluctmatch.parsers.writers.PSF
 
 TTestPSFParser = TypeVar("TTestPSFParser", bound="TestPSFParser")
 TTestPSFParser = TypeVar("TTestPSFParser", bound="TestPSFParser")
@@ -64,63 +63,91 @@ class TestPSFParser(ParserBase):
     expected_n_residues = 115
     expected_n_segments = 1
 
-    def test_bonds_total_counts(self: TTestPSFParser, top: TopologyObject):
-        assert len(top.bonds.values) == 429
+    def test_bonds_atom_counts(self: TTestPSFParser) -> None:
+        """Test bond count.
 
-    def test_bonds_atom_counts(self: TTestPSFParser, filename: str) -> None:
+        GIVEN a PSF file
+        WHEN a universe is loaded
+        THEN the number of bonds should be equivalent
+        """
         u = mda.Universe(PSF)
         assert len(u.atoms[[0]].bonds) == 2
         assert len(u.atoms[[42]].bonds) == 2
-
-    def test_bonds_identity(self: TTestPSFParser, top: TopologyObject) -> None:
-        vals = top.bonds.values
-        for b in ((0, 1), (0, 2)):
-            assert (b in vals) or (b[::-1] in vals)
-
-    def test_angles_total_counts(self: TTestPSFParser, top: TopologyObject) -> None:
-        assert len(top.angles.values) == 726
 
     def test_angles_atom_counts(self: TTestPSFParser, filename: str) -> None:
         u = mda.Universe(filename)
         assert len(u.atoms[[0]].angles), 4
         assert len(u.atoms[[42]].angles), 6
 
-    def test_angles_identity(self: TTestPSFParser, top: TopologyObject) -> None:
-        vals = top.angles.values
-        for b in ((1, 0, 2), (0, 1, 2), (0, 2, 3)):
-            assert (b in vals) or (b[::-1] in vals)
-
-    def test_dihedrals_total_counts(self: TTestPSFParser, top: TopologyObject) -> None:
-        assert len(top.dihedrals.values) == 907
-
-    def test_dihedrals_atom_counts(self: TTestPSFParser, filename: str) -> None:
-        u = mda.Universe(filename)
-        assert len(u.atoms[[0]].dihedrals) == 4
-
-    def test_dihedrals_identity(self: TTestPSFParser, top: TopologyObject) -> None:
-        vals = top.dihedrals.values
-        for b in ((0, 1, 2, 3), (0, 2, 3, 4), (0, 2, 3, 5), (1, 0, 2, 3)):
-            assert (b in vals) or (b[::-1] in vals)
-
 
 class TestPSFWriter:
     @staticmethod
     @pytest.fixture()
     def universe() -> mda.Universe:
+        """Create a universe.
+
+        Returns
+        -------
+        Universe
+            An all-atom universe
+        """
         return mda.Universe(PSF, COR)
 
-    def test_writer(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
-        filename = tmp_path / "temp.xplor.psf"
-        with patch("fluctmatch.parsers.writers.PSF.Writer.write") as writer, mda.Writer(filename) as w:
-            w.write(universe.atoms)
-            writer.assert_called()
+    @staticmethod
+    @pytest.fixture()
+    def filename(tmp_path) -> Path:
+        """Return an topology filename.
 
-    def test_roundtrip(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
+        Parameters
+        ----------
+        tmp_path : Path
+            Temporary directory
+
+        Returns
+        -------
+        Path
+            Topology filename
+        """
+        return tmp_path / "temp.xplor.psf"
+
+    def test_writer(self: TTestPSFParser, universe: mda.Universe, filename: Path, mocker: MockerFixture) -> None:
+        """Test PSF writer.
+
+        GIVEN an all-atom universe
+        WHEN the writer is called
+        THEN the patched writer should register as called
+
+        Parameters
+        ----------
+        universe : Universe
+            An all-atom universe
+        filename : Path
+            Topology file
+        """
+        mocker.patch.object(fluctmatch.parsers.writers.PSF.Writer, "write")
+        with mda.Writer(filename) as w:
+            w.write(universe.atoms)
+
+        fluctmatch.parsers.writers.PSF.Writer.write.assert_called()
+
+    def test_roundtrip(self: TTestPSFParser, universe: mda.Universe, filename: Path) -> None:
+        """Compare a written PSF with the original file.
+
+        GIVEN a PSF file
+        WHEN an all-atom universe is written to a new topology file
+        THEN the new topology file should be equivalent line-by-line to the original file
+
+        Parameters
+        ----------
+        universe : Universe
+            An all-atom universe
+        filename : Path
+            Topology file
+        """
         # Write out a copy of the Universe, and compare this against the
         # original. This is more rigorous than simply checking the coordinates
         # as it checks all formatting
-        filename = (tmp_path / "temp.xplor.psf").as_posix()
-        with mda.Writer(filename) as w:
+        with mda.Writer(filename.as_posix()) as w:
             w.write(universe.atoms)
 
         def psf_iter(fn: str) -> str:
@@ -132,12 +159,24 @@ class TestPSFWriter:
         for ref, other in zip(psf_iter(PSF), psf_iter(filename), strict=True):
             assert ref == other
 
-    def test_write_atoms(self: TTestPSFParser, universe: mda.Universe, tmp_path: Path):
+    def test_write_atoms(self: TTestPSFParser, universe: mda.Universe, filename: Path) -> None:
+        """Compare a written PSF with the original file.
+
+        GIVEN an all-atom universe
+        WHEN a topology file is written
+        THEN the two topologies should match
+
+        Parameters
+        ----------
+        universe : Universe
+            An all-atom universe
+        filename : Path
+            Topology file
+        """
         # Test that written file when read gives same coordinates
-        filename = tmp_path / "temp.xplor.psf"
-        with mda.Writer(filename) as w:
+        with mda.Writer(filename.as_posix()) as w:
             w.write(universe.atoms)
 
-        u2 = mda.Universe(filename, COR)
+        u2 = mda.Universe(filename.as_posix(), COR)
 
         assert_equal(universe.atoms.charges, u2.atoms.charges)

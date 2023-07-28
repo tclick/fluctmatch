@@ -203,7 +203,6 @@ class Writer(base.TopologyWriterBase):
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8) XPLOR,c35
             (I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,A4,1X,2G14.6,I8,2G14.6) XPLOR,c35,CHEQ
         """
-        output = StringIO()
         fmt: str = self._fmt[self._fmtkey]
 
         print(safe_format(self.sect_hdr, self._universe.atoms.n_atoms, "NATOM"), file=psffile)
@@ -237,18 +236,15 @@ class Writer(base.TopologyWriterBase):
 
         data: Iterator
         if self._cheq:
-            fmt += "{:>10.6f}{:<18}"
+            fmt += "{:>10.6f}{:>18}"
             cheq: list[float] = np.zeros_like(masses).tolist()
-            cmap: list[str] = np.full_like(names, "-0.301140E-02").tolist()
+            cmap: list[str] = ["-0.301140E-02"] * len(cheq)
             data = zip(num, segids, resids, resnames, names, types, charges, masses, ids, cheq, cmap, strict=True)
         else:
             data = zip(num, segids, resids, resnames, names, types, charges, masses, ids, strict=True)
 
         for line in data:
-            print(safe_format(fmt, *line).strip(), file=output)
-        # np.savetxt(output, lines, fmt=fmt)
-        # for _ in output.getvalue().split("\n"):
-        #     print(_.rstrip(), file=psffile)
+            print(safe_format(fmt, *line).rstrip(), file=psffile)
         print(file=psffile)
 
     def _write_sec(self: TWriter, psffile: TextIO, section_info: tuple[str, str, int]) -> None:
@@ -268,7 +264,9 @@ class Writer(base.TopologyWriterBase):
             values: NDArray = np.concatenate((values, np.full((n_extra, n_cols), fill_value="", dtype=object)))
         values: NDArray = values.reshape((values.shape[0] // n_values, n_perline))
         print(safe_format(self.sect_hdr, n_rows, header), file=psffile)
-        np.savetxt(psffile, values, fmt=f"%{self.col_width:d}s", delimiter="")
+        with StringIO() as output:
+            np.savetxt(output, values, fmt=f"%{self.col_width:d}s", delimiter="")
+            print(output.getvalue().rstrip(), file=psffile)
         print(file=psffile)
 
     def _write_other(self: TWriter, psffile: TextIO) -> None:
@@ -284,7 +282,9 @@ class Writer(base.TopologyWriterBase):
         nnb: NDArray = nnb.reshape((nnb.size // n_cols, n_cols))
 
         print(safe_format(self.sect_hdr, 0, "NNB\n"), file=psffile)
-        np.savetxt(psffile, nnb, fmt=f"%{self.col_width:d}s", delimiter="")
+        with StringIO() as output:
+            np.savetxt(output, nnb, fmt=f"%{self.col_width:d}s", delimiter="")
+            print(output.getvalue().rstrip(), file=psffile)
         print(file=psffile)
 
         # NGRP NST2
@@ -301,15 +301,16 @@ class Writer(base.TopologyWriterBase):
                 line: NDArray = np.concatenate([line, np.zeros(missing, dtype=object)])
             line: NDArray = line.reshape((line.size // n_cols, n_cols))
             print(safe_format(self.sect_hdr, 1, "MOLNT"), file=psffile)
-            np.savetxt(psffile, line, fmt=f"%{self.col_width:d}s", delimiter="")
+            with StringIO() as output:
+                np.savetxt(output, line, fmt=f"%{self.col_width:d}s", delimiter="")
+                print(output.getvalue().rstrip(), file=psffile)
             print(file=psffile)
         else:
             print(safe_format(self.sect_hdr, 0, "MOLNT"), file=psffile)
             print("\n", file=psffile)
 
         # NUMLP NUMLPH
-        print(safe_format(self.sect_hdr2, 0, 0, "NUMLP NUMLPH"), file=psffile)
+        print(safe_format(self.sect_hdr2, 0, 0, "NUMLP NUMLPH").rstrip(), file=psffile)
         print("\n", file=psffile)
 
-        print(safe_format(self.sect_hdr, 0, "NCRTERM: cross-terms"), file=psffile)
-        print("\n", file=psffile)
+        print(safe_format(self.sect_hdr, 0, "NCRTERM: cross-terms").rstrip(), file=psffile)
