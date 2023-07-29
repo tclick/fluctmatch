@@ -35,6 +35,7 @@
 """Writer for internal coordinates."""
 
 import textwrap
+from io import StringIO
 from pathlib import Path
 from typing import ClassVar, TypeVar
 
@@ -111,15 +112,21 @@ class Writer(TopologyWriterBase):
             line: NDArray = np.zeros((1, 20), dtype=int)
             line[0, 0]: int = 30 if self._extended else 20
             line[0, 1]: int = 2 if self._resid else 1
-            np.savetxt(outfile, line, fmt="%4d", delimiter="")
+            with StringIO() as output:
+                np.savetxt(output, line, fmt="%4d", delimiter="")
+                print(output.getvalue().rstrip(), file=outfile)
 
             # Save the internal coordinates
             line: NDArray = np.zeros((1, 2), dtype=int)
             line[0, 0] += intcor.data["r_IJ"].size
             line[0, 1] += 2 if self._resid else 1
-            np.savetxt(outfile, line, fmt="%5d", delimiter="")
+            with StringIO() as output:
+                np.savetxt(output, line, fmt="%5d", delimiter="")
+                print(output.getvalue().rstrip(), file=outfile)
 
             table: pd.DataFrame = intcor.create_table()
             table.index += 1
-            np.savetxt(outfile, table.reset_index().values, fmt=self.fmt[self.key])
+            with StringIO() as output:
+                np.savetxt(output, table.reset_index().values, fmt=self.fmt[self.key])
+                print(output.getvalue().rstrip(), file=outfile)
             logger.info("Table successfully written.")
