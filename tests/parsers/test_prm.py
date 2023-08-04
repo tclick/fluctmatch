@@ -44,7 +44,7 @@ from fluctmatch.libs.parameters import Parameters
 from fluctmatch.parsers.readers import PRM as ParamReader
 from numpy.testing import assert_allclose
 
-from tests.datafile import PRM, PAR
+from tests.datafile import PRM
 
 TTestPRMReader = TypeVar("TTestPRMReader", bound="TestPRMReader")
 TTestPRMWriter = TypeVar("TTestPRMWriter", bound="TestPRMWriter")
