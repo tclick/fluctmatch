@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -31,51 +31,51 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false
-"""Command-line interface."""
+# flake8: noqa
+"""Class to write CHARMM extended coordinate files with a cor extension."""
 
-import logging
-import sys
-from typing import TypeVar
+from pathlib import Path
+from typing import ClassVar, TypeVar
 
-from loguru import logger
+from MDAnalysis.coordinates import CRD
 
-from fluctmatch.cli import main
-
-if not sys.warnoptions:
-    import warnings
-
-    warnings.simplefilter("ignore")
-
-TInterceptHandler = TypeVar("TInterceptHandler", bound="InterceptHandler")
+TWriter = TypeVar("TWriter", bound="Writer")
 
 
-class InterceptHandler(logging.Handler):
-    """Intercept standard logging."""
+class Writer(CRD.CRDWriter):
+    """CRD writer that implements the CHARMM CRD coordinate format.
 
-    def emit(self: TInterceptHandler, record: logging.LogRecord) -> None:
-        """Emit standard logging to loguru.
+    It automatically writes the CHARMM EXT extended format if there
+    are more than 99,999 atoms.
+
+    Requires the following attributes to be present:
+    - resids
+    - resnames
+    - names
+    - chainIDs
+    - tempfactors
+
+    - versionchanged: 0.11.0
+       Frames now 0-based instead of 1-based
+    - versionchanged: 2.2.0
+       CRD extended format can now be explicitly requested with the
+       `extended` keyword
+    """
+
+    format: ClassVar[str] = "COR"
+    units: ClassVar[dict[str, str | None]] = {"time": None, "length": "Angstrom"}
+
+    def __init__(self: TWriter, filename: str | Path, **kwargs: str) -> None:
+        """CRD writer that implements the CHARMM CRD coordinate format.
 
         Parameters
         ----------
-        record : logging.LogRecord
-            logging record
+        filename : str or :class:`~MDAnalysis.lib.util.NamedStream`
+             name of the output file or a stream
         """
-        # Get corresponding Loguru level if it exists.
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
+        super().__init__(filename, **kwargs)
 
-        # Find caller from where originated the logged message.
-        frame, depth = sys._getframe(6), 6
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
+        self.filename = Path(filename).with_suffix("." + self.format.lower())
 
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
-
-
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-with logger.catch(message="An unexpected error occurred while running the program."):
-    main()
+        # account for explicit crd format, if requested
+        self.extended = kwargs.pop("extended", True)

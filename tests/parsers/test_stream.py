@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,52 +30,51 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false
-"""Command-line interface."""
+# pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
+# flake8: noqa
+"""Test stream file writer."""
 
-import logging
-import sys
+from pathlib import Path
 from typing import TypeVar
+from unittest.mock import patch
 
-from loguru import logger
+import MDAnalysis as mda
+import pytest
 
-from fluctmatch.cli import main
+import fluctmatch.parsers.writers.stream
 
-if not sys.warnoptions:
-    import warnings
+from ..datafile import COR, PSF, STR
 
-    warnings.simplefilter("ignore")
-
-TInterceptHandler = TypeVar("TInterceptHandler", bound="InterceptHandler")
-
-
-class InterceptHandler(logging.Handler):
-    """Intercept standard logging."""
-
-    def emit(self: TInterceptHandler, record: logging.LogRecord) -> None:
-        """Emit standard logging to loguru.
-
-        Parameters
-        ----------
-        record : logging.LogRecord
-            logging record
-        """
-        # Get corresponding Loguru level if it exists.
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the logged message.
-        frame, depth = sys._getframe(6), 6
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+Self = TypeVar("Self", bound="TestStreamWriter")
 
 
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
+class TestStreamWriter:
+    @staticmethod
+    @pytest.fixture()
+    def u() -> mda.Universe:
+        return mda.Universe(PSF, COR)
 
-with logger.catch(message="An unexpected error occurred while running the program."):
-    main()
+    def test_writer(self: Self, u: mda.Universe, tmp_path: Path):
+        filename: Path = tmp_path / "temp.stream"
+        with patch("fluctmatch.parsers.writers.stream.Writer.write") as writer, mda.Writer(
+            filename.as_posix(), n_atoms=u.atoms.n_atoms
+        ) as w:
+            w.write(u.atoms)
+            writer.assert_called()
+
+    def test_roundtrip(self: Self, u: mda.Universe, tmp_path: Path):
+        # Write out a copy of the Universe, and compare this against the
+        # original.  This is more rigorous than simply checking the coordinates
+        # as it checks all formatting
+        filename: Path = tmp_path / "temp.stream"
+        with mda.Writer(filename.as_posix(), n_atoms=u.atoms.n_atoms) as w:
+            w.write(u.atoms)
+
+        def stream_iter(fn: str | Path):
+            with open(fn) as inf:
+                for line in inf:
+                    if not line.startswith("*"):
+                        yield line
+
+        for ref, other in zip(stream_iter(STR), stream_iter(filename), strict=True):
+            assert ref == other

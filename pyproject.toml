@@ -31,6 +31,7 @@ click-extra = ">=4.6"
 loguru = "*"
 MDAnalysis = ">=2.5, <3.0"
 phx-class-registry = "*"
+pandas = "*"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"
@@ -42,6 +43,7 @@ darglint = "*"
 flake8 = "*"
 flake8-pyproject = "*"
 furo = "*"
+MDAnalysisTESTS = ">=2.5, <3.0"
 myst-parser = {version = "*"}
 nox-poetry = "*"
 pep8-naming = "*"

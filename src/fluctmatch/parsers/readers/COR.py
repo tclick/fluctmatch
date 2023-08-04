@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2023 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -31,51 +31,34 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false
-"""Command-line interface."""
+# flake8: noqa
+"""CHARMM coordinate file reader for viewing in VMD."""
 
-import logging
-import sys
-from typing import TypeVar
+from pathlib import Path
+from typing import ClassVar, TypeVar, Optional, Union
+from collections.abc import Mapping
 
-from loguru import logger
+from MDAnalysis.coordinates import CRD
 
-from fluctmatch.cli import main
-
-if not sys.warnoptions:
-    import warnings
-
-    warnings.simplefilter("ignore")
-
-TInterceptHandler = TypeVar("TInterceptHandler", bound="InterceptHandler")
+Self = TypeVar("Self", bound="Reader")
 
 
-class InterceptHandler(logging.Handler):
-    """Intercept standard logging."""
+class Reader(CRD.CRDReader):
+    """CRD reader that implements the extended CRD coordinate formats
 
-    def emit(self: TInterceptHandler, record: logging.LogRecord) -> None:
-        """Emit standard logging to loguru.
+    .. versionchanged:: 0.11.0
+       Now returns a ValueError instead of FormatError.
+       Frames now 0-based instead of 1-based.
+    """
 
-        Parameters
-        ----------
-        record : logging.LogRecord
-            logging record
-        """
-        # Get corresponding Loguru level if it exists.
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
+    format: ClassVar[str] = "COR"
+    units: ClassVar[dict[str, str | None]] = dict(time=None, length="Angstrom")
 
-        # Find caller from where originated the logged message.
-        frame, depth = sys._getframe(6), 6
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
-
-
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-with logger.catch(message="An unexpected error occurred while running the program."):
-    main()
+    def __init__(
+        self: Self,
+        filename: str | Path,
+        convert_units: bool = False,
+        n_atoms: int | None = None,
+        **kwargs: Mapping,
+    ) -> None:
+        super().__init__(filename, convert_units, n_atoms, **kwargs)
