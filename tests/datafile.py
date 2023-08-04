@@ -50,7 +50,6 @@ __all__: list[str] = [
     "DCD",
     "IC",
     "COR",
-    "PAR",
     "PRM",
     "RTF",
     "STR",
@@ -94,9 +93,6 @@ with resources.as_file(_data_ref / "cg.dcd") as f:
 
 with resources.as_file(_data_ref / "fluct.ic") as f:
     IC: str = f.as_posix()
-
-with resources.as_file(_data_ref / "fluctmatch.par") as f:
-    PAR: str = f.as_posix()
 
 with resources.as_file(_data_ref / "fluctmatch.prm") as f:
     PRM: str = f.as_posix()
