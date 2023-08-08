@@ -53,6 +53,7 @@ __all__: list[str] = [
     "PRM",
     "RTF",
     "STR",
+    "CSV",
 ]
 
 with resources.as_file(_data_ref / "trex1.pdb") as f:
@@ -105,3 +106,6 @@ with resources.as_file(_data_ref / "cg.rtf") as f:
 
 with resources.as_file(_data_ref / "cg.stream") as f:
     STR: str = f.as_posix()
+
+with resources.as_file(_data_ref / "setup.csv") as f:
+    CSV: str = f.as_posix()
