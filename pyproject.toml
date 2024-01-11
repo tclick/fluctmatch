@@ -29,7 +29,7 @@ Changelog = "https://github.com/tclick/fluctmatch/releases"
 python = ">=3.10, <4.0"
 click-extra = ">=4.6"
 loguru = "*"
-MDAnalysis = ">=2.5, <3.0"
+MDAnalysis = ">=2.6, <3.0"
 phx-class-registry = "*"
 pandas = "*"
 
