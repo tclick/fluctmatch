@@ -40,7 +40,6 @@ from typing import TypeVar
 
 import MDAnalysis as mda
 import numpy as np
-from class_registry import AutoRegister, ClassRegistry
 from loguru import logger
 from MDAnalysis import transformations
 from MDAnalysis.coordinates.memory import MemoryReader
@@ -50,10 +49,9 @@ from numpy.typing import NDArray
 
 MDUniverse = TypeVar("MDUniverse", mda.Universe, Iterable[mda.Universe])
 TModel = TypeVar("TModel", bound="ModelBase")
-_MODELS = ClassRegistry("model")
 
 
-class ModelBase(abc.ABC, metaclass=AutoRegister(_MODELS)):
+class ModelBase(abc.ABC):
     """Base class for creating coarse-grain core.
 
     Parameters

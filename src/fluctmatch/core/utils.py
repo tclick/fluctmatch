@@ -45,13 +45,14 @@ from MDAnalysis.analysis.base import AnalysisFromFunction
 from MDAnalysis.coordinates.memory import MemoryReader
 from numpy.typing import NDArray
 
-from .. import _MODELS
 from .base import ModelBase
 
 T = TypeVar("T")
 
 
-def modeller(topology: str | Path, trajectory: str | Path, *model_type: str) -> mda.Universe:
+def modeller(
+    topology: str | Path, trajectory: str | Path, *model_type: str, **kwargs: bool | float | str | Path
+) -> mda.Universe:
     """Create coarse-grain model from universe selection.
 
     Parameters
@@ -75,11 +76,12 @@ def modeller(topology: str | Path, trajectory: str | Path, *model_type: str) -> 
     KeyError
         if a specified model is not found within the available registry of models
     """
-    models: list[str] = [_.upper() for _ in model_type]
+    from .. import _MODELS
+
     try:
-        if "ENM" in models:
+        if "enm" in model_type:
             logger.warning("ENM model detected. All other core are being ignored.")
-            model: ModelBase = _MODELS["ENM"]
+            model: ModelBase = _MODELS["enm"](**kwargs)
             return model.transform(mda.Universe(topology, trajectory))
     except Exception as exc:
         message = "An error occurred while trying to create the universe."
@@ -87,7 +89,9 @@ def modeller(topology: str | Path, trajectory: str | Path, *model_type: str) -> 
         raise RuntimeError(message) from exc
 
     try:
-        universe: list[mda.Universe] = [_MODELS[_].transform(mda.Universe(topology, trajectory)) for _ in models]
+        universe: list[mda.Universe] = [
+            _MODELS[_](**kwargs).transform(mda.Universe(topology, trajectory)) for _ in model_type
+        ]
     except KeyError as err:
         message: str = f"One of the core is not implemented. Please try {_MODELS.keys()}"
         logger.exception(message)

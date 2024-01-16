@@ -42,10 +42,11 @@ from typing import TYPE_CHECKING, ParamSpec, TypeVar
 import MDAnalysis as mda
 from loguru import logger
 
+import fluctmatch.core.models
 import fluctmatch.parsers.parsers
 import fluctmatch.parsers.readers
 import fluctmatch.parsers.writers
-from fluctmatch.core.base import _MODELS  # noqa: F401
+from fluctmatch.core.base import ModelBase
 
 if TYPE_CHECKING:
     from loguru import Logger
@@ -149,3 +150,7 @@ mda._SINGLEFRAME_WRITERS.update(
         for _, name, _ in iter_namespace(fluctmatch.parsers.writers)
     }
 )
+
+_MODELS: dict[str, ModelBase] = {
+    name.split(".")[-1]: importlib.import_module(name).Model for _, name, _ in iter_namespace(fluctmatch.core.models)
+}
