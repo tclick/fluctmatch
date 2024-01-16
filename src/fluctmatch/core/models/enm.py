@@ -107,8 +107,6 @@ class Model(ModelBase):
     def __init__(
         self: TModel,
         *,
-        xplor: bool = True,
-        extended: bool = True,
         com: bool = True,
         guess_angles: bool = False,
         rmin: float = 0.0,
