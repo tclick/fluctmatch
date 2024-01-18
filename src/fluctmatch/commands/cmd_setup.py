@@ -37,12 +37,12 @@ import csv
 from itertools import zip_longest
 from pathlib import Path
 
-import click
 import MDAnalysis as mda
+import rich_click as click
 from click_extra import help_option, timer_option
 
-from .. import __copyright__, config_logger
-from . import FILE_MODE
+from fluctmatch import __copyright__, config_logger
+from fluctmatch.commands import FILE_MODE
 
 
 @click.command(

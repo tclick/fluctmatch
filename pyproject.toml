@@ -28,9 +28,11 @@ Changelog = "https://github.com/tclick/fluctmatch/releases"
 [tool.poetry.dependencies]
 python = ">=3.10, <4.0"
 click-extra = ">=4.6"
+clickloader = "*"
 loguru = "*"
 MDAnalysis = ">=2.6, <3.0"
 phx-class-registry = "*"
+rich-click = "*"
 pandas = "*"
 
 [tool.poetry.dev-dependencies]

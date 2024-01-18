@@ -35,13 +35,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import click
 import MDAnalysis as mda
 import numpy as np
+import rich_click as click
 from click_extra import help_option, timer_option
 from MDAnalysis.analysis.align import AlignTraj
 
-from .. import __copyright__, config_logger
+from fluctmatch import __copyright__, config_logger
 
 
 @click.command(
