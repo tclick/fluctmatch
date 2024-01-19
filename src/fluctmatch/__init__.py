@@ -56,7 +56,7 @@ else:
 T = TypeVar("T")
 P = ParamSpec("P")
 __version__: str = "4.0.0a0"
-__copyright__: str = """Copyright (C) 2013-2023 Timothy H. Click <timothy.click@briarcliff.edu>
+__copyright__: str = """Copyright (C) 2013-2024 Timothy H. Click <thclick@umary.edu>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
