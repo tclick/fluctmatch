@@ -62,7 +62,7 @@ class Reader(TopologyReaderBase):
         ),
     }
 
-    def parse(self: Self) -> intcor.InternalCoord:
+    def parse(self: Self, **kwargs) -> intcor.InternalCoord:
         """Read an internal coordinate file.
 
         Returns

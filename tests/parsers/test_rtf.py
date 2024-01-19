@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
+# pyright: reportFunctionMemberAccess=false
 """Test RTF writer."""
 
 from pathlib import Path

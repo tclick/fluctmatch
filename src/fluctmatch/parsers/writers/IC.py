@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false, reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
+# pyright: reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Writer for internal coordinates."""
 

@@ -31,7 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportOptionalSubscript=false, reportGeneralTypeIssues=false, reportInvalidTypeVarUse=false
-# pyright: reportWildcardImportFromLibrary=false
+# pyright: reportWildcardImportFromLibrary=false, reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Tests for different solvent core."""
 

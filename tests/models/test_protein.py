@@ -31,7 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportOptionalIterable=false, reportGeneralTypeIssues=false, reportInvalidTypeVarUse=false
-# pyright: reportOptionalSubscript=false
+# pyright: reportOptionalSubscript=false, reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Tests for various protein core."""
 

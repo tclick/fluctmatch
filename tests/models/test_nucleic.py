@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportOptionalMemberAccess=false, reportGeneralTypeIssues=false, reportInvalidTypeVarUse=false
+# pyright: reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Tests for the different nucleic acid core."""
 

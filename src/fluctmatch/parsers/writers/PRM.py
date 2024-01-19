@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportOptionalIterable=false, reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
+# pyright: reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Class to write CHARMM parameter files with a prm extension."""
 

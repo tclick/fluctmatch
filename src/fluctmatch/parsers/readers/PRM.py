@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportOptionalIterable=false, reportInvalidTypeVarUse=false, reportUnboundVariable=false
+# pyright: reportIncompatibleMethodOverride=false
 # flake8: noqa
 """Class to read CHARMM parameter files."""
 
@@ -67,7 +68,7 @@ class Reader(TopologyReaderBase):
         "DIHEDRALS",
         "IMPROPER",
     )
-    _COLUMNS: ClassVar[dict[str, list[str]]] = {
+    _COLUMNS: ClassVar[dict[str, list]] = {
         "ATOMS": "type atom mass".split(),
         "BONDS": "I J Kb b0".split(),
         "ANGLES": "I J K Ktheta theta0 Kub S0".split(),

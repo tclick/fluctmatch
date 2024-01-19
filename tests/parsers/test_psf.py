@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false, reportOptionalSubscript=false
+# pyright: reportFunctionMemberAccess=false
 # flake8: noqa
 """Test PSF reader and writer."""
 
