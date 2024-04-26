@@ -1,4 +1,5 @@
 """Sphinx configuration."""
+
 project = "Fluctuation Matching"
 author = "Timothy H. Click, Ph.D."
 copyright = "2013–2024, Timothy H. Click, Ph.D."
