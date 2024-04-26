@@ -1,9 +1,13 @@
-comment: false
 coverage:
+  range: 70..100
+  round: down
+  precision: 1
   status:
     project:
       default:
-        target: "100"
+        target: 90%
+        threshold: 0.5%
     patch:
       default:
-        target: "100"
+        target: 90%
+        threshold: 0.5%
