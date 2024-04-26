@@ -54,12 +54,13 @@ except ImportError:
 
 package = "fluctmatch"
 python_versions = ["3.12", "3.11"]
-nox.needs_version = ">= 2023.4.22"
+nox.needs_version = ">= 2024.4.15"
 nox.options.sessions = (
     "pre-commit",
     "safety",
     "pyright",
     "tests",
+    "typeguard",
     "xdoctest",
     "docs-build",
 )
@@ -151,6 +152,7 @@ def precommit(session: Session) -> None:
         "flake8",
         "flake8-rst-docstrings",
         "flake8-pyproject",
+        "isort",
         "nox-poetry",
         "pep8-naming",
         "pre-commit",
