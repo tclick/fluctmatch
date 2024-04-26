@@ -1,3 +1,35 @@
+# ------------------------------------------------------------------------------
+#  fluctmatch
+#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#
+#  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  Redistributions of source code must retain the above copyright notice, this
+#  list of conditions and the following disclaimer.
+#
+#  Redistributions in binary form must reproduce the above copyright notice,
+#  this list of conditions and the following disclaimer in the documentation
+#  and/or other materials provided with the distribution.
+#
+#  Neither the name of the author nor the names of its contributors may be used
+#  to endorse or promote products derived from this software without specific
+#  prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR
+#  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+#  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+#  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+#  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+#  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+#  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+#  DAMAGE.
+# ------------------------------------------------------------------------------
 """Nox sessions."""
 import os
 import shlex
@@ -8,10 +40,8 @@ from textwrap import dedent
 
 import nox
 
-
 try:
-    from nox_poetry import Session
-    from nox_poetry import session
+    from nox_poetry import Session, session
 except ImportError:
     message = f"""\
     Nox failed to import the 'nox-poetry' package.
@@ -23,14 +53,13 @@ except ImportError:
 
 
 package = "fluctmatch"
-python_versions = ["3.10", "3.9", "3.8", "3.7"]
-nox.needs_version = ">= 2021.6.6"
+python_versions = ["3.12", "3.11"]
+nox.needs_version = ">= 2023.4.22"
 nox.options.sessions = (
     "pre-commit",
     "safety",
-    "mypy",
+    "pyright",
     "tests",
-    "typeguard",
     "xdoctest",
     "docs-build",
 )
@@ -46,14 +75,13 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
     Args:
         session: The Session object.
     """
-    assert session.bin is not None  # noqa: S101
+    assert session.bin is not None  # nosec
 
     # Only patch hooks containing a reference to this session's bindir. Support
     # quoting rules for Python and bash, but strip the outermost quotes so we
     # can detect paths within the bindir, like <bindir>/python.
     bindirs = [
-        bindir[1:-1] if bindir[0] in "'\"" else bindir
-        for bindir in (repr(session.bin), shlex.quote(session.bin))
+        bindir[1:-1] if bindir[0] in "'\"" else bindir for bindir in (repr(session.bin), shlex.quote(session.bin))
     ]
 
     virtualenv = session.env.get("VIRTUAL_ENV")
@@ -95,10 +123,7 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 
         text = hook.read_text()
 
-        if not any(
-            Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text
-            for bindir in bindirs
-        ):
+        if not any(Path("A") == Path("a") and bindir.lower() in text.lower() or bindir in text for bindir in bindirs):
             continue
 
         lines = text.splitlines()
@@ -120,18 +145,19 @@ def precommit(session: Session) -> None:
         "--show-diff-on-failure",
     ]
     session.install(
+        "bandit",
         "black",
         "darglint",
         "flake8",
-        "flake8-bandit",
-        "flake8-bugbear",
-        "flake8-docstrings",
         "flake8-rst-docstrings",
-        "isort",
+        "flake8-pyproject",
+        "nox-poetry",
         "pep8-naming",
         "pre-commit",
         "pre-commit-hooks",
+        "pytest-console-scripts",
         "pyupgrade",
+        "reorder-python-imports",
     )
     session.run("pre-commit", *args)
     if args and args[0] == "install":
@@ -147,26 +173,41 @@ def safety(session: Session) -> None:
 
 
 @session(python=python_versions)
-def mypy(session: Session) -> None:
-    """Type-check using mypy."""
-    args = session.posargs or ["src", "tests", "docs/conf.py"]
-    session.install(".")
-    session.install("mypy", "pytest")
-    session.run("mypy", *args)
-    if not session.posargs:
-        session.run("mypy", f"--python-executable={sys.executable}", "noxfile.py")
+def pyright(sessions: Session) -> None:
+    """Type-check using pyright.
+
+    Parameters
+    ----------
+    sessions: Session
+        The Session object.
+    """
+    args = sessions.posargs or ["src", "tests", "docs/conf.py"]
+    sessions.install(".")
+    sessions.install("pyright", "pytest", "pytest-mock", "MDAnalysisTests")
+    sessions.run("pyright", *args)
+    if not sessions.posargs:
+        sessions.run("pyright", f"--pythonpath={sys.executable}", "noxfile.py")
 
 
 @session(python=python_versions)
-def tests(session: Session) -> None:
+def tests(sessions: Session) -> None:
     """Run the test suite."""
-    session.install(".")
-    session.install("coverage[toml]", "pytest", "pygments")
+    sessions.install(".")
+    sessions.install("coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
     try:
-        session.run("coverage", "run", "--parallel", "-m", "pytest", *session.posargs)
+        sessions.run(
+            "coverage",
+            "run",
+            "--parallel",
+            "-m",
+            "pytest",
+            "--random-order",
+            "--disable-pytest-warnings",
+            *sessions.posargs,
+        )
     finally:
-        if session.interactive:
-            session.notify("coverage", posargs=[])
+        if sessions.interactive:
+            sessions.notify("coverage", posargs=[])
 
 
 @session(python=python_versions[0])
@@ -183,11 +224,13 @@ def coverage(session: Session) -> None:
 
 
 @session(python=python_versions[0])
-def typeguard(session: Session) -> None:
+def typeguard(sessions: Session) -> None:
     """Runtime type checking using Typeguard."""
-    session.install(".")
-    session.install("pytest", "typeguard", "pygments")
-    session.run("pytest", f"--typeguard-packages={package}", *session.posargs)
+    sessions.install(".")
+    sessions.install("pytest", "typeguard", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
+    sessions.run(
+        "pytest", f"--typeguard-packages={package}", "--random-order", "--disable-pytest-warnings", *sessions.posargs
+    )
 
 
 @session(python=python_versions)
