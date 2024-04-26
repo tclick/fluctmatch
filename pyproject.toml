@@ -1,52 +1,94 @@
 [tool.poetry]
 name = "fluctmatch"
-version = "4.0.0"
-description = "Fluctuation Matching"
-authors = ["Timothy H. Click, Ph.D. <thclick@umary.edu>"]
+version = "4.0.0a0"
+description = "Fluctuation matching"
+authors = ["Timothy H. Click <timothy.click@briarcliff.edu>"]
 license = "GPL-3.0"
 readme = "README.md"
 homepage = "https://github.com/tclick/fluctmatch"
 repository = "https://github.com/tclick/fluctmatch"
 documentation = "https://fluctmatch.readthedocs.io"
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 6 - Mature",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Utilities"
 ]
 
 [tool.poetry.urls]
 Changelog = "https://github.com/tclick/fluctmatch/releases"
 
 [tool.poetry.dependencies]
-python = "^3.7"
-click = ">=8.0.1"
+python = ">=3.11, <4.0"
+aiofiles = "*"
+click-extra = ">=4.6"
+click-loguru = "*"
+clickloader = "*"
+loguru = "*"
+MDAnalysis = ">=2.6, <3.0"
+phx-class-registry = "*"
+rich-click = "*"
+pandas = "*"
 
 [tool.poetry.dev-dependencies]
-Pygments = ">=2.10.0"
-black = ">=21.10b0"
-coverage = {extras = ["toml"], version = ">=6.2"}
-darglint = ">=1.8.1"
-flake8 = ">=4.0.1"
-flake8-bandit = ">=2.1.2"
-flake8-bugbear = ">=21.9.2"
-flake8-docstrings = ">=1.6.0"
-flake8-rst-docstrings = ">=0.2.5"
-furo = ">=2021.11.12"
-isort = ">=5.10.1"
-mypy = ">=0.930"
-pep8-naming = ">=0.12.1"
-pre-commit = ">=2.16.0"
-pre-commit-hooks = ">=4.1.0"
-pytest = ">=6.2.5"
-pyupgrade = ">=2.29.1"
-safety = ">=1.10.3"
-sphinx = ">=4.3.2"
-sphinx-autobuild = ">=2021.3.14"
-sphinx-click = ">=3.0.2"
-typeguard = ">=2.13.3"
-xdoctest = {extras = ["colors"], version = ">=0.15.10"}
-myst-parser = {version = ">=0.16.1"}
+Pygments = "*"
+autoflake = "*"
+bandit = {version = "*", extras = ["toml"]}
+black = ">=23.3"
+coverage = {extras = ["toml"], version = "*"}
+darglint = "*"
+flake8 = "*"
+flake8-pyproject = "*"
+furo = "*"
+MDAnalysisTESTS = ">=2.5, <3.0"
+myst-parser = {version = "*"}
+nox-poetry = "*"
+pep8-naming = "*"
+pre-commit = "*"
+pre-commit-hooks = "*"
+pymdown-extensions = "*"
+pylint = "*"
+pyright = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-mock = "*"
+pytest-random-order = "*"
+pytest-github-actions-annotate-failures = "*"
+python-kacl = "*"
+pyupgrade = "*"
+reorder-python-imports = "*"
+safety = ">=2.3"
+sphinx = ">=6.0"
+sphinx-autobuild = "*"
+sphinx-automodapi = "*"
+sphinx-rtd-theme = ">=1.2"
+sphinx-click = "*"
+typeguard = "*"
+tryceratops = "*"
+xdoctest = {version = "*", extras = ["colors"]}
 
 [tool.poetry.scripts]
 fluctmatch = "fluctmatch.__main__:main"
+
+[tool.bandit]
+exclude_dirs = ["build","dist","tests","scripts"]
+number = 4
+recursive = true
+skips = ["B404", "B603"]
+targets = "src"
+
+[tool.black]
+target-version = ["py310", "py311"]
+include = '\.pyi?$'
+line-length = 120
+fast = true
 
 [tool.coverage.paths]
 source = ["src", "*/site-packages"]
@@ -58,20 +100,140 @@ source = ["fluctmatch", "tests"]
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 100
+skip_empty = true
+fail_under = 70
+omit = ["__main__.py",]
 
-[tool.isort]
-profile = "black"
-force_single_line = true
-lines_after_imports = 2
+[tool.flake8]
+max-line-length = 120
+max-complexity = 10
+select = "B,B9,C,D,DAR,E,F,N,RST,W"
+ignore = "E203,E501,N813,RST201,RST203,RST301,W503"
+exclude = [
+    ".eggs",
+    ".git",
+    ".idea",
+    ".tox",
+    ".nox",
+    "nssm",
+    "obj",
+    "out",
+    "packages",
+    "pywin32",
+    "tests",
+    "swagger_client",
+    "noxfile.py"
+]
+docstring-convention = "numpy"
+rst-roles = "class,const,func,meth,mod,ref"
+rst-directives = "deprecated"
 
-[tool.mypy]
-strict = true
-warn_unreachable = true
-pretty = true
-show_column_numbers = true
-show_error_codes = true
-show_error_context = true
+[tool.pyright]
+include = ["src"]
+exclude = ["**/node_modules", "**/__pycache__", "noxfile.py"]
+venv = "env311"
+reportMissingImports = true
+reportMissingTypeStubs = false
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+executionEnvironments = [{ root = "src" }]
+
+[tool.pytest.ini_options]
+#addopts = "--cov-report xml:coverage.xml --cov tests --cov-fail-under 0 --cov-append -m 'not integration'"
+pythonpath = [
+  "test"
+]
+testpaths = "tests"
+junit_family = "xunit2"
+markers = [
+    "integration: marks as integration test",
+    "notebooks: marks as notebook test",
+    "gpu: marks as gpu test",
+    "slow: marks tests as slow",
+    "unit: fast offline tests",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+fix = true
+select = [
+    # flake8-2020
+    "YTT",
+    # flake8-bandit
+    "S",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # pydocstyle
+    "D",
+    # flake8-debugger
+    "T10",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # mccabe
+    "C90",
+    # pycodestyle
+    "E", "W",
+    # pyflakes
+    "F",
+    # pygrep-hooks
+    "PGH",
+    # pyupgrade
+    "UP",
+    # ruff
+    "RUF",
+    # tryceratops
+    "TRY",
+    # flake8-errmsg
+    "EM",
+    # flake8-copyright
+    "CPY",
+    # pep8-naming
+    "N",
+    # flake8-annotations
+    "ANN",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-pytest-style
+    "PT",
+    # flake8-quotes
+    "Q",
+    # flake8-return
+    "RET",
+    # flake8-unused-arguments
+    "ARG",
+    # eradicate
+    "ERA",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
+]
+ignore = [
+    # LineTooLong
+    "E501",
+    # DoNotAssignLambda
+    "E731",
+    # Camelcase imported as lower case
+    "N813",
+    # Too many arguments to function call
+    "PLR0913",
+]
+
+[tool.ruff.per-file-ignores]
+"tests/*" = ["S101", "ANN"]
+"noxfile.py" = ["S101"]
+"docs/*" = ["A001"]
+"cli.py" = ["ARG"]
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
