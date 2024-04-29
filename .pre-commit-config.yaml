@@ -36,6 +36,13 @@ repos:
         types: [text]
         stages: [commit, push, manual]
       - id: mixed-line-ending
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.8
+    hooks:
+      - id: bandit
+        language: python
+        language_version: python3
+        types: [python]
   - repo: https://github.com/terrencepreilly/darglint
     rev: v1.8.1
     hooks:
