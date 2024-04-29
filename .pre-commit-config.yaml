@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: main
+    rev: v4.6.0
     hooks:
       - id: check-ast
       - id: check-added-large-files
@@ -37,36 +37,36 @@ repos:
         stages: [commit, push, manual]
       - id: mixed-line-ending
   - repo: https://github.com/terrencepreilly/darglint
-    rev: master
+    rev: v1.8.1
     hooks:
       - id: darglint
         language: system
         types: [python]
         stages: [manual]
   - repo: https://github.com/pycqa/flake8
-    rev: main
+    rev: 7.0.0
     hooks:
       - id: flake8
         require_serial: true
         args: ["--darglint-ignore-regex", ".*"]
         additional_dependencies: [darglint, flake8-docstrings, flake8-pyproject]
   - repo: https://github.com/asottile/pyupgrade
-    rev: main
+    rev: v3.15.2
     hooks:
-    - id: pyupgrade
-      types:
-        - python
-      args: ["--py311-plus"]
+      - id: pyupgrade
+        types:
+          - python
+        args: ["--py311-plus"]
   - repo: https://github.com/psf/black
-    rev: main
+    rev: 24.4.2
     hooks:
       - id: black
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: main
+    rev: v0.4.2
     hooks:
       - id: ruff
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: main
+    rev: v4.0.0-alpha.8
     hooks:
       - id: prettier
