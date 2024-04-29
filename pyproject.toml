@@ -39,22 +39,14 @@ pandas = "*"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"
-autoflake = "*"
-bandit = {version = "*", extras = ["toml"]}
-black = ">=23.3"
 coverage = {extras = ["toml"], version = "*"}
-darglint = "*"
-flake8 = "*"
-flake8-pyproject = "*"
 furo = "*"
 MDAnalysisTESTS = ">=2.5, <3.0"
 myst-parser = {version = "*"}
 nox-poetry = "*"
-pep8-naming = "*"
 pre-commit = "*"
 pre-commit-hooks = "*"
 pymdown-extensions = "*"
-pylint = "*"
 pyright = "*"
 pytest = "*"
 pytest-cov = "*"
@@ -62,16 +54,12 @@ pytest-mock = "*"
 pytest-random-order = "*"
 pytest-github-actions-annotate-failures = "*"
 python-kacl = "*"
-pyupgrade = "*"
-reorder-python-imports = "*"
-safety = ">=2.3"
+safety = ">=3"
 sphinx = ">=6.0"
 sphinx-autobuild = "*"
 sphinx-automodapi = "*"
 sphinx-rtd-theme = ">=1.2"
 sphinx-click = "*"
-typeguard = "*"
-tryceratops = "*"
 xdoctest = {version = "*", extras = ["colors"]}
 
 [tool.poetry.scripts]

@@ -146,20 +146,8 @@ def precommit(session: Session) -> None:
         "--show-diff-on-failure",
     ]
     session.install(
-        "bandit",
-        "black",
-        "darglint",
-        "flake8",
-        "flake8-rst-docstrings",
-        "flake8-pyproject",
-        "isort",
-        "nox-poetry",
-        "pep8-naming",
         "pre-commit",
         "pre-commit-hooks",
-        "pytest-console-scripts",
-        "pyupgrade",
-        "reorder-python-imports",
     )
     session.run("pre-commit", *args)
     if args and args[0] == "install":
