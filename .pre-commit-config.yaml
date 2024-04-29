@@ -1,66 +1,76 @@
 repos:
-  - repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
     hooks:
-      - id: black
-        name: black
-        entry: black
-        language: system
-        types: [python]
-        require_serial: true
+      - id: check-ast
       - id: check-added-large-files
         name: Check for added large files
-        entry: check-added-large-files
+        entry: poetry run check-added-large-files
+        args: ["--maxkb=52428800"]
         language: system
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-json
       - id: check-toml
         name: Check Toml
-        entry: check-toml
+        entry: poetry run check-toml
         language: system
         types: [toml]
       - id: check-yaml
         name: Check Yaml
-        entry: check-yaml
+        entry: poetry run check-yaml
         language: system
         types: [yaml]
-      - id: darglint
-        name: darglint
-        entry: darglint
-        language: system
-        types: [python]
-        stages: [manual]
+      - id: debug-statements
       - id: end-of-file-fixer
         name: Fix End of Files
-        entry: end-of-file-fixer
+        entry: poetry run end-of-file-fixer
         language: system
         types: [text]
         stages: [commit, push, manual]
+      - id: trailing-whitespace
+        name: Trim Trailing Whitespace
+        entry: poetry run trailing-whitespace-fixer
+        language: system
+        types: [text]
+        stages: [commit, push, manual]
+      - id: mixed-line-ending
+  - repo: local
+    hooks:
+      - id: darglint
+        name: darglint
+        entry: poetry run darglint
+        language: system
+        types: [python]
+        stages: [manual]
       - id: flake8
         name: flake8
-        entry: flake8
+        entry: poetry run flake8
         language: system
         types: [python]
         require_serial: true
         args: [--darglint-ignore-regex, .*]
-      - id: isort
-        name: isort
-        entry: isort
-        require_serial: true
-        language: system
-        types_or: [cython, pyi, python]
-        args: ["--filter-files"]
       - id: pyupgrade
         name: pyupgrade
         description: Automatically upgrade syntax for newer versions.
-        entry: pyupgrade
+        entry: poetry run pyupgrade
         language: system
         types: [python]
-        args: [--py37-plus]
-      - id: trailing-whitespace
-        name: Trim Trailing Whitespace
-        entry: trailing-whitespace-fixer
+        args: [--py310-plus]
+      - id: black
+        name: black
+        entry: poetry run black
         language: system
-        types: [text]
-        stages: [commit, push, manual]
+        types: [python]
+        require_serial: true
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.0.277
+    hooks:
+      - id: ruff
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v2.6.0
     hooks:
       - id: prettier
+        args: ["--print-width 120"]
