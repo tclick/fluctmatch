@@ -1,0 +1,21 @@
+{
+  "template": "/Users/tclick/Developer/python/cookiecutter-hypermodern-python",
+  "commit": "274a46989c2964cd75ef494f97f8de49a099e0bf",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "fluctmatch",
+      "package_name": "fluctmatch",
+      "friendly_name": "Fluctuation matching",
+      "author": "Timothy H. Click",
+      "email": "timothy.click@briarcliff.edu",
+      "github_user": "tclick",
+      "version": "4.0.0a0",
+      "copyright_year": "2013–2023",
+      "license": "GPL-3.0",
+      "development_status": "Development Status :: 6 - Mature",
+      "_template": "/Users/tclick/Developer/python/cookiecutter-hypermodern-python"
+    }
+  },
+  "directory": null
+}
