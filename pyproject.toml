@@ -85,7 +85,7 @@ skips = ["B404", "B603"]
 targets = "src"
 
 [tool.black]
-target-version = ["py310", "py311"]
+target-version = ["py311", "py312"]
 include = '\.pyi?$'
 line-length = 120
 fast = true
