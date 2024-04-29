@@ -54,7 +54,6 @@ pep8-naming = "*"
 pre-commit = "*"
 pre-commit-hooks = "*"
 pymdown-extensions = "*"
-pycodestyle = {version = ">= 2.11" }
 pylint = "*"
 pyright = "*"
 pytest = "*"
