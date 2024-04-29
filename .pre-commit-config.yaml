@@ -48,6 +48,7 @@ repos:
     hooks:
       - id: flake8
         require_serial: true
+        types: [python]
         args: ["--darglint-ignore-regex", ".*"]
         additional_dependencies: [darglint, flake8-docstrings, flake8-pyproject]
   - repo: https://github.com/asottile/pyupgrade
