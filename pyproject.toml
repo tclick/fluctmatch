@@ -121,6 +121,7 @@ include = ["src"]
 exclude = ["**/node_modules", "**/__pycache__", "noxfile.py"]
 defineConstant = { DEBUG = true }
 venv = "env312"
+venvPath = "."
 reportMissingImports = true
 reportMissingTypeStubs = false
 pythonVersion = "3.12"
