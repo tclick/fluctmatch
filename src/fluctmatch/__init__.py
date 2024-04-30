@@ -103,6 +103,8 @@ def config_logger(name: str, logfile: str = "fluctmatch.log", level: str = "INFO
             },
             {"sink": logfile, "format": "{time:YYYY-MM-DD HH:mm:ss} | {level} | {message}", "level": level},
         ],
+        "extra": "",
+        "patcher": "",
     }
     logger.configure(**config)
     return logger.bind(name=name, user=getpass.getuser())

@@ -33,12 +33,18 @@
 """Test cases for the __main__ module."""
 import os
 
+import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 
 
 class TestMain:
     """Run test for main command."""
+
+    @pytest.fixture
+    def cli_runner(self) -> CliRunner:
+        """Fixture for running the main command."""
+        return CliRunner()
 
     def test_help(self, cli_runner: CliRunner) -> None:
         """Test help output.
