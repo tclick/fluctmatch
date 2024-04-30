@@ -92,7 +92,12 @@ jobs:
           path: docs/_build
 
   coverage:
+    name: ${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12"]
     needs: tests
     steps:
       - name: Check out the repository
