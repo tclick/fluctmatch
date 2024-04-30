@@ -6,7 +6,7 @@ on:
 
 jobs:
   pyright:
-    name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
+    name: ${{ matrix.python-version }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -15,7 +15,6 @@ jobs:
         os: [ubuntu-latest, macos-latest]
 
     env:
-      NOXSESSION: ${{ matrix.session }}
       FORCE_COLOR: "1"
       PRE_COMMIT_COLOR: "always"
 
@@ -23,10 +22,10 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install poetry
         uses: abatilo/actions-poetry@v3
