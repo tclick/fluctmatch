@@ -31,8 +31,6 @@ jobs:
 
       # Run pyright
       - uses: jakebailey/pyright-action@v2
-        with:
-          args: [ $(find . -name '*.py' | xargs) ]  # Analyze all Python files
 
   tests:
     name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
