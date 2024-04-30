@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
 #  fluctmatch
-#  Copyright (c) 2013-2023 Timothy H. Click, Ph.D.
+#  Copyright (c) 2013-2024 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
