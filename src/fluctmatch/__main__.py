@@ -38,7 +38,7 @@ from typing import Self
 
 from loguru import logger
 
-from .cli import main
+from fluctmatch.cli import main
 
 if not sys.warnoptions:
     import warnings
