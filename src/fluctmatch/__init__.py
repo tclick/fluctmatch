@@ -69,6 +69,8 @@ logger.remove()
 click_loguru = ClickLoguru(
     NAME,
     __version__,
+    retention=0,
+    stderr_format_func="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
     log_dir_parent=Path.cwd() / "logs",
     timer_log_level="info",
 )
