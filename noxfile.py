@@ -173,10 +173,10 @@ def pyright(sessions: Session) -> None:
     """
     args = sessions.posargs or ["src", "tests", "docs/conf.py"]
     sessions.install(".")
-    sessions.install("pyright", "pytest", "pytest-mock", "MDAnalysisTests")
+    sessions.install("basedpyright", "pytest", "pytest-mock", "MDAnalysisTests")
     sessions.run("pyright", *args)
     if not sessions.posargs:
-        sessions.run("pyright", f"--pythonpath={sys.executable}", "noxfile.py")
+        sessions.run("basedpyright", f"--pythonpath={sys.executable}", "noxfile.py")
 
 
 @session(python=python_versions)
