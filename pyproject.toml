@@ -47,7 +47,7 @@ nox-poetry = "*"
 pre-commit = "*"
 pre-commit-hooks = "*"
 pymdown-extensions = "*"
-pyright = "*"
+basedpyright = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
@@ -116,13 +116,14 @@ docstring-convention = "numpy"
 rst-roles = "class,const,func,meth,mod,ref"
 rst-directives = "deprecated"
 
-[tool.pyright]
+[tool.basedpyright]
 include = ["src"]
 exclude = ["**/node_modules", "**/__pycache__", "noxfile.py"]
-venv = "env311"
+defineConstant = { DEBUG = true }
+venv = "env312"
 reportMissingImports = true
 reportMissingTypeStubs = false
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 executionEnvironments = [{ root = "src" }]
 
