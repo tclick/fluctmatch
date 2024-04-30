@@ -37,7 +37,7 @@ import ccl
 import rich_click as click
 from click_extra import help_option, version_option
 
-from . import __copyright__, __version__, click_loguru
+from fluctmatch import __copyright__, __version__, click_loguru
 
 path_to_commands = Path(__file__, "..", "commands")
 
