@@ -6,21 +6,45 @@ on:
 
 jobs:
   pyright:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { python: "3.12", os: "ubuntu-latest"}
+          - { python: "3.11", os: "ubuntu-latest"}
+
+    env:
+      NOXSESSION: ${{ matrix.session }}
+      FORCE_COLOR: "1"
+      PRE_COMMIT_COLOR: "always"
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v5
         with:
-          cache: 'poetry'
-      # Use Poetry for dependency management
-      - run: pip install poetry
-      - run: poetry config virtualenvs.prefer-activ-python true
+          python-version: ${{ matrix.python }}
 
-      # Setup Python environment using Poetry
-      - run: poetry install
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v3
 
-      # Add Poetry's bin directory to PATH
-      - run: echo "$(poetry env info --path)/bin" >> $GITHUB_PATH
+      - name: Setup a local virtual environment (if no pyproject.toml file)
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
 
-      # Run pyright
-      - run: basedpyright
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install the project dependencies
+        run: poetry install --no-interaction
+
+      - name: Perform static type checks
+        run: basedpyright

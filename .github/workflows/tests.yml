@@ -33,30 +33,22 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt pip
-          pip --version
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v3
 
-      - name: Upgrade pip in virtual environments
-        shell: python
+      - name: Setup a local virtual environment (if no pyproject.toml file)
         run: |
-          import os
-          import pip
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
 
-          with open(os.environ["GITHUB_ENV"], mode="a") as io:
-              print(f"VIRTUALENV_PIP={pip.__version__}", file=io)
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
 
-      - name: Install Poetry
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt poetry
-          poetry --version
-
-      - name: Install Nox
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt nox
-          pip install --constraint=.github/workflows/constraints.txt nox nox-poetry
-          nox --version
+      - name: Install the project dependencies
+        run: poetry install --no-interaction
 
       - name: Compute pre-commit cache key
         if: matrix.session == 'pre-commit'
