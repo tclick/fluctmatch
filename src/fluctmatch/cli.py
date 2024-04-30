@@ -45,7 +45,7 @@ path_to_commands = Path(__file__, "..", "commands")
 @click_loguru.logging_options
 @click.group("fluctmatch", help=f"{__copyright__}")
 @click_loguru.stash_subcommand()
-@help_option
+@help_option()
 @version_option(version=__version__)
 def main() -> None:
     """Console script for fluctmatch."""
