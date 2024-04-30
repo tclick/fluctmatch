@@ -102,23 +102,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt pip
-          pip --version
+      - name: Install poetry
+        uses: abatilo/actions-poetry@v3
 
-      - name: Install Poetry
+      - name: Setup a local virtual environment (if no pyproject.toml file)
         run: |
-          pip install --constraint=.github/workflows/constraints.txt poetry
-          poetry --version
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
 
-      - name: Install Nox
-        run: |
-          pip install --constraint=.github/workflows/constraints.txt nox
-          pip install --constraint=.github/workflows/constraints.txt nox nox-poetry
-          nox --version
+      - uses: actions/cache@v4
+        name: Define a cache for the virtual environment based on the dependencies lock file
+        with:
+          path: ./.venv
+          key: venv-${{ hashFiles('poetry.lock') }}
+
+      - name: Install the project dependencies
+        run: poetry install --no-interaction
 
       - name: Download coverage data
         uses: actions/download-artifact@v4
@@ -126,12 +127,10 @@ jobs:
           name: coverage-data
 
       - name: Combine coverage data and display human readable report
-        run: |
-          nox --session=coverage
+        run: poetry run nox --session=coverage
 
       - name: Create coverage report
-        run: |
-          nox --session=coverage -- xml
+        run: poetry run nox --session=coverage -- xml
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v4
