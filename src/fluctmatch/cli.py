@@ -34,8 +34,9 @@
 from pathlib import Path
 
 import ccl
-import rich_click as click
+import click
 from click_extra import help_option, version_option
+from rich_click import RichGroup
 
 from fluctmatch import __copyright__, __version__, click_loguru
 
@@ -43,7 +44,7 @@ path_to_commands = Path(__file__, "..", "commands")
 
 
 @click_loguru.logging_options
-@click.group("fluctmatch", help=f"{__copyright__}")
+@click.group("fluctmatch", cls=RichGroup, help=f"{__copyright__}")
 @click_loguru.stash_subcommand()
 @help_option()
 @version_option(version=__version__)
