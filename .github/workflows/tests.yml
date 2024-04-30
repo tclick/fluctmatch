@@ -5,6 +5,28 @@ on:
   - pull_request
 
 jobs:
+  pyright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'poetry'
+      # Use Poetry for dependency management
+      - run: pip install poetry
+      - run: poetry config virtualenvs.prefer-active true
+
+      # Setup Python environment using Poetry
+      - run: poetry install
+
+      # Add Poetry's bin directory to PATH
+      - run: echo "$(poetry env info --path)/bin" >> $GITHUB_PATH
+
+      # Run pyright
+      - uses: jakebailey/pyright-action@v2
+        with:
+          args: [ $(find . -name '*.py' | xargs) ]  # Analyze all Python files
+
   tests:
     name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -12,10 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { python: "3.12", os: "ubuntu-latest", session: "pre-commit" }
           - { python: "3.12", os: "ubuntu-latest", session: "safety" }
-          - { python: "3.11", os: "ubuntu-latest", session: "pyright" }
-          - { python: "3.12", os: "ubuntu-latest", session: "pyright" }
           - { python: "3.11", os: "ubuntu-latest", session: "tests" }
           - { python: "3.12", os: "macos-latest", session: "tests" }
           - { python: "3.12", os: "ubuntu-latest", session: "typeguard" }
@@ -84,6 +103,12 @@ jobs:
           key: ${{ steps.pre-commit-cache.outputs.result }}-${{ hashFiles('.pre-commit-config.yaml') }}
           restore-keys: |
             ${{ steps.pre-commit-cache.outputs.result }}-
+
+      - name: Run Pyright
+        uses: "jakebailey/pyright-action@v2"
+        with:
+            project: pyproject.toml
+            python-version: 3.12
 
       - name: Run Nox
         run: |
