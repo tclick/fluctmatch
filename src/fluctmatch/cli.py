@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
-#  fluctmatch
-#  Copyright (c) 2013-2024 Timothy H. Click, Ph.D.
+#  mdsetup
+#  Copyright (c) 2024 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,49 +30,26 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-"""Command-line interface."""
+"""Module that contains the command line app."""
+from pathlib import Path
 
-import logging
-import sys
-from typing import Self
+import ccl
+import rich_click as click
+from click_extra import help_option, version_option
 
-from loguru import logger
+from . import __copyright__, __version__, click_loguru
 
-from .cli import main
-
-if not sys.warnoptions:
-    import warnings
-
-    warnings.simplefilter("ignore")
+path_to_commands = Path(__file__, "..", "commands")
 
 
-class InterceptHandler(logging.Handler):
-    """Intercept standard logging."""
-
-    def emit(self: Self, record: logging.LogRecord) -> None:
-        """Emit standard logging to loguru.
-
-        Parameters
-        ----------
-        record : logging.LogRecord
-            logging record
-        """
-        # Get corresponding Loguru level if it exists.
-        try:
-            level = logger.level(record.levelname).name
-        except ValueError:
-            level = record.levelno
-
-        # Find caller from where originated the logged message.
-        frame, depth = sys._getframe(6), 6
-        while frame and frame.f_code.co_filename == logging.__file__:
-            frame = frame.f_back
-            depth += 1
-
-        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
+@click_loguru.logging_options
+@click.group("fluctmatch", help=f"{__copyright__}")
+@click_loguru.stash_subcommand()
+@help_option
+@version_option(version=__version__)
+def main() -> None:
+    """Console script for fluctmatch."""
+    pass
 
 
-logging.basicConfig(handlers=[InterceptHandler()], level=0, force=True)
-
-with logger.catch(message="An unexpected error occurred while running the program."):
-    main()
+ccl.register_commands(main, path_to_commands)
