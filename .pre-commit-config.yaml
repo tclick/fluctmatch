@@ -78,6 +78,11 @@ repos:
     rev: 24.4.2
     hooks:
       - id: black
-
-run:
-    - poetry run basedpyright
+  - repo: local
+    hooks:
+      - id: basedpyright
+        name: basedpyright
+        entry: poetry run basedpyright
+        language: system
+        pass_filenames: false
+        types: [ python ]
