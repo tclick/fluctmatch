@@ -1,0 +1,26 @@
+name: pyright
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  pyright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          cache: 'poetry'
+      # Use Poetry for dependency management
+      - run: pip install poetry
+      - run: poetry config virtualenvs.prefer-activ-python true
+
+      # Setup Python environment using Poetry
+      - run: poetry install
+
+      # Add Poetry's bin directory to PATH
+      - run: echo "$(poetry env info --path)/bin" >> $GITHUB_PATH
+
+      # Run pyright
+      - run: basedpyright
