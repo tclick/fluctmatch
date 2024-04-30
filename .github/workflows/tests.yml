@@ -75,8 +75,7 @@ jobs:
             ${{ steps.pre-commit-cache.outputs.result }}-
 
       - name: Run Nox
-        run: |
-          nox --python=${{ matrix.python }}
+        run: poetry run nox --python=${{ matrix.python }}
 
       - name: Upload coverage data
         if: always() && matrix.session == 'tests' && matrix.python == '3.12'
@@ -99,7 +98,7 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
