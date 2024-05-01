@@ -84,3 +84,6 @@ tests/data/*.lock
 
 # Cookiecutter
 .cookiecutter.json
+
+# log subdirectory
+logs
