@@ -30,11 +30,11 @@ python = ">=3.11, <4.0"
 aiofiles = "*"
 click-extra = ">=4.6"
 click-loguru = "*"
-clickloader = "*"
+clickloader="*"
 loguru = "*"
-MDAnalysis = ">=2.6, <3.0"
+MDAnalysis = { extras = ["analysis"], version = ">=2.6, <3.0" }
+netcdf4 = "*"
 phx-class-registry = "*"
-rich-click = "*"
 pandas = "*"
 
 [tool.poetry.dev-dependencies]
