@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
-#  mdsetup
-#  Copyright (c) 2024 Timothy H. Click, Ph.D.
+#  fluctmatch
+#  Copyright (c) 2013-2024 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
@@ -30,27 +30,28 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportArgumentType=false
 """Module that contains the command line app."""
 from pathlib import Path
 
 import ccl
-import click
-from click_extra import help_option, version_option
-from rich_click import RichGroup
+import click_extra
 
-from fluctmatch import __copyright__, __version__, click_loguru
-
-path_to_commands = Path(__file__, "..", "commands")
+from fluctmatch import __copyright__
+from fluctmatch import __version__
+from fluctmatch import click_loguru
 
 
 @click_loguru.logging_options
-@click.group("fluctmatch", cls=RichGroup, help=f"{__copyright__}")
+@click_extra.extra_command(name="fluctmatch", cls=click_extra.ExtraGroup, help=__copyright__)
 @click_loguru.stash_subcommand()
-@help_option()
-@version_option(version=__version__)
-def main() -> None:
+@click_extra.extra_version_option(version=__version__)
+@click_extra.help_option()
+def main(verbose, quiet, logfile, profile_mem) -> None:
     """Console script for fluctmatch."""
-    pass
+    unused_str = f"verbose: {verbose} quiet: {quiet}" + f" logfile: {logfile} profile_mem: {profile_mem}"
+    del unused_str
 
 
-ccl.register_commands(main, path_to_commands)
+plugin_folder = Path(__file__).parent.joinpath("commands").resolve()
+ccl.register_commands(main, plugin_folder)
