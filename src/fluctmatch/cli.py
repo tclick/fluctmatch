@@ -46,7 +46,7 @@ from fluctmatch import click_loguru
 @click_extra.extra_group(name="fluctmatch", help=__copyright__)
 @click_loguru.stash_subcommand()
 @click_extra.extra_version_option(version=__version__)
-def main(verbose, quiet, logfile, profile_mem) -> None:
+def main(verbose: bool, quiet: bool, logfile: bool, profile_mem: bool) -> None:
     """Console script for fluctmatch."""
     unused_str = f"verbose: {verbose} quiet: {quiet}" + f" logfile: {logfile} profile_mem: {profile_mem}"
     del unused_str
