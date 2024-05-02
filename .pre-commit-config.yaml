@@ -57,14 +57,6 @@ repos:
         language: system
         types: [python]
         stages: [manual]
-  - repo: https://github.com/pycqa/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        require_serial: true
-        types: [python]
-        args: ["--darglint-ignore-regex", ".*"]
-        additional_dependencies: [darglint, flake8-docstrings, flake8-pyproject]
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.15.2
     hooks:
@@ -72,15 +64,18 @@ repos:
         types:
           - python
         args: ["--py311-plus"]
-  - repo: https://github.com/psf/black
-    rev: 24.4.2
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.4.2
     hooks:
-      - id: black
-  - repo: local
+      # Run the linter.
+      - id: ruff
+        args: [ --fix ]
+      # Run the formatter.
+      - id: ruff-format
+  - repo: https://github.com/DetachHead/basedpyright
+    rev: v1.11.0
     hooks:
-      - id: basedpyright
-        name: basedpyright
-        entry: poetry run basedpyright
-        language: system
-        pass_filenames: false
-        types: [ python ]
+    - id: basedpyright
+      language: system
+      types: [ python ]
