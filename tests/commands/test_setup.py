@@ -34,17 +34,15 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Self
 
 import pytest
 from click.testing import CliRunner
 
-from fluctmatch.commands.setup import setup
-
-
-# from fluctmatch.libs import utils
-#
-# from ..datafile import TPR, XTC
+from fluctmatch.cli import main
+from ..datafile import TPR
+from ..datafile import XTC
 
 
 class TestSetup:
@@ -73,7 +71,94 @@ class TestSetup:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(setup, ["-h"])
+        result = cli_runner.invoke(main, ["-h"])
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
+
+    @pytest.mark.parametrize("winsize", [5, 10, 100])
+    def test_setup(self, cli_runner: CliRunner, winsize: int) -> None:
+        """Test subcommand in an isolated filesystem.
+
+        GIVEN an output subdirectory
+        WHEN invoking the setup subcommand
+        THEN the subcommand will complete successfully.
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            CLI runner
+        winsize : int
+            window size
+        mocker
+            mock object
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            outdir = tmp_path / "test"
+            json_file = tmp_path / "setup.json"
+
+            result = cli_runner.invoke(
+                main,
+                [
+                    "setup",
+                    "-s",
+                    TPR,
+                    "-f",
+                    XTC,
+                    "-o",
+                    outdir.as_posix(),
+                    "--json",
+                    json_file.as_posix(),
+                    "-w",
+                    f"{winsize}",
+                    "--verbosity",
+                    "DEBUG",
+                ],
+            )
+
+            assert json_file.exists()
+            assert json_file.stat().st_size > 0
+            assert outdir.exists()
+            assert outdir.is_dir()
+            assert result.exit_code == os.EX_OK
+
+    def test_wrong_winsize(self, cli_runner: CliRunner) -> None:
+        """Test subcommand in an isolated filesystem.
+
+        GIVEN a large window size
+        WHEN invoking the setup subcommand
+        THEN an exception is raised
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            CLI runner
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            outdir = tmp_path / "test"
+            json_file = tmp_path / "setup.csv"
+
+            result = cli_runner.invoke(
+                main,
+                [
+                    "setup",
+                    "-s",
+                    TPR,
+                    "-f",
+                    XTC,
+                    "-o",
+                    outdir.as_posix(),
+                    "--json",
+                    json_file.as_posix(),
+                    "-w",
+                    "200",
+                    "--verbosity",
+                    "DEBUG",
+                ],
+            )
+
+            assert isinstance(result.exception, ValueError)
+            assert result.exit_code != os.EX_OK
+            assert not json_file.exists()

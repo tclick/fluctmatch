@@ -33,8 +33,15 @@
 """Prepare subdirectories for fluctuation matching."""
 from __future__ import annotations
 
+import json
+from itertools import zip_longest
+from pathlib import Path
+
+import MDAnalysis as mda
 import click
 import click_extra
+
+from loguru import logger
 
 from fluctmatch import __copyright__
 from fluctmatch import click_loguru
@@ -46,17 +53,57 @@ from fluctmatch import click_loguru
 )
 @click_loguru.init_logger()
 @click_loguru.log_elapsed_time(level="info")
-@click.help_option()
+@click.option(
+    "-s",
+    "--topology",
+    metavar="FILE",
+    default=Path.cwd().joinpath("input.parm7"),
+    show_default=True,
+    type=click_extra.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Topology file",
+)
+@click.option(
+    "-f",
+    "--trajectory",
+    metavar="FILE",
+    default=Path.cwd().joinpath("input.nc"),
+    show_default=True,
+    type=click_extra.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    help="Trajectory file",
+)
+@click.option(
+    "-o",
+    "--outdir",
+    metavar="DIR",
+    default=Path.cwd().joinpath("fluctmatch"),
+    show_default=True,
+    type=click_extra.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
+    help="Parent directory",
+)
+@click.option(
+    "-w",
+    "--winsize",
+    metavar="WINSIZE",
+    show_default=True,
+    default=10000,
+    type=click_extra.IntRange(min=2, max_open=True, clamp=True),
+    help="Size of each window",
+)
+@click.option(
+    "--json",
+    "windows_output",
+    metavar="JSON",
+    show_default=True,
+    default=Path.cwd().joinpath("setup.json"),
+    type=click_extra.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    help="JSON file",
+)
 def setup(
-    # self: Self,
-    # topology: Path,
-    # trajectory: Path,
-    # outdir: Path,
-    # logfile: Path,
-    # winsize: int,
-    # windows_output: Path,
-    # nthreads: int,
-    # verbose: str,
+    topology: Path,
+    trajectory: Path,
+    outdir: Path,
+    winsize: int,
+    windows_output: Path,
 ) -> None:
     """Create simulation directories.
 
@@ -74,9 +121,40 @@ def setup(
         Window size
     windows_output : Path, default=$CWD/setup.json
         JSON file
-    nthreads : int, default=4
-        Number of threads
-    verbose : str, default=INFO
-        Level of verbosity for logging output
     """
     click_extra.echo(__copyright__)
+
+    n_frames = mda.Universe(topology, trajectory).trajectory.n_frames
+    if winsize > n_frames:
+        msg = f"Window size is larger than the number of frames. ({winsize} > {n_frames})"
+        raise ValueError(msg)
+    if winsize == n_frames:
+        logger.warning("Window size is equivalent to the number of frames. You will only have one subdirectory.")
+
+    half_size = winsize // 2
+    total_windows = (n_frames // half_size) - 1
+
+    start = 1 if trajectory.suffix == ".trr" or trajectory.suffix == ".xtc" or trajectory.suffix == ".tng" else 0
+    stop = n_frames + 1
+    beginning = range(start, stop, half_size)
+    end = range(start + winsize, stop, half_size)
+    logger.debug(f"start: {start}; stop: {stop}; half_size: {half_size}; total_windows: {total_windows}")
+
+    # Create directories for fluctuation matching
+    trajectory_range = zip_longest(beginning, end)
+    width = len(str(total_windows))
+    ranges = {
+        str(outdir / f"{n:>0{width}d}"): {"start": i, "stop": j}
+        for n, (i, j) in enumerate(trajectory_range, 1)
+        if j is not None
+    }
+
+    # Create the parent subdirectory
+    with windows_output.open(mode="w", newline="") as json_file:
+        print(f"Writing {windows_output}")
+        logger.info(f"Writing {windows_output}")
+        json.dump(ranges, json_file)
+
+    # Create subdirectories
+    for subdirectory in ranges.keys():
+        Path(subdirectory).mkdir(parents=True, exist_ok=True)
