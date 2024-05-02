@@ -71,7 +71,7 @@ class TestSetup:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, ["-h"])
+        result = cli_runner.invoke(main, ["setup", "-h"])
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
