@@ -11,7 +11,6 @@
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](ruff)
 [ [MDAnalysis](https://img.shields.io/badge/Powered%20by-MDAnalysis-orange.svg)][mdanalysis]
 
 [pypi status]: https://pypi.org/project/fluctmatch/
@@ -20,7 +19,6 @@
 [codecov]: https://app.codecov.io/gh/tclick/fluctmatch
 [pre-commit]: https://github.com/pre-commit/pre-commit
 [black]: https://github.com/psf/black
-[ruff]: https://github.com/astral-sh/ruff
 [mdanalysis]: https://www.mdanalysis.org
 
 ## Introduction
