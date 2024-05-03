@@ -30,7 +30,9 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportArgumentType = false
 """Test for mdsetup.commands.cmd_setup subcommand."""
+
 from __future__ import annotations
 
 import os
@@ -39,10 +41,9 @@ from typing import Self
 
 import pytest
 from click.testing import CliRunner
-
 from fluctmatch.cli import main
-from ..datafile import TPR
-from ..datafile import XTC
+
+from ..datafile import TPR, XTC
 
 
 class TestSetup:

@@ -30,7 +30,9 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportArgumentType = false
 """Test cases for the __main__ module."""
+
 import os
 
 import pytest
@@ -41,7 +43,7 @@ from fluctmatch.cli import main
 class TestMain:
     """Run test for main command."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def cli_runner(self) -> CliRunner:
         """Fixture for running the main command."""
         return CliRunner()
