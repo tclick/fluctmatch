@@ -72,7 +72,7 @@ class TestSetup:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, ["setup", "-h"])
+        result = cli_runner.invoke(main, "setup -h".split())
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
@@ -100,22 +100,7 @@ class TestSetup:
             json_file = tmp_path / "setup.json"
 
             result = cli_runner.invoke(
-                main,
-                [
-                    "setup",
-                    "-s",
-                    TPR,
-                    "-f",
-                    XTC,
-                    "-o",
-                    outdir.as_posix(),
-                    "--json",
-                    json_file.as_posix(),
-                    "-w",
-                    f"{winsize}",
-                    "--verbosity",
-                    "DEBUG",
-                ],
+                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w {winsize}".split()
             )
 
             assert json_file.exists()
@@ -141,24 +126,7 @@ class TestSetup:
             outdir = tmp_path / "test"
             json_file = tmp_path / "setup.csv"
 
-            result = cli_runner.invoke(
-                main,
-                [
-                    "setup",
-                    "-s",
-                    TPR,
-                    "-f",
-                    XTC,
-                    "-o",
-                    outdir.as_posix(),
-                    "--json",
-                    json_file.as_posix(),
-                    "-w",
-                    "200",
-                    "--verbosity",
-                    "DEBUG",
-                ],
-            )
+            result = cli_runner.invoke(main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w 200".split())
 
             assert isinstance(result.exception, ValueError)
             assert result.exit_code != os.EX_OK
