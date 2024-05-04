@@ -36,11 +36,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Self
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+
+from ..datafile import TPR, XTC
 
 
 class TestAlign:
@@ -69,7 +72,34 @@ class TestAlign:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, ["align", "-h"])
+        result = cli_runner.invoke(main, "align -h".split())
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
+
+    def test_align(self, cli_runner: CliRunner) -> None:
+        """Test the alignment of a trajectory.
+
+        GIVEN the align subcommand
+        WHEN a topology and trajectory file are provided
+        THEN a new trajectory file should be written
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            Command-line cli_runner
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            log_file = tmp_path / "align.log"
+            align = tmp_path / f"aligned_{Path(XTC).name}"
+
+            result = cli_runner.invoke(
+                main, f"align -s {TPR} -f {XTC} -r {XTC} -o {ifs} -l {log_file} -t backbone --mass".split()
+            )
+
+            assert result.exit_code == os.EX_OK
+            assert log_file.exists()
+            assert log_file.stat().st_size > 0
+            assert align.exists()
+            assert align.stat().st_size > 0
