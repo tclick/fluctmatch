@@ -31,35 +31,30 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Prepare subdirectories for fluctuation matching."""
+
 from __future__ import annotations
 
 import json
 from itertools import zip_longest
 from pathlib import Path
 
-import MDAnalysis as mda
 import click
-import click_extra
+import MDAnalysis as mda
 
-from loguru import logger
-
-from fluctmatch import __copyright__
-from fluctmatch import click_loguru
+from fluctmatch import __copyright__, config_logger
 
 
-@click_extra.extra_command(
+@click.command(
     help=f"{__copyright__}\nCreate simulation directories.",
     short_help="Create directories for fluctuation matching",
 )
-@click_loguru.init_logger()
-@click_loguru.log_elapsed_time(level="info")
 @click.option(
     "-s",
     "--topology",
     metavar="FILE",
     default=Path.cwd().joinpath("input.parm7"),
     show_default=True,
-    type=click_extra.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
     help="Topology file",
 )
 @click.option(
@@ -68,7 +63,7 @@ from fluctmatch import click_loguru
     metavar="FILE",
     default=Path.cwd().joinpath("input.nc"),
     show_default=True,
-    type=click_extra.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
     help="Trajectory file",
 )
 @click.option(
@@ -77,7 +72,7 @@ from fluctmatch import click_loguru
     metavar="DIR",
     default=Path.cwd().joinpath("fluctmatch"),
     show_default=True,
-    type=click_extra.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
+    type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
     help="Parent directory",
 )
 @click.option(
@@ -86,7 +81,7 @@ from fluctmatch import click_loguru
     metavar="WINSIZE",
     show_default=True,
     default=10000,
-    type=click_extra.IntRange(min=2, max_open=True, clamp=True),
+    type=click.IntRange(min=2, max_open=True, clamp=True),
     help="Size of each window",
 )
 @click.option(
@@ -95,15 +90,28 @@ from fluctmatch import click_loguru
     metavar="JSON",
     show_default=True,
     default=Path.cwd().joinpath("setup.json"),
-    type=click_extra.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="JSON file",
 )
+@click.option(
+    "-l",
+    "--logfile",
+    metavar="WARNING",
+    show_default=True,
+    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    help="Path to log file",
+)
+@click.option(
+    "-v",
+    "--verbosity",
+    default="INFO",
+    show_default=True,
+    help="Minimum severity level for log messages",
+)
+@click.help_option("-h", "--help", help="Show this help message and exit")
 def setup(
-    topology: Path,
-    trajectory: Path,
-    outdir: Path,
-    winsize: int,
-    windows_output: Path,
+    topology: Path, trajectory: Path, outdir: Path, winsize: int, windows_output: Path, logfile: Path, verbosity: str
 ) -> None:
     """Create simulation directories.
 
@@ -121,12 +129,16 @@ def setup(
         Window size
     windows_output : Path, default=$CWD/setup.json
         JSON file
+    verbosity : str, default=INFO
+        Level of verbosity for logging output
     """
-    click_extra.echo(__copyright__)
+    logger = config_logger(name=__name__, logfile=logfile, level=verbosity)
+    click.echo(__copyright__)
 
     n_frames = mda.Universe(topology, trajectory).trajectory.n_frames
     if winsize > n_frames:
         msg = f"Window size is larger than the number of frames. ({winsize} > {n_frames})"
+        logger.exception(msg)
         raise ValueError(msg)
     if winsize == n_frames:
         logger.warning("Window size is equivalent to the number of frames. You will only have one subdirectory.")
@@ -156,5 +168,5 @@ def setup(
         json.dump(ranges, json_file)
 
     # Create subdirectories
-    for subdirectory in ranges.keys():
+    for subdirectory in ranges:
         Path(subdirectory).mkdir(parents=True, exist_ok=True)

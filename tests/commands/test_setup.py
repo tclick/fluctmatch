@@ -97,12 +97,15 @@ class TestSetup:
         with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
             outdir = tmp_path / "test"
-            json_file = tmp_path / "setup.json"
+            log_file = outdir / "setup.log"
+            json_file = log_file.with_suffix(".json")
 
             result = cli_runner.invoke(
-                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w {winsize}".split()
+                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}".split()
             )
 
+            assert log_file.exists()
+            assert log_file.stat().st_size > 0
             assert json_file.exists()
             assert json_file.stat().st_size > 0
             assert outdir.exists()
@@ -124,10 +127,15 @@ class TestSetup:
         with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
             outdir = tmp_path / "test"
-            json_file = tmp_path / "setup.csv"
+            log_file = outdir / "setup.log"
+            json_file = log_file.with_suffix(".json")
 
-            result = cli_runner.invoke(main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w 200".split())
+            result = cli_runner.invoke(
+                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w 200 -l {log_file}".split()
+            )
 
             assert isinstance(result.exception, ValueError)
             assert result.exit_code != os.EX_OK
+            assert log_file.exists()
+            assert log_file.stat().st_size > 0
             assert not json_file.exists()
