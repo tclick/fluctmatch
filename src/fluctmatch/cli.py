@@ -32,24 +32,30 @@
 # ------------------------------------------------------------------------------
 # pyright: reportArgumentType=false
 """Module that contains the command line app."""
+
 from pathlib import Path
 
 import ccl
-import click_extra
+import click
+from click_help_colors import HelpColorsGroup, version_option
 
-from fluctmatch import __copyright__
-from fluctmatch import __version__
-from fluctmatch import click_loguru
+from fluctmatch import NAME, __copyright__, __version__
 
 
-@click_loguru.logging_options
-@click_extra.extra_group(name="fluctmatch", help=__copyright__)
-@click_loguru.stash_subcommand()
-@click_extra.extra_version_option(version=__version__)
-def main(verbose: bool, quiet: bool, logfile: bool, profile_mem: bool) -> None:
+@click.group(
+    name="fluctmatch",
+    help=__copyright__,
+    cls=HelpColorsGroup,
+    help_headers_color="yellow",
+    help_options_color="blue",
+    context_settings={"max_content_width": 120},
+)
+@version_option(
+    version=__version__, prog_name=NAME, version_color="blue", prog_name_color="yellow", message="%(prog)s %(version)s"
+)
+def main() -> None:
     """Console script for fluctmatch."""
-    unused_str = f"verbose: {verbose} quiet: {quiet}" + f" logfile: {logfile} profile_mem: {profile_mem}"
-    del unused_str
+    pass
 
 
 plugin_folder = Path(__file__).parent.joinpath("commands").resolve()

@@ -32,17 +32,20 @@
 # ------------------------------------------------------------------------------
 """Fluctuation Matching."""
 
+import getpass
+import logging
+import sys
 from pathlib import Path
-from typing import ParamSpec
-from typing import TYPE_CHECKING
-from typing import TypeVar
+from typing import TYPE_CHECKING, ParamSpec, TypeVar
 
-from click_loguru import ClickLoguru
+from loguru import logger
+from loguru_logging_intercept import setup_loguru_logging_intercept
 
 if TYPE_CHECKING:
-    pass
+    from loguru import Logger
 else:
-    pass
+    from loguru import logger as Logger  # noqa: N812
+
 
 NAME = "fluctmatch"
 T = TypeVar("T")
@@ -63,13 +66,43 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-click_loguru = ClickLoguru(
-    name=NAME,
-    version=__version__,
-    retention=None,
-    file_log_level="DEBUG",  # Log debug level to file
-    stderr_log_level="INFO",  # Log info level to console
-    stderr_format_func="{time:YYYY-MM-DD at HH:mm:ss} | {level} | {message}",
-    log_dir_parent=Path.cwd() / "logs",
-    timer_log_level="info",
-)
+
+def config_logger(name: str, logfile: str | Path | None = None, level: str | int = "INFO") -> Logger:
+    """Configure logger.
+
+    Parameters
+    ----------
+    name : str
+        name associated with the logger
+    logfile: str or Path, optional
+        name of log file
+    level : str
+        minimum level for logging
+
+    Returns
+    -------
+    Logger
+        logging object
+    """
+    config = {
+        "handlers": [
+            {
+                "sink": sys.stderr,
+                "format": "{time:YYYY-MM-DD HH:mm} | <level>{level.name}</level> | {message}",
+                "colorize": True,
+                "level": level,
+                "backtrace": True,
+                "diagnose": True,
+            },
+        ],
+        "extra": {"user": getpass.getuser()},
+    }
+    if logfile is not None:
+        config["handlers"].append(
+            {"sink": logfile, "format": "{time:YYYY-MM-DD HH:mm} | {level} | {message}", "level": level},
+        )
+
+    logger.remove()
+    logger.configure(**config)
+    setup_loguru_logging_intercept(level=logging.DEBUG, modules=f"root {name}".split())
+    return logger.bind(name=name, user=getpass.getuser())
