@@ -31,6 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Various data files for testing."""
+
 from importlib import resources
 
 _data_ref = resources.files("tests.data")
