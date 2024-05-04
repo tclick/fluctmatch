@@ -28,10 +28,10 @@ Changelog = "https://github.com/tclick/fluctmatch/releases"
 [tool.poetry.dependencies]
 python = ">=3.11, <4.0"
 aiofiles = "*"
-click-extra = ">=4.6"
-click-loguru = "*"
+click-help-colors = "*"
 clickloader="*"
 loguru = "*"
+loguru-logging-intercept = "*"
 MDAnalysis = { extras = ["analysis"], version = ">=2.6, <3.0" }
 netcdf4 = "*"
 phx-class-registry = "*"
