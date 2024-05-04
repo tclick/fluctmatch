@@ -53,6 +53,7 @@ from fluctmatch import NAME, __copyright__, __version__
 @version_option(
     version=__version__, prog_name=NAME, version_color="blue", prog_name_color="yellow", message="%(prog)s %(version)s"
 )
+@click.help_option("-h", "--help", help="Show this help message and exit")
 def main() -> None:
     """Console script for fluctmatch."""
     pass
