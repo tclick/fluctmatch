@@ -30,21 +30,59 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-"""Fluctuation Matching."""
+"""Logging module."""
 
-NAME = "fluctmatch"
-__version__: str = "4.0.0a0"
-__copyright__: str = """Copyright (C) 2013-2024 Timothy H. Click <thclick@umary.edu>
+from __future__ import annotations
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, version 3 of the License.
+import getpass
+import logging
+import sys
+from pathlib import Path
+from typing import TYPE_CHECKING
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+from loguru import logger
+from loguru_logging_intercept import setup_loguru_logging_intercept
 
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
+if TYPE_CHECKING:
+    from loguru import Logger
+
+
+def config_logger(name: str, logfile: str | Path | None = None, level: str | int = "INFO") -> Logger:
+    """Configure logger.
+
+    Parameters
+    ----------
+    name : str
+        name associated with the logger
+    logfile: str or Path, optional
+        name of log file
+    level : str
+        minimum level for logging
+
+    Returns
+    -------
+    Logger
+        logging object
+    """
+    config = {
+        "handlers": [
+            {
+                "sink": sys.stderr,
+                "format": "{time:YYYY-MM-DD HH:mm} | <level>{level.name}</level> | {message}",
+                "colorize": True,
+                "level": level,
+                "backtrace": True,
+                "diagnose": True,
+            },
+        ],
+        "extra": {"user": getpass.getuser()},
+    }
+    if logfile is not None:
+        config["handlers"].append(
+            {"sink": logfile, "format": "{time:YYYY-MM-DD HH:mm} | {level} | {message}", "level": level},
+        )
+
+    logger.remove()
+    logger.configure(**config)
+    setup_loguru_logging_intercept(level=logging.DEBUG, modules=f"root {name}".split())
+    return logger.bind(name=name, user=getpass.getuser())
