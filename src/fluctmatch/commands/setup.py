@@ -41,7 +41,8 @@ from pathlib import Path
 import click
 import MDAnalysis as mda
 
-from fluctmatch import __copyright__, config_logger
+from fluctmatch import __copyright__
+from fluctmatch.libs.logging import config_logger
 
 
 @click.command(
