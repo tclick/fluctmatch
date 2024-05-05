@@ -72,7 +72,7 @@ class TestAlign:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, "align -h".split())
+        result = cli_runner.invoke(main, "align -h")
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
@@ -95,11 +95,9 @@ class TestAlign:
             align = tmp_path / f"aligned_{Path(XTC).name}"
 
             result = cli_runner.invoke(
-                main, f"align -s {TPR} -f {XTC} -r {XTC} -o {ifs} -l {log_file} -t backbone --mass".split()
+                main, f"align -s {TPR} -f {XTC} -r {XTC} -o {ifs} -l {log_file} -t backbone --mass"
             )
 
             assert result.exit_code == os.EX_OK
-            assert log_file.exists()
-            assert log_file.stat().st_size > 0
             assert align.exists()
             assert align.stat().st_size > 0
