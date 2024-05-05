@@ -184,14 +184,14 @@ def pyright(sessions: Session) -> None:
 def tests(sessions: Session) -> None:
     """Run the test suite."""
     sessions.install(".")
-    sessions.install("coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
+    sessions.install(
+        "coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock", "pytest-cov", "MDAnalysisTests"
+    )
     try:
         sessions.run(
-            "coverage",
-            "run",
-            "--parallel",
-            "-m",
             "pytest",
+            "--cov=src",
+            "--cov-report=xml",
             "--random-order",
             "--disable-pytest-warnings",
             *sessions.posargs,
