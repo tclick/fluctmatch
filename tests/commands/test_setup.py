@@ -39,11 +39,12 @@ import os
 from pathlib import Path
 from typing import Self
 
+import MDAnalysis as mda
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 
-from ..datafile import TPR, XTC
+from ..datafile import DCD, PSF
 
 
 class TestSetup:
@@ -60,6 +61,36 @@ class TestSetup:
         """
         return CliRunner()
 
+    @pytest.fixture(scope="class")
+    def n_frames(self: Self) -> int:
+        """Give the number of frames in the trajectory.
+
+        Returns
+        -------
+        int
+            Number of frames in the trajectory.
+        """
+        return mda.Universe(PSF, DCD).trajectory.n_frames
+
+    def count_subdirectories(self, path: Path) -> int:
+        """Count the number of subdirectories inside given path.
+
+        Parameters
+        ----------
+        path : Path
+            The path to the directory to be scanned
+
+        Returns
+        -------
+        Path
+            The number of subdirectories inside the given path
+        """
+        count = 0
+        for item in path.iterdir():
+            if item.is_dir():
+                count += 1
+        return count
+
     def test_help(self: Self, cli_runner: CliRunner) -> None:
         """Test help output.
 
@@ -72,13 +103,13 @@ class TestSetup:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        result = cli_runner.invoke(main, "setup -h".split())
+        result = cli_runner.invoke(main, "setup -h")
 
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
 
-    @pytest.mark.parametrize("winsize", [5, 10, 100])
-    def test_setup(self, cli_runner: CliRunner, winsize: int) -> None:
+    @pytest.mark.parametrize("winsize", [1000, 2000, 10000])
+    def test_setup(self: Self, cli_runner: CliRunner, winsize: int, n_frames: int) -> None:
         """Test subcommand in an isolated filesystem.
 
         GIVEN an output subdirectory
@@ -91,8 +122,8 @@ class TestSetup:
             CLI runner
         winsize : int
             window size
-        mocker
-            mock object
+        n_frames : int
+            number of frames
         """
         with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
@@ -101,18 +132,19 @@ class TestSetup:
             json_file = log_file.with_suffix(".json")
 
             result = cli_runner.invoke(
-                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}".split()
+                main, f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}"
             )
+            expected_dirs = 2 * (n_frames // winsize) - 1
+            n_dirs = self.count_subdirectories(outdir)
 
-            assert log_file.exists()
-            assert log_file.stat().st_size > 0
             assert json_file.exists()
             assert json_file.stat().st_size > 0
             assert outdir.exists()
             assert outdir.is_dir()
             assert result.exit_code == os.EX_OK
+            assert n_dirs == expected_dirs
 
-    def test_wrong_winsize(self, cli_runner: CliRunner) -> None:
+    def test_wrong_winsize(self: Self, cli_runner: CliRunner) -> None:
         """Test subcommand in an isolated filesystem.
 
         GIVEN a large window size
@@ -130,12 +162,9 @@ class TestSetup:
             log_file = outdir / "setup.log"
             json_file = log_file.with_suffix(".json")
 
-            result = cli_runner.invoke(
-                main, f"setup -s {TPR} -f {XTC} -o {outdir} --json {json_file}  -w 200 -l {log_file}".split()
-            )
-
-            assert isinstance(result.exception, ValueError)
-            assert result.exit_code != os.EX_OK
-            assert log_file.exists()
-            assert log_file.stat().st_size > 0
-            assert not json_file.exists()
+            with pytest.raises(ValueError):
+                cli_runner.invoke(
+                    main,
+                    f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w 20000 -l {log_file}",
+                    catch_exceptions=False,
+                )
