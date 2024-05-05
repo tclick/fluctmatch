@@ -92,7 +92,7 @@ source = ["fluctmatch", "tests"]
 show_missing = true
 skip_empty = true
 fail_under = 70
-omit = ["__main__.py", "commands/__init__.py"]
+omit = ["__main__.py"]
 
 [tool.flake8]
 max-line-length = 120
@@ -217,6 +217,8 @@ ignore = [
     "N813",
     # Too many arguments to function call
     "PLR0913",
+    # pytest.raises is too broad
+    "PT011",
 ]
 
 [tool.ruff.lint.per-file-ignores]
