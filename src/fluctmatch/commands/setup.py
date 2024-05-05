@@ -40,14 +40,19 @@ from pathlib import Path
 
 import click
 import MDAnalysis as mda
+from click_help_colors import HelpColorsCommand
 
 from fluctmatch import __copyright__
 from fluctmatch.libs.logging import config_logger
 
 
 @click.command(
+    cls=HelpColorsCommand,
     help=f"{__copyright__}\nCreate simulation directories.",
     short_help="Create directories for fluctuation matching",
+    help_headers_color="yellow",
+    help_options_color="blue",
+    context_settings={"max_content_width": 120},
 )
 @click.option(
     "-s",
