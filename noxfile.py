@@ -140,16 +140,8 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 @session(name="pre-commit", python=python_versions[0])
 def precommit(session: Session) -> None:
     """Lint using pre-commit."""
-    args = session.posargs or [
-        "run",
-        "--all-files",
-        "--hook-stage=manual",
-        "--show-diff-on-failure",
-    ]
-    session.install(
-        "pre-commit",
-        "pre-commit-hooks",
-    )
+    args = session.posargs or "run --all-files --hook-stage=manual --show-diff-on-failure".split()
+    session.run(*"poetry install".split(), external=True)
     session.run("pre-commit", *args)
     if args and args[0] == "install":
         activate_virtualenv_in_precommit_hooks(session)
@@ -160,45 +152,38 @@ def safety(session: Session) -> None:
     """Scan dependencies for insecure packages."""
     requirements = session.poetry.export_requirements()
     session.install("safety")
-    session.run("safety", "check", "--full-report", f"--file={requirements}")
+    session.run(*f"safety check --full-report --file={requirements}".split())
 
 
 @session(python=python_versions)
-def pyright(sessions: Session) -> None:
+def pyright(session: Session) -> None:
     """Type-check using pyright.
 
     Parameters
     ----------
-    sessions: Session
+    session: Session
         The Session object.
     """
-    args = sessions.posargs or ["src", "tests", "docs/conf.py"]
-    sessions.install(".")
-    sessions.install("basedpyright", "pytest", "pytest-mock", "MDAnalysisTests")
-    sessions.run("pyright", *args)
-    if not sessions.posargs:
-        sessions.run("basedpyright", f"--pythonpath={sys.executable}", "noxfile.py")
+    args = session.posargs or f"-p pyproject.toml --pythonversion {session.python} src tests docs/conf.py".split()
+    session.install(".")
+    session.run(*"poetry install".split(), external=True)
+    session.run("basedpyright", *args)
+    if not session.posargs:
+        session.run("basedpyright", f"--pythonpath={sys.executable}", "noxfile.py")
 
 
 @session(python=python_versions)
-def tests(sessions: Session) -> None:
+def tests(session: Session) -> None:
     """Run the test suite."""
-    sessions.install(".")
-    sessions.install(
-        "coverage[toml]", "pytest", "pygments", "pytest-random-order", "pytest-mock", "pytest-cov", "MDAnalysisTests"
-    )
+    args = "--cov src --cov-report=xml --cov-config=pyproject.toml --random-order --disable-pytest-warnings".split()
+    session.install(".")
+    session.run(*"poetry install".split(), external=True)
+
     try:
-        sessions.run(
-            "pytest",
-            "--cov=src",
-            "--cov-report=xml",
-            "--random-order",
-            "--disable-pytest-warnings",
-            *sessions.posargs,
-        )
+        session.run("pytest", *args, *session.posargs)
     finally:
-        if sessions.interactive:
-            sessions.notify("coverage", posargs=[])
+        if session.interactive:
+            session.notify("coverage", posargs=[])
 
 
 @session(python=python_versions[0])
@@ -217,11 +202,10 @@ def coverage(session: Session) -> None:
 @session(python=python_versions[0])
 def typeguard(sessions: Session) -> None:
     """Runtime type checking using Typeguard."""
+    args = f"--typeguard-packages={package} --random-order --disable-pytest-warnings".split()
     sessions.install(".")
-    sessions.install("pytest", "typeguard", "pygments", "pytest-random-order", "pytest-mock", "MDAnalysisTests")
-    sessions.run(
-        "pytest", f"--typeguard-packages={package}", "--random-order", "--disable-pytest-warnings", *sessions.posargs
-    )
+    sessions.run(*"poetry install".split(), external=True)
+    sessions.run("pytest", *args, *sessions.posargs)
 
 
 @session(python=python_versions)
