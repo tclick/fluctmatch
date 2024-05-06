@@ -31,3 +31,13 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Fluctuation matching subcommands."""
+
+import stat
+
+from loguru import logger
+
+logger.debug("Initializing commands module.")
+
+# Grants read-write permissions for the owner along with the sticky bit permission.
+# Grants read-only access for group members and others.
+FILE_MODE = stat.S_ISUID | stat.S_ISVTX | stat.S_IRWXU | stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH

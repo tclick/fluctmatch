@@ -43,6 +43,7 @@ import MDAnalysis as mda
 from click_help_colors import HelpColorsCommand
 
 from fluctmatch import __copyright__
+from fluctmatch.commands import FILE_MODE
 from fluctmatch.libs.logging import config_logger
 
 
@@ -175,4 +176,4 @@ def setup(
 
     # Create subdirectories
     for subdirectory in ranges:
-        Path(subdirectory).mkdir(parents=True, exist_ok=True)
+        Path(subdirectory).mkdir(parents=True, exist_ok=True, mode=FILE_MODE)
