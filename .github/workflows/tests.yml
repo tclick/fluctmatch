@@ -78,7 +78,7 @@ jobs:
         run: poetry run nox -r --python=${{ matrix.python }} --session=${{ matrix.session }}
 
       - name: Upload coverage data
-        if: matrix.session == 'tests' && matrix.python == '3.12'
+        if: ${{ always() }} && ${{ matrix.session }} == 'tests' && ${{ matrix.python }} == '3.12'
         uses: "actions/upload-artifact@v4"
         with:
           name: coverage-data
