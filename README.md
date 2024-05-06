@@ -10,7 +10,7 @@
 [![Codecov](https://codecov.io/gh/tclick/fluctmatch/branch/main/graph/badge.svg)][codecov]
 
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)][pre-commit]
-[![Black](https://img.shields.io/badge/code%20style-black-000000.svg)][black]
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](ruff)
 [ [MDAnalysis](https://img.shields.io/badge/Powered%20by-MDAnalysis-orange.svg)][mdanalysis]
 
 [pypi status]: https://pypi.org/project/fluctmatch/
@@ -18,7 +18,7 @@
 [tests]: https://github.com/tclick/fluctmatch/actions?workflow=Tests
 [codecov]: https://app.codecov.io/gh/tclick/fluctmatch
 [pre-commit]: https://github.com/pre-commit/pre-commit
-[black]: https://github.com/psf/black
+[ruff]: https://github.com/astral-sh/ruff
 [mdanalysis]: https://www.mdanalysis.org
 
 ## Introduction
@@ -39,16 +39,28 @@ the directory structure was such that all average structures were used to
 determine the springs available within the system. The current code base as been
 completely retooled allowing for easier definitions of additional coarse-grain
 models, additions to analysis, and implementation of other MD packages. Because
-MDAnalysis 0.16.2+ has also been employed (compared with 0.10.0 for fluctmatch
+MDAnalysis 2.0+ has also been employed (compared with 0.10.0 for fluctmatch
 2.0), greater improvements have been made in the efficiency of the code.
 
 ## Features
 
-- TODO
+- Align trajectories to a reference to remove translation and rotation.
+- Create initial subdirectories for each window of fluctuation matching.
+- Convert an all-atom molecular dynamics (MD) trajectory to a coarse-grain (CG) model.
+- Create the topology files to represent the elastic network model (ENM).
+- Run fluctuation matching for each window.
+- Analyze the data per window.
+- Combine the data into a table for further analysis.
+- Perform JADE independent component analysis (ICA) on the accumulated data.
+- Perform cluster analysis of the data.
 
 ## Requirements
 
-- Python >3.10
+- Python >=3.11
+- MDAnalysis >= 2.0
+- click
+- loguru
+- pandas
 
 ## Installation
 
