@@ -67,7 +67,7 @@ nox.options.sessions = (
 )
 
 
-def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
+def activate_virtualenv_in_precommit_hooks(sessions: Session) -> None:
     """Activate virtualenv in hooks installed by pre-commit.
 
     This function patches git hooks installed by pre-commit to activate the
@@ -75,18 +75,18 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
     that environment when invoked from git.
 
     Args:
-        session: The Session object.
+        sessions: The Session object.
     """
-    assert session.bin is not None  # nosec
+    assert sessions.bin is not None  # nosec
 
     # Only patch hooks containing a reference to this session's bindir. Support
     # quoting rules for Python and bash, but strip the outermost quotes so we
     # can detect paths within the bindir, like <bindir>/python.
     bindirs = [
-        bindir[1:-1] if bindir[0] in "'\"" else bindir for bindir in (repr(session.bin), shlex.quote(session.bin))
+        bindir[1:-1] if bindir[0] in "'\"" else bindir for bindir in (repr(sessions.bin), shlex.quote(sessions.bin))
     ]
 
-    virtualenv = session.env.get("VIRTUAL_ENV")
+    virtualenv = sessions.env.get("VIRTUAL_ENV")
     if virtualenv is None:
         return
 
@@ -96,19 +96,19 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
             import os
             os.environ["VIRTUAL_ENV"] = {virtualenv!r}
             os.environ["PATH"] = os.pathsep.join((
-                {session.bin!r},
+                {sessions.bin!r},
                 os.environ.get("PATH", ""),
             ))
             """,
         # pre-commit >= 2.16.0
         "bash": f"""\
             VIRTUAL_ENV={shlex.quote(virtualenv)}
-            PATH={shlex.quote(session.bin)}"{os.pathsep}$PATH"
+            PATH={shlex.quote(sessions.bin)}"{os.pathsep}$PATH"
             """,
         # pre-commit >= 2.17.0 on Windows forces sh shebang
         "/bin/sh": f"""\
             VIRTUAL_ENV={shlex.quote(virtualenv)}
-            PATH={shlex.quote(session.bin)}"{os.pathsep}$PATH"
+            PATH={shlex.quote(sessions.bin)}"{os.pathsep}$PATH"
             """,
     }
 
@@ -138,117 +138,113 @@ def activate_virtualenv_in_precommit_hooks(session: Session) -> None:
 
 
 @session(name="pre-commit", python=python_versions[0])
-def precommit(session: Session) -> None:
+def precommit(sessions: Session) -> None:
     """Lint using pre-commit."""
-    args = session.posargs or "run --all-files --hook-stage=manual --show-diff-on-failure".split()
-    session.run(*"poetry install".split(), external=True)
-    session.run("pre-commit", *args)
+    args = sessions.posargs or "run --all-files --hook-stage=manual --show-diff-on-failure".split()
+    sessions.install(".")
+    sessions.run("pre-commit", *args, external=True)
     if args and args[0] == "install":
         activate_virtualenv_in_precommit_hooks(session)
 
 
 @session(python=python_versions[0])
-def safety(session: Session) -> None:
+def safety(sessions: Session) -> None:
     """Scan dependencies for insecure packages."""
-    requirements = session.poetry.export_requirements()
-    session.install("safety")
-    session.run(*f"safety check --full-report --file={requirements}".split())
+    requirements = sessions.poetry.export_requirements()
+    sessions.install(".")
+    sessions.run(*f"safety check --full-report --file={requirements}".split())
 
 
 @session(python=python_versions)
-def pyright(session: Session) -> None:
+def pyright(sessions: Session) -> None:
     """Type-check using pyright.
 
     Parameters
     ----------
-    session: Session
+    sessions: Session
         The Session object.
     """
-    args = session.posargs or f"-p pyproject.toml --pythonversion {session.python} src tests docs/conf.py".split()
-    session.install(".")
-    session.run(*"poetry install".split(), external=True)
-    session.run("basedpyright", *args)
-    if not session.posargs:
-        session.run("basedpyright", f"--pythonpath={sys.executable}", "noxfile.py")
+    args = (
+        sessions.posargs
+        or f"-p pyproject.toml --pythonversion {sessions.python} --pythonpath={sys.executable} src".split()
+    )
+    sessions.install(".")
+    sessions.run("basedpyright", *args)
 
 
 @session(python=python_versions)
-def tests(session: Session) -> None:
+def tests(sessions: Session) -> None:
     """Run the test suite."""
     args = "--cov src --cov-report=xml --cov-config=pyproject.toml --random-order --disable-pytest-warnings".split()
-    session.install(".")
-    session.run(*"poetry install".split(), external=True)
+    sessions.install(".")
 
     try:
-        session.run("pytest", *args, *session.posargs)
+        sessions.run("pytest", *args, *sessions.posargs)
     finally:
-        if session.interactive:
-            session.notify("coverage", posargs=[])
+        if sessions.interactive:
+            sessions.notify("coverage", posargs=[])
 
 
 @session(python=python_versions[0])
-def coverage(session: Session) -> None:
+def coverage(sessions: Session) -> None:
     """Produce the coverage report."""
-    args = session.posargs or ["report"]
+    args = sessions.posargs or ["report"]
 
-    session.install("coverage[toml]")
+    sessions.install("coverage[toml]")
 
-    if not session.posargs and any(Path().glob(".coverage.*")):
-        session.run("coverage", "combine")
+    if not sessions.posargs and any(Path().glob(".coverage.*")):
+        sessions.run("coverage", "combine")
 
-    session.run("coverage", *args)
+    sessions.run("coverage", *args)
 
 
 @session(python=python_versions[0])
 def typeguard(sessions: Session) -> None:
     """Runtime type checking using Typeguard."""
-    args = f"--typeguard-packages={package} --random-order --disable-pytest-warnings".split()
+    args = "--typeguard-packages=all --random-order --disable-pytest-warnings".split()
     sessions.install(".")
-    sessions.run(*"poetry install".split(), external=True)
     sessions.run("pytest", *args, *sessions.posargs)
 
 
 @session(python=python_versions)
-def xdoctest(session: Session) -> None:
+def xdoctest(sessions: Session) -> None:
     """Run examples with xdoctest."""
-    if session.posargs:
-        args = [package, *session.posargs]
+    if sessions.posargs:
+        args = [package, *sessions.posargs]
     else:
         args = [f"--modname={package}", "--command=all"]
         if "FORCE_COLOR" in os.environ:
             args.append("--colored=1")
 
-    session.install(".")
-    session.install("xdoctest[colors]")
-    session.run("python", "-m", "xdoctest", *args)
+    sessions.install(".")
+    sessions.install("xdoctest[colors]")
+    sessions.run("python", "-m", "xdoctest", *args)
 
 
 @session(name="docs-build", python=python_versions[0])
-def docs_build(session: Session) -> None:
+def docs_build(sessions: Session) -> None:
     """Build the documentation."""
-    args = session.posargs or ["docs", "docs/_build"]
-    if not session.posargs and "FORCE_COLOR" in os.environ:
+    args = sessions.posargs or ["docs", "docs/_build"]
+    if not sessions.posargs and "FORCE_COLOR" in os.environ:
         args.insert(0, "--color")
 
-    session.install(".")
-    session.install("sphinx", "sphinx-click", "furo", "myst-parser")
+    sessions.install(".")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    session.run("sphinx-build", *args)
+    sessions.run("sphinx-build", *args)
 
 
 @session(python=python_versions[0])
-def docs(session: Session) -> None:
+def docs(sessions: Session) -> None:
     """Build and serve the documentation with live reloading on file changes."""
-    args = session.posargs or ["--open-browser", "docs", "docs/_build"]
-    session.install(".")
-    session.install("sphinx", "sphinx-autobuild", "sphinx-click", "furo", "myst-parser")
+    args = sessions.posargs or ["--open-browser", "docs", "docs/_build"]
+    sessions.install(".")
 
     build_dir = Path("docs", "_build")
     if build_dir.exists():
         shutil.rmtree(build_dir)
 
-    session.run("sphinx-autobuild", *args)
+    sessions.run("sphinx-autobuild", *args)
