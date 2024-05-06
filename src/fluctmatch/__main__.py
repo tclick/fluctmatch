@@ -33,14 +33,11 @@
 # pyright: reportCallIssue=false
 """Command-line interface."""
 
-import sys
+import warnings
 
 from fluctmatch.cli import main
 
-if not sys.warnoptions:
-    import warnings
-
-    warnings.simplefilter("ignore")
+warnings.simplefilter("default")
 
 
 if __name__ == "__main__":
