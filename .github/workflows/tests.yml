@@ -75,10 +75,10 @@ jobs:
             ${{ steps.pre-commit-cache.outputs.result }}-
 
       - name: Run Nox
-        run: poetry run nox --python=${{ matrix.python }} --session=${{ matrix.session }}
+        run: poetry run nox -r --python=${{ matrix.python }} --session=${{ matrix.session }}
 
       - name: Upload coverage data
-        if: always() && matrix.session == 'tests' && matrix.python == '3.12'
+        if: matrix.session == 'tests' && matrix.python == '3.12'
         uses: "actions/upload-artifact@v4"
         with:
           name: coverage-data
