@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  tests:
+  nox:
     name: ${{ matrix.session }} ${{ matrix.python }} / ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
