@@ -75,7 +75,7 @@ jobs:
             ${{ steps.pre-commit-cache.outputs.result }}-
 
       - name: Run Nox
-        run: poetry run nox --python=${{ matrix.python }}
+        run: poetry run nox --python=${{ matrix.python }} --session=${{ matrix.session }}
 
       - name: Upload coverage data
         if: always() && matrix.session == 'tests' && matrix.python == '3.12'
