@@ -88,12 +88,19 @@ tests = ["tests", "*/tests"]
 [tool.coverage.run]
 branch = true
 source = ["fluctmatch", "tests"]
+omit = ["__main__.py"]
 
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
 fail_under = 70
-omit = ["__main__.py"]
+exclude_also = [
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+    ]
 
 [tool.flake8]
 max-line-length = 120
