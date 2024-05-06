@@ -12,8 +12,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { python: "3.11", os: "ubuntu-latest", session: "tests" }
-          - { python: "3.12", os: "macos-latest", session: "tests" }
+          - { python: "3.12", os: "ubuntu-latest", session: "safety" }
+          - { python: "3.12", os: "ubuntu-latest", session: "typeguard" }
+          - { python: "3.12", os: "ubuntu-latest", session: "xdoctest" }
+          - { python: "3.12", os: "ubuntu-latest", session: "docs-build" }
 
     env:
       NOXSESSION: ${{ matrix.session }}
@@ -72,20 +74,3 @@ jobs:
 
       - name: Run Nox
         run: poetry run nox -r --python=${{ matrix.python }} --session=${{ matrix.session }}
-
-      - name: Upload coverage data
-        if: ${{ always() }} && ${{ matrix.session }} == 'tests' && ${{ matrix.python }} == '3.12'
-        uses: "actions/upload-artifact@v4"
-        with:
-          name: coverage-data
-          path: ".coverage.*"
-
-      - name: Upload Codecov coverage results
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: true # optional (default = false)
-          flags: unittests # optional
-          token: ${{ secrets.CODECOV_TOKEN }} # required
-          verbose: true # optional (default = false)
-          files: ./coverage.xml
-          fail_ci: true
