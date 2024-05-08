@@ -35,6 +35,7 @@
 
 from __future__ import annotations
 
+import filecmp
 import os
 from pathlib import Path
 from typing import Self
@@ -44,7 +45,7 @@ import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 
-from ..datafile import DCD, PSF
+from ..datafile import DCD, JSON, PSF
 
 
 class TestSetup:
@@ -139,6 +140,8 @@ class TestSetup:
 
             assert json_file.exists()
             assert json_file.stat().st_size > 0
+            if winsize == 1000:
+                filecmp.cmp(json_file, JSON, shallow=False)
             assert outdir.exists()
             assert outdir.is_dir()
             assert result.exit_code == os.EX_OK
