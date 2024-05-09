@@ -30,11 +30,11 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportAttributeAccessIssue = false
 """Split a trajectory into smaller trajectories."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -44,6 +44,7 @@ from click_help_colors import HelpColorsCommand
 
 from fluctmatch import __copyright__
 from fluctmatch.libs.logging import config_logger
+from fluctmatch.libs.write_traj import write_trajectory
 
 
 @click.command(
@@ -139,12 +140,13 @@ def split(
         setup_input: dict = json.load(f)
 
     universe = mda.Universe(topology, trajectory)
-    n_atoms = universe.atoms.n_atoms
 
     logger.info("Splitting trajectory into smaller trajectories...")
-    info = ((Path(outdir) / outfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
-    for traj_file, start, stop in info:
-        with mda.Writer(traj_file.as_posix(), n_atoms=n_atoms) as writer:
-            logger.debug(f"Spliting trajectory {start} to {stop} in {traj_file}.")
-            for _ in universe.trajectory[start:stop]:
-                writer.write(universe.atoms)
+    info = ((outdir / outfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
+    tasks = (
+        write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
+        for traj_file, start, stop in info
+    )
+
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(asyncio.gather(*tasks))
