@@ -46,6 +46,7 @@ MDAnalysis 2.0+ has also been employed (compared with 0.10.0 for fluctmatch
 
 - Align trajectories to a reference to remove translation and rotation.
 - Create initial subdirectories for each window of fluctuation matching.
+- Split trajectories with a certain number of frames per trajectory.
 - Convert an all-atom molecular dynamics (MD) trajectory to a coarse-grain (CG) model.
 - Create the topology files to represent the elastic network model (ENM).
 - Run fluctuation matching for each window.
@@ -61,6 +62,8 @@ MDAnalysis 2.0+ has also been employed (compared with 0.10.0 for fluctmatch
 - click
 - loguru
 - pandas
+- parmed
+- CHARMM >= 36
 
 ## Installation
 
