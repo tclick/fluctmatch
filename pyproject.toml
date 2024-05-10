@@ -36,6 +36,7 @@ MDAnalysis = { extras = ["analysis"], version = ">=2.6, <3.0" }
 netcdf4 = "*"
 phx-class-registry = "*"
 pandas = "*"
+parmed = "*"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"
