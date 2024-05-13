@@ -1,6 +1,6 @@
 # ------------------------------------------------------------------------------
-#  mdsetup
-#  Copyright (c) 2024 Timothy H. Click, Ph.D.
+#  fluctmatch
+#  Copyright (c) 2013-2024 Timothy H. Click, Ph.D.
 #
 #  All rights reserved.
 #
