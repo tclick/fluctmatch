@@ -41,6 +41,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import numpy as np
+from class_registry import AutoRegister, ClassRegistry
 from loguru import logger
 from MDAnalysis import transformations
 from MDAnalysis.coordinates.memory import MemoryReader
@@ -48,8 +49,10 @@ from MDAnalysis.topology import base as topbase
 from MDAnalysis.topology import guessers
 from numpy.typing import NDArray
 
+coarse_grain = ClassRegistry("model")
 
-class CoarseGrainModel(abc.ABC):
+
+class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
     """Base class for creating coarse-grain core.
 
     Parameters
@@ -325,30 +328,3 @@ class CoarseGrainModel(abc.ABC):
             self._universe.add_TopologyAttr("impropers", impropers)
         except AttributeError:
             pass
-
-
-class CoarseGrainModelFactory(abc.ABC):
-    """Abstract base class for the model factory."""
-
-    @abc.abstractmethod
-    def create_model(self: Self, model_type: str, **kwargs: dict[str, object]) -> CoarseGrainModel:
-        """Create a model.
-
-        Parameters
-        ----------
-        model_type: str
-            The type of model to create.
-        **kwargs
-            Additional keyword arguments specific to the model type.
-
-        Returns
-        -------
-        CoarseGrainModel
-            An instance of the created coarse-grained model.
-
-        Raises
-        ------
-        ValueError
-            If an unsupported model type is provided
-        """
-        pass
