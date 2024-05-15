@@ -222,6 +222,8 @@ ignore = [
     "E501",
     # DoNotAssignLambda
     "E731",
+    # Undefined local with import star
+    "F403",
     # Camelcase imported as lower case
     "N813",
     # Too many arguments to function call
