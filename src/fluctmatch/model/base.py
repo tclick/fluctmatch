@@ -40,14 +40,17 @@ from types import MappingProxyType
 from typing import Self
 
 import MDAnalysis as mda
+import MDAnalysis.core.groups as groups
+import MDAnalysis.topology.base as topbase
+import MDAnalysis.topology.guessers as guessers
+import MDAnalysis.transformations as transformations
 import numpy as np
 from class_registry import AutoRegister, ClassRegistry
 from loguru import logger
-from MDAnalysis import transformations
 from MDAnalysis.coordinates.memory import MemoryReader
-from MDAnalysis.topology import base as topbase
-from MDAnalysis.topology import guessers
 from numpy.typing import NDArray
+
+from fluctmatch.model.selection import *
 
 coarse_grain = ClassRegistry("model")
 
@@ -59,6 +62,9 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
     ----------
     mobile : Universe
         All-atom universe
+
+    Other Parameters
+    ----------------
     com : bool, optional
         Calculates the bead coordinates using either the center of mass
         (default) or center of geometry.
@@ -73,7 +79,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         The transformed universe
     """
 
-    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, object]) -> None:
+    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
 
         Mapping must be a dictionary with atom names as keys.
@@ -88,7 +94,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         """
         # Coarse grained Universe
         # Make a blank Universe for myself.
-        self._mobile = mobile
+        self._mobile = mobile.copy()
         self._universe: mda.Universe = mda.Universe.empty(0)
         self._com = kwargs.get("com", True)
         self._guess = kwargs.get("guess_angles", False)
@@ -106,16 +112,10 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         self._mass_beads: list[mda.AtomGroup] = []
 
         # Residues with corresponding atoms and selection criteria.
-        self._residues: tuple[tuple[str, str, str | mda.ResidueGroup], ...] | None = None
+        self._residues: tuple[tuple[groups.Residue, str, str | mda.ResidueGroup], ...] | None = None
 
     def create_topology(self: Self) -> None:
-        """Determine the topology attributes and initialize the universe.
-
-        Parameters
-        ----------
-        universe : :class:`~MDAnalysis.Universe`
-            An all-atom universe
-        """
+        """Determine the topology attributes and initialize the universe."""
         # Allocate arrays
         residues: mda.ResidueGroup = self._mobile.residues
 
@@ -125,7 +125,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         )
 
         logger.debug("Creating the coarse-grain topology.")
-        for residue, (key, selection) in self._residues:
+        for residue, key, selection in self._residues:
             value: str = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
             bead: mda.AtomGroup = residue.atoms.select_atoms(value)
             if bead:
@@ -174,23 +174,22 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         # Add additonal attributes
         for attr, value in attributes.items():
             self._universe.add_TopologyAttr(topologyattr=attr, values=value)
-        self._add_masses(self._mobile)
-        self._add_charges(self._mobile)
+        self._add_masses()
+        self._add_charges()
 
-    def add_trajectory(
-        self: Self,
-        universe: mda.Universe,
-        /,
-        start: int | None = None,
-        stop: int | None = None,
-        step: int | None = None,
-    ) -> None:
+    def generate_bonds(self: Self) -> None:
+        """Add bonds, angles, dihedrals, and improper dihedrals to the universe."""
+        self._add_bonds()
+        if self._guess:
+            self._add_angles()
+            self._add_dihedrals()
+            self._add_impropers()
+
+    def add_trajectory(self: Self, start: int | None = None, stop: int | None = None, step: int | None = None) -> None:
         """Add coordinates to the new system.
 
         Parameters
         ----------
-        universe: :class:`~MDAnalysis.Universe`
-            An all-atom universe
         start : int, optional
             Beginning frame
         stop : int, optional
@@ -202,12 +201,12 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             message = "Topologies need to be created before trajectory can be added."
             raise AttributeError(message)
 
-        if not hasattr(universe, "trajectory"):
+        if not hasattr(self._mobile, "trajectory"):
             message = "The provided universe does not have coordinates defined."
             raise AttributeError(message)
 
         logger.debug("Creating the coarse-grain trajectory.")
-        selections = itertools.product(universe.residues, self._mapping.items())
+        selections = itertools.product(self._mobile.residues, self._mapping.items())
         beads: list[mda.AtomGroup] = []
         total_beads: list[mda.AtomGroup] = []
         for residue, (key, selection) in selections:
@@ -219,8 +218,8 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             total_beads.append(residue.atoms.select_atoms(other_selection))
 
         position_array: list[NDArray] = []
-        universe.trajectory.rewind()
-        for _ts in universe.trajectory[start:stop:step]:
+        self._mobile.trajectory.rewind()
+        for _ts in self._mobile.trajectory[start:stop:step]:
             # Positions
             try:
                 positions = np.asarray([
@@ -233,36 +232,28 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         if self._universe.trajectory.ts.has_positions:
             dim = np.asarray([999.0, 999.0, 999.0, 90.0, 90.0, 90.0], dtype=float)
             transform = transformations.boxdimensions.set_dimensions(dim)
-            self._universe.load_new(
-                np.asarray(position_array),
-                format=MemoryReader,
-            )
+            self._universe.load_new(np.asarray(position_array), format=MemoryReader)
             self._universe.trajectory.add_transformations(transform)
-        universe.trajectory.rewind()
+        self._mobile.trajectory.rewind()
 
-    def transform(self: Self, universe: mda.Universe, /) -> mda.Universe:
+    def transform(self: Self) -> mda.Universe:
         """Convert an all-atom universe to a coarse-grain model.
 
         Topologies are generated, bead connections are determined, and positions
         are read. This is a wrapper for the other three methods.
-
-        Parameters
-        ----------
-        universe: :class:`~MDAnalysis.Universe`
-            An all-atom universe
 
         Returns
         -------
         A coarse-grain model
         """
         logger.debug("Transforming an all-atom system to an elastic network model.")
-        self.create_topology(universe)
+        self.create_topology()
         self.generate_bonds()
-        self.add_trajectory(universe)
+        self.add_trajectory()
         return self._universe
 
-    def _add_masses(self: Self, universe: mda.Universe, /) -> None:
-        residues: mda.ResidueGroup = universe.residues
+    def _add_masses(self: Self) -> None:
+        residues: mda.ResidueGroup = self._mobile.residues
         atoms: mda.AtomGroup = residues.atoms
         selections = itertools.product(residues, self._selection.values())
 
@@ -281,10 +272,10 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
 
         self._universe.add_TopologyAttr("masses", masses)
 
-    def _add_charges(self: Self, universe: mda.Universe, /) -> None:
-        residues = universe.residues
+    def _add_charges(self: Self) -> None:
+        residues = self._mobile.residues
         atoms = residues.atoms
-        selections = itertools.product(universe.residues, self._selection.values())
+        selections = itertools.product(self._mobile.residues, self._selection.values())
 
         try:
             logger.debug("Assigning charges to the beads.")
