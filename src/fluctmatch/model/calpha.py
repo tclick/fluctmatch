@@ -50,8 +50,8 @@ class CalphaModel(CoarseGrainModel):
     model: ClassVar[str] = "CALPHA"
     description: ClassVar[str] = "C-alpha of a protein"
 
-    def __init__(self: Self, universe: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
-        super().__init__(universe, **kwargs)
+    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
+        super().__init__(mobile, **kwargs)
 
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"CA": "calpha", "ions": "bioion"})
         self._selection: MappingProxyType[str, str] = MappingProxyType({"CA": "protein", "ions": "bioion"})
