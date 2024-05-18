@@ -32,20 +32,19 @@
 # ------------------------------------------------------------------------------
 """Test various coarse-grain models developed for proteins."""
 
-import itertools
-from types import MappingProxyType
 from typing import Self
 
 import MDAnalysis as mda
 import pytest
 from fluctmatch.model import calpha  # , caside, ncsc, polar
+from fluctmatch.model.base import coarse_grain
 from numpy import testing
-from numpy.typing import NDArray
 
 from tests.datafile import TPR, XTC
 
 # Number of residues to test
 N_RESIDUES = 6
+BIOION = "MG CAL MN FE CU ZN AG"
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -57,73 +56,113 @@ def universe() -> mda.Universe:
     Universe
         universe with protein, DNA, and water
     """
-    u = mda.Universe(TPR, XTC)
-    return mda.Merge(u.residues[:N_RESIDUES].atoms)
-
-
-@pytest.fixture(autouse=True, scope="class")
-def model(universe: mda.Universe) -> calpha.CalphaModel:
-    """Fixture for a C-alpha model."""
-    return calpha.CalphaModel(universe, guess_angles=True)
-
-
-@pytest.fixture(autouse=True, scope="class")
-def system(universe: mda.Universe) -> mda.Universe:
-    """Fixture to transform an all-atom universe to a C-alpha model."""
-    model = calpha.CalphaModel(universe, guess_angles=True)
-    return model.transform()
+    return mda.Universe(TPR, XTC)
 
 
 class TestCalpha:
     """Test C-alpha model."""
 
-    def test_topology(self: Self, universe: mda.Universe, system: mda.Universe) -> None:
-        """Test topology for C-alpha model."""
-        calpha = universe.select_atoms("protein and name CA")
+    @pytest.fixture(scope="class")
+    def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
+        """Fixture for a C-alpha model from the all-atom model.
 
-        testing.assert_equal(system.atoms.n_atoms, calpha.n_atoms)
-        testing.assert_allclose(system.residues.masses, calpha.residues.masses)
-        testing.assert_allclose(system.residues.charges, calpha.residues.charges)
+        Returns
+        -------
+        MDAnalysis.AtomGroup
+            Atom group with C-alpha atoms and bioions
+        """
+        return universe.select_atoms(f"(protein and name CA) or name {BIOION}")
 
-    def test_creation(self: Self, universe: mda.Universe, model: calpha.CalphaModel, system: mda.Universe) -> None:
-        """Test creation of a C-alpha model."""
-        n_atoms = 0
-        for residue, selection in itertools.product(universe.residues, model._mapping.values()):
-            value = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
-            n_atoms += residue.atoms.select_atoms(value).residues.n_residues
-        testing.assert_equal(system.atoms.n_atoms, n_atoms, err_msg="Number of sites don't match.")
+    @pytest.fixture()
+    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+        """Fixture for a C-alpha model.
 
-    def test_positions(self: Self, universe: mda.Universe, model: calpha.CalphaModel, system: mda.Universe) -> None:
-        """Ensure that positions match between the all-atom and C-alpha model."""
-        positions: list[list[NDArray]] = []
-        for residue, selection in itertools.product(universe.residues, model._mapping.values()):
-            value = (
-                selection.get(residue.resname, "hsidechain and not name H*")
-                if isinstance(selection, MappingProxyType)
-                else selection
-            )
-            if residue.atoms.select_atoms(value):
-                positions.append(residue.atoms.select_atoms(value).center_of_mass())
-        testing.assert_allclose(positions, system.atoms.positions, err_msg="The coordinates do not match.")
+        Parameters
+        ----------
+        universe : mda.Universe
+            Universe with protein, DNA, and water
 
-    def test_trajectory(self: Self, universe: mda.Universe, system: mda.Universe) -> None:
-        """Compare the trajectory of the C-alpha model with the C-alpha atoms of the all-atom universe."""
-        assert (
-            system.trajectory.n_frames == universe.trajectory.n_frames
-        ), "All-atom and coarse-grain trajectories unequal."
+        Returns
+        -------
+        C-alpha only universe with coordinates
+        """
+        return coarse_grain.get("CALPHA", universe, guess_angles=True)
 
-    def test_bonds(self: Self, system: mda.Universe) -> None:
-        """Ensure that the number of bonds exists."""
-        assert len(system.bonds) > 0, "Number of bonds should be > 0."
+    def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
+        """Test topology for C-alpha model.
 
-    def test_angles(self: Self, system: mda.Universe) -> None:
-        """Ensure that the number of angles exists."""
-        assert len(system.angles) > 0, "Number of angles should be > 0."
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN number of atoms, residues, masses, and charges should be equal
+        """
+        model.create_topology()
+        system: mda.Universe = model._universe
 
-    def test_dihedrals(self: Self, system: mda.Universe) -> None:
-        """Ensure that the number of dihedral angles exists."""
-        assert len(system.dihedrals) > 0, "Number of dihedral angles should be > 0."
+        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
+        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
+        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
+        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
 
-    def test_impropers(self: Self, system: mda.Universe) -> None:
-        """Ensure that the number of improper dihedral angles exists."""
-        assert len(system.impropers) == 0, "Number of improper angles should not be > 0."
+    def test_bond_generation(self: Self, model: calpha.CalphaModel) -> None:
+        """Test the creation of intramolecular bonds between C-alpha atoms.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN bonds are formed between respective sites.
+        """
+        testing.assert_raises(AttributeError, model.generate_bonds)
+
+        model.create_topology()
+        model.generate_bonds()
+        system: mda.Universe = model._universe
+
+        assert len(system.bonds) > 0, "Bonds not generated"
+        assert len(system.angles) > 0, "Angles not generated"
+        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
+        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
+
+    def test_trajectory_addition(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
+        """Ensure that positions match between the all-atom and C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN trajectory is added to the universe with the same number of frames.
+        """
+        model.create_topology()
+        model.add_trajectory()
+        u = atoms.universe
+        system: mda.Universe = model._universe
+
+        atom_positions = [atoms.positions for _ in u.trajectory]
+        model_positions = [system.atoms.positions for _ in system.trajectory]
+
+        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
+        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
+
+    def test_transformation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
+        """Test transformation from an all-atom system to C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN the system will have a proper topology and trajectory.
+        """
+        u = atoms.universe
+        system = model.transform()
+        atom_positions = [atoms.positions for _ in u.trajectory]
+        model_positions = [system.atoms.positions for _ in system.trajectory]
+
+        # Test topology creation
+        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
+        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
+        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
+        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
+
+        # Test bond generation
+        assert len(system.bonds) > 0, "Bonds not generated"
+        assert len(system.angles) > 0, "Angles not generated"
+        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
+        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
+
+        # Test trajectory addition
+        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
+        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
