@@ -179,6 +179,10 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
 
     def generate_bonds(self: Self) -> None:
         """Add bonds, angles, dihedrals, and improper dihedrals to the universe."""
+        if self._universe.atoms.n_atoms == 0:
+            message = "Topologies need to be created before trajectory can be added."
+            raise AttributeError(message)
+
         self._add_bonds()
         if self._guess:
             self._add_angles()
@@ -197,7 +201,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         step : int, optional
             Number of frames to skip
         """
-        if not hasattr(self, "_universe"):
+        if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
             raise AttributeError(message)
 
