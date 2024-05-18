@@ -294,7 +294,8 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
 
     @abc.abstractmethod
     def _add_bonds(self: Self) -> None:
-        pass
+        msg = "Subclass must implement this method."
+        raise NotImplementedError(msg)
 
     def _add_angles(self: Self) -> None:
         try:
