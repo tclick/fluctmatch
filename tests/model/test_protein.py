@@ -36,7 +36,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model import calpha, caside
+from fluctmatch.model import calpha, caside, ncsc, polar
 from fluctmatch.model.base import coarse_grain
 from numpy import testing
 
@@ -74,7 +74,7 @@ class TestCalpha:
         return universe.select_atoms(f"(protein and name CA) or name {BIOION}")
 
     @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+    def model(self: Self, universe: mda.Universe) -> calpha.CalphaModel:
         """Fixture for a C-alpha model.
 
         Parameters
@@ -183,7 +183,7 @@ class TestCaside:
         return universe.select_atoms(f"(protein and name CA CB) or name {BIOION}")
 
     @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+    def model(self: Self, universe: mda.Universe) -> caside.CasideModel:
         """Fixture for a C-alpha model.
 
         Parameters
@@ -285,7 +285,7 @@ class TestNcsc(TestCaside):
         return universe.select_atoms(f"(protein and name N CB C) or name {BIOION}")
 
     @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+    def model(self: Self, universe: mda.Universe) -> ncsc.NcscModel:
         """Fixture for a C-alpha model.
 
         Parameters
@@ -304,7 +304,7 @@ class TestPolar(TestNcsc):
     """Test amino N, carboxyl O, and polar sidechain model."""
 
     @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+    def model(self: Self, universe: mda.Universe) -> polar.PolarModel:
         """Fixture for a C-alpha model.
 
         Parameters
