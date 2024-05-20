@@ -43,7 +43,23 @@ from fluctmatch.model.ncsc import NcscModel
 
 
 class PolarModel(NcscModel):
-    """Universe consisting of the amine, carboxyl, and polar regions."""
+    """Universe consisting of the amine, carboxyl, and polar regions.
+
+    For each residue, two beads will be assigned for the backbone and one bead for the sidechain (excluding glycine).
+    The amino bead will be positioned at the amino nitrogen with amino hydrogens and half the C-alpha and H-alpha atoms
+    contributing to the mass and charge. The other backbone bead corresponds to the carboxyl oxygen; the position will
+    rely upon the center-of-mass or center-of-geometry between oxygens (particularly at the C-terminux), and the
+    carboxyl carbon and half the C-alpha and H-alpha atoms will account for the mass and charge of the bead. The C-beta
+    position (excluding glycine) will be determined by the center-of-mass or center-of-geometry of the specific atoms of
+    each sidechain, and the mass and charge will be the total for each sidechain. Three bonds will exist per residue as
+    well as a single bond between the carboxyl bead and the amino bead in the :math:`i,i+1`. Additionally, common ions
+    found as cofactors within proteins (i.e., MG CAL MN FE CU ZN  AG) will also be included but have no bonds associated
+    with them.
+
+      SC
+     /  \
+    N - C - N
+    """
 
     model: ClassVar[str] = "POLAR"
     description: ClassVar[str] = "c.o.m./c.o.g. of N, C, and polar sidechains of protein"

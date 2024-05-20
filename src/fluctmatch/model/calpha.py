@@ -43,7 +43,13 @@ from fluctmatch.model.base import CoarseGrainModel
 
 
 class CalphaModel(CoarseGrainModel):
-    """Universe defined by the protein C-alpha."""
+    """Universe defined by the protein C-alpha.
+
+    The C-alpha will be selected within the protein. The total charge and mass of each residue will be assigned to the
+    corresponding carbon, and bonds will be generated between :math:`i,i+1` residues. Additionally, common ions found
+    as cofactors within proteins (i.e., MG CAL MN FE CU ZN AG) will also be included but have no bonds associated with
+    them.
+    """
 
     model: ClassVar[str] = "CALPHA"
     description: ClassVar[str] = "C-alpha of a protein"

@@ -43,7 +43,16 @@ from fluctmatch.model.base import CoarseGrainModel
 
 
 class CasideModel(CoarseGrainModel):
-    """Universe consisting of the C-alpha and sidechains of a protein."""
+    """Universe consisting of the C-alpha and sidechains of a protein.
+
+    The C-alpha and C-beta atoms will be selected within the protein. The total charge and mass of each residue backbone
+    will be assigned to the C-alpha atom, and the total charge and mass of each residue sidechain will be assigned to
+    the C-beta atom. The C-alpha position will remain identical to the original protein C-alpha position, but the C-beta
+    position (excluding glycine) will be determined by the center-of-mass or center-of-geometry of the heavy atoms of
+    each sidechain. Bonds will be generated between :math:`i,i+1` between C-alpha atoms and within each residue between
+    the C-alpha and C-beta beads. Additionally, common ions found as cofactors within proteins (i.e., MG CAL MN FE CU ZN
+    AG) will also be included but have no bonds associated with them.
+    """
 
     model: ClassVar[str] = "CASIDE"
     description: ClassVar[str] = "C-alpha and sidechain (c.o.m./c.o.g.) of protein"
