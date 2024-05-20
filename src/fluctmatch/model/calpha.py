@@ -62,6 +62,6 @@ class CalphaModel(CoarseGrainModel):
         # Create bonds between C-alphas in adjacent residues
         for segment in self._universe.segments:
             atom_selection: str = self._mapping[next(iter(self._mapping.keys()))]
-            atoms = segment.atoms.select_atoms(atom_selection)
+            atoms: mda.AtomGroup = segment.atoms.select_atoms(atom_selection)
             bonds.extend(tuple(zip(atoms.ix[1:], atoms.ix[:-1], strict=True)))  # noqa: PD007
         self._universe.add_TopologyAttr(Bonds(bonds))
