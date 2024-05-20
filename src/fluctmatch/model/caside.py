@@ -30,9 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse = false, reportCallIssue = false, reportArgumentType = false
-# pyright: reportAssignmentType = false, reportAttributeAccessIssue = false, reportOptionalMemberAccess = false
-# pyright: reportOptionalIterable = false
+# pyright: reportInvalidTypeVarUse = false, reportOptionalIterable = false
 """Class definition for beads using C-alpha and C-beta positions."""
 
 from types import MappingProxyType
