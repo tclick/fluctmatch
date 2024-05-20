@@ -36,7 +36,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model import calpha, caside  # , polar
+from fluctmatch.model import calpha, caside
 from fluctmatch.model.base import coarse_grain
 from numpy import testing
 
@@ -298,3 +298,22 @@ class TestNcsc(TestCaside):
         C-alpha only universe with coordinates
         """
         return coarse_grain.get("NCSC", universe, guess_angles=True, com=True)
+
+
+class TestPolar(TestNcsc):
+    """Test amino N, carboxyl O, and polar sidechain model."""
+
+    @pytest.fixture()
+    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+        """Fixture for a C-alpha model.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+            Universe with protein, DNA, and water
+
+        Returns
+        -------
+        C-alpha only universe with coordinates
+        """
+        return coarse_grain.get("POLAR", universe, guess_angles=True, com=True)
