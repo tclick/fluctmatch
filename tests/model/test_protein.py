@@ -36,7 +36,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model import calpha, caside  # , ncsc, polar
+from fluctmatch.model import calpha, caside  # , polar
 from fluctmatch.model.base import coarse_grain
 from numpy import testing
 
@@ -268,3 +268,33 @@ class TestCaside:
 
         # Test trajectory addition
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
+
+
+class TestNcsc(TestCaside):
+    """Test C-alpha/sidechain model."""
+
+    @pytest.fixture(scope="class")
+    def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
+        """Fixture for a C-alpha model from the all-atom model.
+
+        Returns
+        -------
+        MDAnalysis.AtomGroup
+            Atom group with C-alpha atoms and bioions
+        """
+        return universe.select_atoms(f"(protein and name N CB C) or name {BIOION}")
+
+    @pytest.fixture()
+    def model(self: Self, universe: mda.Universe) -> mda.Universe:
+        """Fixture for a C-alpha model.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+            Universe with protein, DNA, and water
+
+        Returns
+        -------
+        C-alpha only universe with coordinates
+        """
+        return coarse_grain.get("NCSC", universe, guess_angles=True, com=True)
