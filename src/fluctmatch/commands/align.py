@@ -40,6 +40,7 @@ from pathlib import Path
 import click
 import MDAnalysis as mda
 from click_help_colors import HelpColorsCommand
+from loguru import logger
 from MDAnalysis import transformations
 
 from fluctmatch import __copyright__
@@ -149,8 +150,7 @@ def align(
     verbosity : str, default=INFO
         Level of verbosity for logging output
     """
-    logger = config_logger(name=__name__, logfile=logfile, level=verbosity)
-
+    config_logger(name=__name__, logfile=logfile, level=verbosity)
     click.echo(__copyright__)
 
     selection = {

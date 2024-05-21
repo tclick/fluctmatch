@@ -41,6 +41,7 @@ from pathlib import Path
 import click
 import MDAnalysis as mda
 from click_help_colors import HelpColorsCommand
+from loguru import logger
 
 from fluctmatch import __copyright__
 from fluctmatch.commands import FILE_MODE
@@ -139,7 +140,7 @@ def setup(
     verbosity : str, default=INFO
         Level of verbosity for logging output
     """
-    logger = config_logger(name=__name__, logfile=logfile, level=verbosity)
+    config_logger(name=__name__, logfile=logfile, level=verbosity)
     click.echo(__copyright__)
 
     n_frames = mda.Universe(topology, trajectory).trajectory.n_frames

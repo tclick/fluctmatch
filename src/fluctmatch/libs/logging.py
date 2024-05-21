@@ -38,16 +38,12 @@ import getpass
 import logging
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 from loguru import logger
 from loguru_logging_intercept import setup_loguru_logging_intercept
 
-if TYPE_CHECKING:
-    from loguru import Logger
 
-
-def config_logger(name: str, logfile: str | Path | None = None, level: str | int = "INFO") -> Logger:
+def config_logger(name: str, logfile: str | Path | None = None, level: str | int = "INFO") -> None:
     """Configure logger.
 
     Parameters
@@ -58,11 +54,6 @@ def config_logger(name: str, logfile: str | Path | None = None, level: str | int
         name of log file
     level : str
         minimum level for logging
-
-    Returns
-    -------
-    Logger
-        logging object
     """
     config = {
         "handlers": [
@@ -75,7 +66,7 @@ def config_logger(name: str, logfile: str | Path | None = None, level: str | int
                 "diagnose": True,
             },
         ],
-        "extra": {"user": getpass.getuser()},
+        "extra": {"name": name, "user": getpass.getuser()},
     }
     if logfile is not None:
         config["handlers"].append(
@@ -85,4 +76,3 @@ def config_logger(name: str, logfile: str | Path | None = None, level: str | int
     logger.remove()
     logger.configure(**config)
     setup_loguru_logging_intercept(level=logging.DEBUG, modules=f"root {name}".split())
-    return logger.bind(name=name, user=getpass.getuser())
