@@ -31,7 +31,7 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 # pyright: reportArgumentType=false, reportAssignmentType=false, reportAttributeAccessIssue=false
-# pyright: reportPossiblyUnboundVariable=false
+# pyright: reportPossiblyUnboundVariable=false, reportOptionalMemberAccess=false
 """Convert an all-atom system to a coarse-grain model."""
 
 from __future__ import annotations
@@ -43,11 +43,14 @@ from pathlib import Path
 import click
 import MDAnalysis as mda
 from click_help_colors import HelpColorsCommand
+from loguru import logger
+from MDAnalysis.analysis import align
 
 import fluctmatch.model
 from fluctmatch import __copyright__
+from fluctmatch.libs import utils
 from fluctmatch.libs.logging import config_logger
-from fluctmatch.model.base import coarse_grain
+from fluctmatch.model.base import CoarseGrainModel, coarse_grain
 
 for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.model.__name__ + "."):
     importlib.import_module(name)
@@ -139,7 +142,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
     help="Maximum distance between bonds",
 )
 @click.option(
-    "-t",
+    "-m",
     "--model",
     metavar="TYPE",
     show_default=True,
@@ -158,6 +161,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option("--guess", is_flag=True, help="Guess angles, dihedrals, and improper dihedrals")
 @click.option("--uniform", is_flag=True, help="Set uniform mass of beads to 1.0")
 @click.option("--write", "write_traj", is_flag=True, help="Convert the trajectory file")
+@click.option("--overwrite", is_flag=True, help="Overwrite existing files")
 @click.option(
     "--list",
     "model_list",
@@ -187,6 +191,7 @@ def convert(
     guess: bool,
     uniform: bool,
     write_traj: bool,
+    overwrite: bool,
     model_list: bool,
     verbosity: str,
 ) -> None:
@@ -222,9 +227,11 @@ def convert(
         set uniform mass of beads to 1.0
     write_traj : bool
         write trajectory file
+    overwrite : bool
+        overwrite existing files
     model_list : bool
         list available coarse-grain models
-    verbosity : bool
+    verbosity : str
         minimum severity level for log messages
     """
     click.echo(__copyright__)
@@ -238,14 +245,51 @@ def convert(
 
     filename = outdir / prefix
     universe = mda.Universe(topology, trajectory)
-    cg_model: mda.Universe
 
     if "enm" in model:
         cg_model = coarse_grain.get(
             "enm", universe, com=com, guess=guess, uniform=uniform, start=start, stop=stop, rmin=rmin, rmax=rmax
         )
+    else:
+        multiverse: list[mda.Universe] = []
+        for model_type in model:
+            logger.info(f"Converting all-atom system to {model_type}.")
+            cg_model: CoarseGrainModel = coarse_grain.get(
+                model_type, universe, com=com, guess=guess, uniform=uniform, start=start, stop=stop
+            )
+            multiverse.append(cg_model.transform())
+            click.echo(f"Number of multiverses: {len(multiverse)}")
+        cg_model = utils.merge(*multiverse)
+
+    # Write CHARMM PSF file.
+    try:
+        new_file = filename.with_suffix(".psf")
+        logger.info(f"Saving topology to {new_file}")
+        cg_model.atoms.convert_to("PARMED").save(new_file.as_posix(), overwrite=overwrite)
+    except OSError as err:
+        message = f"File {new_file} already exists. To overwrite, please use '--overwrite'."
+        logger.exception(message)
+        raise OSError(message) from err
+
+    # Determine the average structure of the trajectory and write a CHARMM coordinate file.
+    verbose = verbosity == "DEBUG"
+    average = align.AverageStructure(cg_model).run(start=start, stop=stop, verbose=verbose)
+    average_model: mda.Universe = average.results.universe
+    try:
+        new_file = filename.with_suffix(".crd")
+        logger.info(f"Saving average coordinates to {new_file}")
+        average_model.atoms.convert_to("PARMED").save(new_file.as_posix(), overwrite=overwrite)
+        # Create symbolic link to `filename.cor` for viewing in VMD.
+        link_file = new_file.with_suffix(".cor")
+        if not link_file.exists():
+            logger.info(f"Linking {new_file} to {link_file} for viewing in VMD.")
+            link_file.symlink_to(new_file, target_is_directory=False)
+    except OSError as err:
+        message = f"File {new_file} already exists. To overwrite, please use '--overwrite'."
+        logger.exception(message)
+        raise OSError(message) from err
 
     if write_traj:
-        with mda.Writer(filename.with_suffix(".dcd").as_posix()) as writer:
+        with mda.Writer(filename.with_suffix(".dcd").as_posix(), n_atoms=cg_model.atoms.n_atoms) as writer:
             for _ in cg_model.trajectory:
                 writer.write(cg_model.atoms)

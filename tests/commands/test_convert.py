@@ -35,11 +35,14 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Self
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+
+from tests.datafile import TPR, XTC
 
 
 class TestConvert:
@@ -88,3 +91,31 @@ class TestConvert:
         result = cli_runner.invoke(main, "convert --list")
         assert "calpha:" in result.output
         assert result.exit_code == os.EX_OK
+
+    def test_conversion(self: Self, cli_runner: CliRunner) -> None:
+        """Test whether an all-atom trajectory is converted to a coarse-grain model.
+
+        GIVEN an all-atom model
+        WHEN flagged to convert to convert to a C-alpha model
+        THEN a CHARMM PSF, CRD, and DCD file are written
+
+        Parameters
+        ----------
+        cli_runner : CliRunner
+            Command-line cli_runner
+        """
+        with cli_runner.isolated_filesystem() as ifs:
+            tmp_path = Path(ifs)
+            prefix = "cg"
+            filename = tmp_path / prefix
+            log_file = tmp_path / "convert.log"
+
+            result = cli_runner.invoke(
+                main, f"convert -s {TPR} -f {XTC} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
+            )
+            print(result.output)
+            assert result.exit_code == os.EX_OK
+            assert filename.with_suffix(".psf").exists()
+            assert filename.with_suffix(".crd").exists()
+            assert filename.with_suffix(".cor").exists()
+            assert filename.with_suffix(".dcd").exists()
