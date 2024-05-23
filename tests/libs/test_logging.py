@@ -33,28 +33,39 @@
 """Tests for logging module."""
 
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from fluctmatch.libs import logging
+from loguru import logger
 
 
 class TestLogging:
     """Tests for logging module."""
 
-    def test_logging(self, tmp_path: Path) -> None:
+    def test_logging(self, tmp_path: Path, capsys: Any) -> None:
         """Test logging functionality."""
         log_file = tmp_path / "test.log"
-        logger = logging.config_logger(name=__name__, logfile=log_file, level="DEBUG")
-        logger.debug("This is a debug message")
+        logging.config_logger(name=__name__, logfile=log_file, level="DEBUG")
+
+        message = "This is a debug message"
+        logger.debug(message)
+        _, err = capsys.readouterr()
 
         assert log_file.exists()
         assert log_file.stat().st_size > 0
+        assert message in err
+        with log_file.open() as f:
+            line = f.readline()
+            assert message in line
 
-    def test_logging_with_no_file(self: Self, tmp_path: Path) -> None:
+    def test_logging_with_no_file(self: Self, tmp_path: Path, capsys: Any) -> None:
         """Test logging functionality with no log file."""
         log_file = tmp_path / "test.log"
 
-        logger = logging.config_logger(name=__name__, level="DEBUG")
-        logger.debug("This is a debug message")
+        logging.config_logger(name=__name__, level="DEBUG")
+        message = "This is a debug message"
+        logger.debug(message)
+        _, err = capsys.readouterr()
 
         assert not log_file.exists()
+        assert message in err
