@@ -114,6 +114,28 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         # Residues with corresponding atoms and selection criteria.
         self._residues: tuple[tuple[groups.Residue, str, str | mda.ResidueGroup], ...] | None = None
 
+    @property
+    def universe(self: Self) -> mda.Universe:
+        """Retrieve coarse-grain universe.
+
+        Returns
+        -------
+        MDAnalysis.Universe
+            coarse-grain model
+        """
+        return self._universe
+
+    @property
+    def atoms(self: Self) -> mda.AtomGroup:
+        """Retrieve coarse-grain model.
+
+        Returns
+        -------
+        MDAnalysis.AtomGroup
+            coarse-grain model
+        """
+        return self._universe.atoms
+
     def create_topology(self: Self) -> None:
         """Determine the topology attributes and initialize the universe."""
         # Allocate arrays
