@@ -96,7 +96,7 @@ class TestCalpha:
         THEN number of atoms, residues, masses, and charges should be equal
         """
         model.create_topology()
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
@@ -110,11 +110,12 @@ class TestCalpha:
         WHEN transformed into a coarse-grain model
         THEN bonds are formed between respective sites.
         """
-        testing.assert_raises(AttributeError, model.generate_bonds)
+        with pytest.raises(AttributeError):
+            model.generate_bonds()
 
         model.create_topology()
         model.generate_bonds()
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
         assert len(system.angles) > 0, "Angles not generated"
@@ -131,7 +132,7 @@ class TestCalpha:
         model.create_topology()
         model.add_trajectory()
         u = atoms.universe
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in u.trajectory]
         model_positions = [system.atoms.positions for _ in system.trajectory]
@@ -205,7 +206,7 @@ class TestCaside:
         THEN number of atoms, residues, masses, and charges should be equal
         """
         model.create_topology()
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
@@ -223,7 +224,7 @@ class TestCaside:
 
         model.create_topology()
         model.generate_bonds()
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
         assert len(system.angles) > 0, "Angles not generated"
@@ -240,7 +241,7 @@ class TestCaside:
         model.create_topology()
         model.add_trajectory()
         u = atoms.universe
-        system: mda.Universe = model._universe
+        system: mda.Universe = model.universe
 
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
 
