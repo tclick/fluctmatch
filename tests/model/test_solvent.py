@@ -34,6 +34,7 @@
 # pyright: reportWildcardImportFromLibrary=false, reportIncompatibleMethodOverride=false
 """Tests for different solvent core."""
 
+import itertools
 from typing import Self
 
 import MDAnalysis as mda
@@ -83,7 +84,7 @@ class TestWater:
         -------
         water only universe with coordinates
         """
-        return coarse_grain.get("WATER", universe, guess_angles=True)
+        return coarse_grain.get("WATER", universe)
 
     def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: water.WaterModel) -> None:
         """Test topology for C-alpha model.
@@ -95,9 +96,19 @@ class TestWater:
         model.create_topology()
         system: mda.Universe = model.universe
 
+        try:
+            charges = [
+                residue.atoms.select_atoms(selection).total_charge()
+                for residue, selection in itertools.product(atoms.residues, model._selection.values())
+                if residue.atoms.select_atoms(selection)
+            ]
+        except mda.NoDataError:
+            charges = [0.0] * system.atoms.n_atoms
+
         testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
         testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
+        testing.assert_allclose(system.residues.charges, charges, err_msg="Charges not equal")
 
     def test_bond_generation(self: Self, model: water.WaterModel) -> None:
         """Test that no bonds are created between water molecules.
@@ -153,10 +164,20 @@ class TestWater:
         atom_positions = [atoms.positions for _ in universe.trajectory]
         model_positions = [system.atoms.positions for _ in system.trajectory]
 
+        try:
+            charges = [
+                residue.atoms.select_atoms(selection).total_charge()
+                for residue, selection in itertools.product(atoms.residues, model._selection.values())
+                if residue.atoms.select_atoms(selection)
+            ]
+        except mda.NoDataError:
+            charges = [0.0] * system.atoms.n_atoms
+
         # Test topology creation
         testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
         testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
+        testing.assert_allclose(system.residues.charges, charges, err_msg="Charges not equal")
 
         # Test bond generation
         testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
