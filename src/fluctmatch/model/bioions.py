@@ -54,6 +54,7 @@ class Model(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
+        self._guess = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"ions": "bioion"})
         self._selection: MappingProxyType[str, str] = self._mapping
 
