@@ -38,7 +38,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model import nucleic3
+from fluctmatch.model import nucleic3, nucleic4
 from fluctmatch.model.base import coarse_grain
 from numpy import testing
 from numpy.typing import NDArray
@@ -182,7 +182,7 @@ class TestNucleic4(TestNucleic3):
     """Test 4-bead nucleic acid model."""
 
     @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> nucleic3.NucleicModel:
+    def model(self: Self, universe: mda.Universe) -> nucleic4.NucleicModel:
         """Fixture for a C-alpha model.
 
         Parameters
@@ -196,7 +196,7 @@ class TestNucleic4(TestNucleic3):
         """
         return coarse_grain.get("NUCLEIC4", universe, guess_angles=True)
 
-    def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: nucleic3.NucleicModel) -> None:
+    def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: nucleic4.NucleicModel) -> None:
         """Test topology for C-alpha model.
 
         GIVEN an all-atom universe
@@ -212,7 +212,7 @@ class TestNucleic4(TestNucleic3):
         )
         testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal", rtol=1e-01)
 
-    def test_transformation(self: Self, atoms: mda.AtomGroup, model: nucleic3.NucleicModel) -> None:
+    def test_transformation(self: Self, atoms: mda.AtomGroup, model: nucleic4.NucleicModel) -> None:
         """Test transformation from an all-atom system to C-alpha model.
 
         GIVEN an all-atom universe
