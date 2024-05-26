@@ -63,15 +63,13 @@ class CasideModel(CoarseGrainModel):
         self._mapping: MappingProxyType[str, str] = MappingProxyType({
             "CA": "calpha",
             "CB": "hsidechain and not name H*",
-            "ions": "bioion",
         })
         self._selection: MappingProxyType[str, str] = MappingProxyType({
             "CA": "hbackbone",
             "CB": "hsidechain",
-            "ions": "bioion",
         })
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue C-alpha and C-beta atoms.

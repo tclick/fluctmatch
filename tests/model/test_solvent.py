@@ -153,47 +153,6 @@ class TestWater:
         )
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
 
-    def test_transformation(self: Self, universe: mda.Universe, atoms: mda.AtomGroup, model: water.WaterModel) -> None:
-        """Test transformation from an all-atom system to C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN the system will have a proper topology and trajectory.
-        """
-        system = model.transform()
-        atom_positions = [atoms.positions for _ in universe.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
-
-        try:
-            charges = [
-                residue.atoms.select_atoms(selection).total_charge()
-                for residue, selection in itertools.product(atoms.residues, model._selection.values())
-                if residue.atoms.select_atoms(selection)
-            ]
-        except mda.NoDataError:
-            charges = [0.0] * system.atoms.n_atoms
-
-        # Test topology creation
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-        testing.assert_allclose(system.residues.charges, charges, err_msg="Charges not equal")
-
-        # Test bond generation
-        testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
-        with pytest.raises(mda.NoDataError):
-            _ = system.angles
-        with pytest.raises(mda.NoDataError):
-            _ = system.dihedrals
-        with pytest.raises(mda.NoDataError):
-            _ = system.impropers
-
-        # Test trajectory addition
-        testing.assert_equal(
-            system.trajectory.n_frames, universe.trajectory.n_frames, err_msg="Number of frames not equal"
-        )
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
-
 
 class TestTip3p(TestWater):
     """Test conversion of all-atom water to a water with three bonds."""
@@ -257,10 +216,10 @@ class TestTip3p(TestWater):
         THEN no bonds are formed between respective sites.
         """
         with pytest.raises(AttributeError):
-            model.generate_bonds()
+            model.generate_bonds(guess=True)
 
         model.create_topology()
-        model.generate_bonds()
+        model.generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), model.atoms.n_atoms, err_msg="Bonds not generated")
@@ -284,34 +243,6 @@ class TestTip3p(TestWater):
         atom_positions = [atoms.positions for _ in universe.trajectory]
         model_positions = [system.atoms.positions for _ in system.trajectory]
 
-        testing.assert_equal(
-            system.trajectory.n_frames, universe.trajectory.n_frames, err_msg="Number of frames not equal"
-        )
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
-
-    def test_transformation(self: Self, universe: mda.Universe, atoms: mda.AtomGroup, model: tip3p.Tip3pModel) -> None:
-        """Test transformation from an all-atom system to C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN the system will have a proper topology and trajectory.
-        """
-        system = model.transform()
-        atom_positions = [atoms.positions for _ in universe.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
-
-        # Test topology creation
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-
-        # Test bond generation
-        testing.assert_equal(len(system.bonds), model.atoms.n_atoms, err_msg="Bonds not generated")
-        testing.assert_equal(len(system.angles), model.atoms.n_atoms, err_msg="Angles not generated")
-        testing.assert_equal(len(system.dihedrals), 0, err_msg="Dihedral angles generated")
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles generated")
-
-        # Test trajectory addition
         testing.assert_equal(
             system.trajectory.n_frames, universe.trajectory.n_frames, err_msg="Number of frames not equal"
         )
@@ -383,7 +314,7 @@ class TestDma:
             model.generate_bonds()
 
         model.create_topology()
-        model.generate_bonds()
+        model.generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), system.residues.n_residues * 3, err_msg="Bonds not generated")
@@ -407,36 +338,6 @@ class TestDma:
         atom_positions = [atoms.positions for _ in universe.trajectory]
         model_positions = [system.atoms.positions for _ in system.trajectory]
 
-        testing.assert_equal(
-            system.trajectory.n_frames, universe.trajectory.n_frames, err_msg="Number of frames not equal"
-        )
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
-
-    def test_transformation(self: Self, universe: mda.Universe, atoms: mda.AtomGroup, model: dma.DmaModel) -> None:
-        """Test transformation from an all-atom system to C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN the system will have a proper topology and trajectory.
-        """
-        system = model.transform()
-        atom_positions = [atoms.positions for _ in universe.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
-
-        # Test topology creation
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-
-        # Test bond generation
-        testing.assert_equal(len(system.bonds), system.residues.n_residues * 3, err_msg="Bonds not generated")
-        testing.assert_equal(len(system.angles), system.residues.n_residues * 3, err_msg="Angles not generated")
-        testing.assert_equal(len(system.dihedrals), 0, err_msg="Dihedral angles generated")
-        testing.assert_equal(
-            len(system.impropers), system.residues.n_residues * 3, err_msg="Improper dihedral angles generated"
-        )
-
-        # Test trajectory addition
         testing.assert_equal(
             system.trajectory.n_frames, universe.trajectory.n_frames, err_msg="Number of frames not equal"
         )

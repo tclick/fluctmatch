@@ -45,7 +45,7 @@ from numpy.typing import NDArray
 from fluctmatch.model.base import CoarseGrainModel
 
 
-class Model(CoarseGrainModel):
+class BioionModel(CoarseGrainModel):
     """Select ions normally found within biological systems."""
 
     model: ClassVar[str] = "BIOIONS"
@@ -65,5 +65,5 @@ class Model(CoarseGrainModel):
         atomtypes: list[int] = [restypes[atom.name] for atom in self._universe.atoms]
         self._universe.add_TopologyAttr(Atomtypes(atomtypes))
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         self._universe.add_TopologyAttr(Bonds([]))

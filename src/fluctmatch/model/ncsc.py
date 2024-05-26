@@ -72,16 +72,14 @@ class NcscModel(CoarseGrainModel):
             "N": "protein and name N",
             "CB": "hsidechain and not name H*",
             "O": "protein and name O OT1 OT2 OXT",
-            "ions": "bioion",
         })
         self._selection: MappingProxyType[str, str] = MappingProxyType({
             "N": "amine",
             "CB": "hsidechain",
             "O": "carboxyl",
-            "ions": "bioion",
         })
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         bonds: list[tuple[int, int]] = []
 
         # Create bonds intraresidue atoms

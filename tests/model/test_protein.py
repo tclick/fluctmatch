@@ -36,7 +36,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model import calpha, caside, ncsc, polar
+from fluctmatch.model import bioions, calpha, caside, ncsc, polar
 from fluctmatch.model.base import coarse_grain
 from numpy import testing
 
@@ -71,7 +71,7 @@ class TestCalpha:
         MDAnalysis.AtomGroup
             Atom group with C-alpha atoms and bioions
         """
-        return universe.select_atoms(f"(protein and name CA) or name {BIOION}")
+        return universe.select_atoms("protein and name CA")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> calpha.CalphaModel:
@@ -86,7 +86,7 @@ class TestCalpha:
         -------
         C-alpha only universe with coordinates
         """
-        return coarse_grain.get("CALPHA", universe, guess_angles=True)
+        return coarse_grain.get("CALPHA", universe)
 
     def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
         """Test topology for C-alpha model.
@@ -114,7 +114,7 @@ class TestCalpha:
             model.generate_bonds()
 
         model.create_topology()
-        model.generate_bonds()
+        model.generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -130,41 +130,13 @@ class TestCalpha:
         THEN trajectory is added to the universe with the same number of frames.
         """
         model.create_topology()
-        model.add_trajectory()
+        model.add_trajectory(com=True)
         u = atoms.universe
         system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in u.trajectory]
         model_positions = [system.atoms.positions for _ in system.trajectory]
 
-        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
-
-    def test_transformation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
-        """Test transformation from an all-atom system to C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN the system will have a proper topology and trajectory.
-        """
-        u = atoms.universe
-        system = model.transform()
-        atom_positions = [atoms.positions for _ in u.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
-
-        # Test topology creation
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
-
-        # Test bond generation
-        assert len(system.bonds) > 0, "Bonds not generated"
-        assert len(system.angles) > 0, "Angles not generated"
-        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
-
-        # Test trajectory addition
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
 
@@ -181,7 +153,7 @@ class TestCaside:
         MDAnalysis.AtomGroup
             Atom group with C-alpha atoms and bioions
         """
-        return universe.select_atoms(f"(protein and name CA CB) or name {BIOION}")
+        return universe.select_atoms("protein and name CA CB")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> caside.CasideModel:
@@ -196,7 +168,7 @@ class TestCaside:
         -------
         C-alpha only universe with coordinates
         """
-        return coarse_grain.get("CASIDE", universe, guess_angles=True, com=True)
+        return coarse_grain.get("CASIDE", universe)
 
     def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: caside.CasideModel) -> None:
         """Test topology for C-alpha model.
@@ -223,7 +195,7 @@ class TestCaside:
         testing.assert_raises(AttributeError, model.generate_bonds)
 
         model.create_topology()
-        model.generate_bonds()
+        model.generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -239,35 +211,10 @@ class TestCaside:
         THEN trajectory is added to the universe with the same number of frames.
         """
         model.create_topology()
-        model.add_trajectory()
+        model.add_trajectory(com=True)
         u = atoms.universe
         system: mda.Universe = model.universe
 
-        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
-
-    def test_transformation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
-        """Test transformation from an all-atom system to C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN the system will have a proper topology and trajectory.
-        """
-        u = atoms.universe
-        system = model.transform()
-
-        # Test topology creation
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
-
-        # Test bond generation
-        assert len(system.bonds) > 0, "Bonds not generated"
-        assert len(system.angles) > 0, "Angles not generated"
-        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        assert len(system.impropers) > 0, "Improper dihedral angles not generated"
-
-        # Test trajectory addition
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
 
 
@@ -283,7 +230,7 @@ class TestNcsc(TestCaside):
         MDAnalysis.AtomGroup
             Atom group with C-alpha atoms and bioions
         """
-        return universe.select_atoms(f"(protein and name N CB C) or name {BIOION}")
+        return universe.select_atoms("protein and name N CB O OT1")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> ncsc.NcscModel:
@@ -298,7 +245,7 @@ class TestNcsc(TestCaside):
         -------
         C-alpha only universe with coordinates
         """
-        return coarse_grain.get("NCSC", universe, guess_angles=True, com=True)
+        return coarse_grain.get("NCSC", universe)
 
 
 class TestPolar(TestNcsc):
@@ -317,4 +264,56 @@ class TestPolar(TestNcsc):
         -------
         C-alpha only universe with coordinates
         """
-        return coarse_grain.get("POLAR", universe, guess_angles=True, com=True)
+        return coarse_grain.get("POLAR", universe)
+
+
+class TestBioions(TestCalpha):
+    """Test bioion model."""
+
+    @pytest.fixture(scope="class")
+    def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
+        """Fixture for a C-alpha model from the all-atom model.
+
+        Returns
+        -------
+        MDAnalysis.AtomGroup
+            Atom group with C-alpha atoms and bioions
+        """
+        return universe.select_atoms(f"name {BIOION}")
+
+    @pytest.fixture()
+    def model(self: Self, universe: mda.Universe) -> bioions.BioionModel:
+        """Fixture for a C-alpha model.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+            Universe with protein, DNA, and water
+
+        Returns
+        -------
+        C-alpha only universe with coordinates
+        """
+        return coarse_grain.get("BIOIONS", universe)
+
+    def test_bond_generation(self: Self, model: bioions.BioionModel) -> None:
+        """Test that no bonds are created between water molecules.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN no bonds are formed between respective sites.
+        """
+        with pytest.raises(AttributeError):
+            model.generate_bonds()
+
+        model.create_topology()
+        model.generate_bonds()
+        system: mda.Universe = model.universe
+
+        testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
+        with pytest.raises(mda.NoDataError):
+            _ = system.angles
+        with pytest.raises(mda.NoDataError):
+            _ = system.dihedrals
+        with pytest.raises(mda.NoDataError):
+            _ = system.impropers

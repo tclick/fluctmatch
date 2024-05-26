@@ -57,10 +57,10 @@ class CalphaModel(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
-        self._mapping: MappingProxyType[str, str] = MappingProxyType({"CA": "calpha", "ions": "bioion"})
-        self._selection: MappingProxyType[str, str] = MappingProxyType({"CA": "protein", "ions": "bioion"})
+        self._mapping: MappingProxyType[str, str] = MappingProxyType({"CA": "calpha"})
+        self._selection: MappingProxyType[str, str] = MappingProxyType({"CA": "protein"})
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         bonds: list[tuple[int, int]] = []
 
         # Create bonds between C-alphas in adjacent residues

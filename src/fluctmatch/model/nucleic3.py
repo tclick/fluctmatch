@@ -62,7 +62,7 @@ class NucleicModel(CoarseGrainModel):
             "C5": "hnucleicbase",
         })
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         bonds: list[tuple[int, int]] = []
         for segment in self._universe.segments:
             atom1 = segment.atoms.select_atoms("name P")

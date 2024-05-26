@@ -66,7 +66,7 @@ class Tip3pModel(CoarseGrainModel):
             key: value + 1 for key, value in zip(self._mapping.keys(), range(len(self._mapping)), strict=True)
         })
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         bonds: list[tuple[int, int]] = []
         for segment in self._universe.segments:
             for select1, select2 in combinations(self._selection.keys(), 2):

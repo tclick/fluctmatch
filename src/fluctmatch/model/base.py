@@ -63,23 +63,13 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
     mobile : Universe
         All-atom universe
 
-    Other Parameters
-    ----------------
-    com : bool, optional
-        Calculates the bead coordinates using either the center of mass
-        (default) or center of geometry.
-    guess_angles : bool, optional
-        Once Universe has been created, attempt to guess the connectivity
-        between atoms.  This will populate the .angles, .dihedrals, and
-        .impropers attributes of the Universe.
-
     Attributes
     ----------
     _universe : :class:`~MDAnalysis.Universe`
         The transformed universe
     """
 
-    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
+    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:  # noqa: ARG002
         """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
 
         Mapping must be a dictionary with atom names as keys.
@@ -96,8 +86,6 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         # Make a blank Universe for myself.
         self._mobile = mobile.copy()
         self._universe: mda.Universe = mda.Universe.empty(0)
-        self._com = kwargs.get("com", True)
-        self._guess = kwargs.get("guess_angles", False)
 
         # Named tuple for specific bead selections. This is primarily used to
         # determine positions.
@@ -199,19 +187,31 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         self._add_masses()
         self._add_charges()
 
-    def generate_bonds(self: Self) -> None:
-        """Add bonds, angles, dihedrals, and improper dihedrals to the universe."""
+    def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> None:
+        """Add bonds, angles, dihedrals, and improper dihedrals to the universe.
+
+        Parameters
+        ----------
+        rmin : float
+            Minimum bond distance
+        rmax : bool
+            Maximum bond distance
+        guess : bool, optional
+            Guess angles and dihedral and improper dihedral angles
+        """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
             raise AttributeError(message)
 
-        self._add_bonds()
-        if self._guess:
+        self._add_bonds(rmin=rmin, rmax=rmax)
+        if guess:
             self._add_angles()
             self._add_dihedrals()
             self._add_impropers()
 
-    def add_trajectory(self: Self, start: int | None = None, stop: int | None = None, step: int | None = None) -> None:
+    def add_trajectory(
+        self: Self, start: int | None = None, stop: int | None = None, step: int | None = None, com: bool = True
+    ) -> None:
         """Add coordinates to the new system.
 
         Parameters
@@ -222,6 +222,8 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             Final frame
         step : int, optional
             Number of frames to skip
+        com : bool, optional
+            Define positions either by center of mass (default) or of geometry
         """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
@@ -248,9 +250,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         for _ts in self._mobile.trajectory[start:stop:step]:
             # Positions
             try:
-                positions = np.asarray([
-                    _.center_of_mass() if self._com else _.center_of_geometry() for _ in beads if _
-                ])
+                positions = np.asarray([_.center_of_mass() if com else _.center_of_geometry() for _ in beads if _])
                 position_array.append(positions)
             except (AttributeError, mda.NoDataError):
                 pass
@@ -262,11 +262,37 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             self._universe.trajectory.add_transformations(transform)
         self._mobile.trajectory.rewind()
 
-    def transform(self: Self) -> mda.Universe:
+    def transform(
+        self: Self,
+        start: int | None = None,
+        stop: int | None = None,
+        step: int | None = None,
+        rmin: float = 0.0,
+        rmax: float = 10.0,
+        com: bool = True,
+        guess: bool = False,
+    ) -> mda.Universe:
         """Convert an all-atom universe to a coarse-grain model.
 
         Topologies are generated, bead connections are determined, and positions
         are read. This is a wrapper for the other three methods.
+
+        Parameters
+        ----------
+        start : int, optional
+            Beginning frame
+        stop : int, optional
+            Final frame
+        step : int, optional
+            Number of frames to skip
+        rmin : float
+            Minimum bond distance
+        rmax : bool
+            Maximum bond distance
+        com : bool, optional
+            Define positions either by center of mass (default) or of geometry
+        guess : bool, optional
+            Guess angles and dihedral and improper dihedral angles
 
         Returns
         -------
@@ -274,8 +300,8 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         """
         logger.debug("Transforming an all-atom system to an elastic network model.")
         self.create_topology()
-        self.generate_bonds()
-        self.add_trajectory()
+        self.generate_bonds(rmin=rmin, rmax=rmax, guess=guess)
+        self.add_trajectory(start=start, stop=stop, step=step, com=com)
         return self._universe
 
     def _add_masses(self: Self) -> None:
@@ -319,7 +345,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         self._universe.add_TopologyAttr("charges", charges)
 
     @abc.abstractmethod
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:
         msg = "Subclass must implement this method."
         raise NotImplementedError(msg)
 

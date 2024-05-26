@@ -222,9 +222,7 @@ class CbetaSelection(selection.ProteinSelection):
     """Contains only the beta-carbon of a protein."""
 
     token: ClassVar[str] = "cbeta"
-    cbeta: ClassVar[set[str]] = {
-        "CB",
-    }
+    cbeta: ClassVar[set[str]] = {"CB"}
 
     def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.

@@ -55,5 +55,5 @@ class WaterModel(CoarseGrainModel):
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"OW": "name OW"})
         self._selection: MappingProxyType[str, str] = MappingProxyType({"OW": "water"})
 
-    def _add_bonds(self: Self) -> None:
+    def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         self._universe.add_TopologyAttr(Bonds([]))
