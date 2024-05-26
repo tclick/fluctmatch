@@ -51,7 +51,6 @@ class WaterModel(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
-        self._guess: bool = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"OW": "name OW"})
         self._selection: MappingProxyType[str, str] = MappingProxyType({"OW": "water"})
 

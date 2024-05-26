@@ -51,7 +51,6 @@ class SolventIonModel(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
-        self._guess: bool = False
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"ION": "name LI LIT K NA F CL BR I"})
         self._selection: MappingProxyType[str, str] = self._mapping
 
