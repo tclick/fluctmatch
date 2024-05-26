@@ -30,9 +30,10 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false
+# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportArgumentType=false
 """Various utilities for the models."""
 
+import string
 from concurrent.futures import ProcessPoolExecutor
 
 import MDAnalysis as mda
@@ -112,3 +113,42 @@ def merge(*universes: mda.Universe) -> mda.Universe:
         universe.trajectory.add_transformations(transform)
 
     return universe
+
+
+def rename_universe(universe: mda.Universe, /) -> None:
+    """Rename the atoms and residues within a universe.
+
+    Standardizes naming of the universe by renaming atoms and residues based
+    upon the number of segments. Atoms are labeled as 'A001', 'A002', 'A003',
+    ..., 'A999' for the first segment, and 'B001', 'B002', 'B003', ..., 'B999'
+    for the second segment. Residues are named in a similar fashion according to
+    their segment.
+
+    Parameters
+    ----------
+    universe : :class:`~MDAnalysis.Universe`
+        A collection of atoms in a universe.
+    """
+    logger.info("Renaming atom names and atom core within the universe.")
+    segments: mda.SegmentGroup = universe.segments
+    attributes: dict[str, NDArray] = {
+        "names": np.array([
+            f"{letter}{i:0>5d}"
+            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
+            for i, _ in enumerate(segment.atoms, 1)
+        ]),
+        "resnames": np.array([
+            f"{letter}{i:0>5d}"
+            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
+            for i, _ in enumerate(segment.residues, 1)
+        ]),
+        "types": np.array([
+            f"{letter}{i:0>5d}"
+            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
+            for i, _ in enumerate(segment.atoms, 1)
+        ]),
+    }
+
+    for attr, value in attributes.items():
+        logger.debug(f"Adding {attr} to the universe")
+        universe.add_TopologyAttr(topologyattr=attr, values=value)
