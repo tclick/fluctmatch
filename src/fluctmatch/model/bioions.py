@@ -33,14 +33,11 @@
 # pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false, reportOptionalMemberAccess=false
 """Select ions typically found as cofactors within proteins."""
 
-from collections.abc import MutableMapping
 from types import MappingProxyType
 from typing import ClassVar, Self
 
 import MDAnalysis as mda
-import numpy as np
-from MDAnalysis.core.topologyattrs import Atomtypes, Bonds
-from numpy.typing import NDArray
+from MDAnalysis.core.topologyattrs import Bonds
 
 from fluctmatch.model.base import CoarseGrainModel
 
@@ -56,13 +53,6 @@ class BioionModel(CoarseGrainModel):
 
         self._mapping: MappingProxyType[str, str] = MappingProxyType({"ions": "bioion"})
         self._selection: MappingProxyType[str, str] = self._mapping
-
-    def _add_atomtypes(self: Self) -> None:
-        resnames: NDArray = np.unique(self._universe.residues.resnames)
-        restypes: MutableMapping[str, int] = dict(zip(resnames, np.arange(resnames.size) + 20, strict=False))
-
-        atomtypes: list[int] = [restypes[atom.name] for atom in self._universe.atoms]
-        self._universe.add_TopologyAttr(Atomtypes(atomtypes))
 
     def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
         self._universe.add_TopologyAttr(Bonds([]))
