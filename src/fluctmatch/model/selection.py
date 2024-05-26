@@ -378,27 +378,6 @@ class HNucleicSugarSelection(AdditionalNucleicSelection, selection.NucleicSugarS
         super().__init__(parser, tokens)
         self.sug_atoms = self.sug_atoms.union("H1' O1' O2' H2' H2'' O3' H3' H3T H4'".split())
 
-    def _apply(self: Self, group: AtomGroup) -> NDArray:
-        """Apply selection to atom group.
-
-        Parameters
-        ----------
-        group : AtomGroup
-            Group of atoms for selection
-
-        Returns
-        -------
-        NDArray
-            Selection of atom names
-        """
-        resnames = group.universe._topology.resnames
-        nmidx = resnames.nmidx[group.resindices]
-
-        matches = [ix for (nm, ix) in resnames.namedict.items() if nm in self.nucl_res]
-        mask = np.in1d(nmidx, matches)
-
-        return group[mask]
-
 
 class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
     """Contains additional atoms on the base region of the nucleic acids."""
@@ -408,34 +387,6 @@ class HBaseSelection(AdditionalNucleicSelection, selection.BaseSelection):
     def __init__(self: Self, parser: str, tokens: Iterable[str]) -> None:
         super().__init__(parser, tokens)
         self.base_atoms = self.base_atoms.union("O8 H8 H21 H22 H2 O6 H6 H61 H62 H41 H42 H5 H51 H52 H53 H3 H7".split())
-
-    def _apply(self: Self, group: AtomGroup) -> NDArray:
-        """Apply selection to atom group.
-
-        Parameters
-        ----------
-        group : AtomGroup
-            Group of atoms for selection
-
-        Returns
-        -------
-        NDArray
-            Selection of atom names
-        """
-        atomnames = group.universe._topology.names
-        resnames = group.universe._topology.resnames
-
-        # filter by atom names
-        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm in self.base_atoms]
-        nmidx = atomnames.nmidx[group.ix]
-        group = group[np.in1d(nmidx, name_matches)]
-
-        # filter by resnames
-        resname_matches = [ix for (nm, ix) in resnames.namedict.items() if nm in self.nucl_res]
-        nmidx = resnames.nmidx[group.resindices]
-        group = group[np.in1d(nmidx, resname_matches)]
-
-        return group.unique
 
 
 class NucleicPhosphateSelection(AdditionalNucleicSelection):
