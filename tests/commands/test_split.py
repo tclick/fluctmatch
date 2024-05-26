@@ -96,9 +96,13 @@ class TestSplit:
             json_file = log_file.with_suffix(".json")
 
             cli_runner.invoke(main, f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w 1000 -l {log_file}")
-            result = cli_runner.invoke(main, f"split -s {PSF} -f {DCD} --json {json_file} -o cg.dcd  -l {log_file}")
+            args = f"split -s {PSF} -f {DCD} --json {json_file} -o cg.dcd  -l {log_file} --average"
+            result = cli_runner.invoke(main, args)
 
             traj = outdir / "01" / "cg.dcd"
+            crd = traj.with_suffix(".crd")
             assert result.exit_code == os.EX_OK
             assert traj.exists()
             assert traj.stat().st_size > 0
+            assert crd.exists()
+            assert crd.stat().st_size > 0
