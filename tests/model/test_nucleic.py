@@ -59,7 +59,7 @@ def universe() -> mda.Universe:
 
 
 class TestNucleic3:
-    """Test C-alpha model."""
+    """Test 3-bead nucleic acid model."""
 
     @pytest.fixture(scope="class")
     def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
@@ -156,6 +156,73 @@ class TestNucleic3:
 
         # Test topology creation
         testing.assert_equal(system.atoms.n_atoms, atoms.n_residues * 3, err_msg="Number of atoms not equal")
+        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
+        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal", rtol=1e-01)
+
+        # Test bond generation
+        assert len(system.bonds) > 0, "Bonds not generated"
+        assert len(system.angles) > 0, "Angles not generated"
+        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
+        assert len(system.dihedrals) > 0, "Improper dihedral angles not generated"
+
+        # Test trajectory addition
+        positions: list[list[NDArray]] = []
+        for residue, selection in itertools.product(atoms.residues, model._mapping.values()):
+            value = (
+                selection.get(residue.resname, "hsidechain and not name H*")
+                if isinstance(selection, MappingProxyType)
+                else selection
+            )
+            if residue.atoms.select_atoms(value):
+                positions.append(residue.atoms.select_atoms(value).center_of_mass())
+        testing.assert_allclose(positions, system.atoms.positions, err_msg="The coordinates do not match.")
+
+
+class TestNucleic4(TestNucleic3):
+    """Test 4-bead nucleic acid model."""
+
+    @pytest.fixture()
+    def model(self: Self, universe: mda.Universe) -> nucleic3.NucleicModel:
+        """Fixture for a C-alpha model.
+
+        Parameters
+        ----------
+        universe : mda.Universe
+            Universe with protein, DNA, and water
+
+        Returns
+        -------
+        C-alpha only universe with coordinates
+        """
+        return coarse_grain.get("NUCLEIC4", universe, guess_angles=True)
+
+    def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: nucleic3.NucleicModel) -> None:
+        """Test topology for C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN number of atoms, residues, masses, and charges should be equal
+        """
+        model.create_topology()
+        system: mda.Universe = model.universe
+
+        testing.assert_equal(system.atoms.n_atoms, atoms.residues.n_residues * 4, err_msg="Number of atoms not equal")
+        testing.assert_equal(
+            system.residues.n_residues, atoms.residues.n_residues, err_msg="Number of residues not equal"
+        )
+        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal", rtol=1e-01)
+
+    def test_transformation(self: Self, atoms: mda.AtomGroup, model: nucleic3.NucleicModel) -> None:
+        """Test transformation from an all-atom system to C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN the system will have a proper topology and trajectory.
+        """
+        system = model.transform()
+
+        # Test topology creation
+        testing.assert_equal(system.atoms.n_atoms, atoms.n_residues * 4, err_msg="Number of atoms not equal")
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
         testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal", rtol=1e-01)
 
