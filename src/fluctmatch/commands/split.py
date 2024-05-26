@@ -45,7 +45,7 @@ from loguru import logger
 
 from fluctmatch import __copyright__
 from fluctmatch.libs.logging import config_logger
-from fluctmatch.libs.write_traj import write_trajectory
+from fluctmatch.libs.write_traj import write_average_structure, write_trajectory
 
 
 @click.command(
@@ -93,6 +93,15 @@ from fluctmatch.libs.write_traj import write_trajectory
     help="Trajectory output file",
 )
 @click.option(
+    "-c",
+    "--crdfile",
+    metavar="FILE",
+    default="cg.crd",
+    show_default=True,
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    help="Average structure file",
+)
+@click.option(
     "-l",
     "--logfile",
     metavar="WARNING",
@@ -101,6 +110,7 @@ from fluctmatch.libs.write_traj import write_trajectory
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
+@click.option("--average", is_flag=True, help="Save the average structure of the trajectory")
 @click.option(
     "-v",
     "--verbosity",
@@ -115,6 +125,8 @@ def split(
     outfile: Path,
     windows_input: Path,
     logfile: Path,
+    average: bool,
+    crdfile: Path,
     verbosity: str,
 ) -> None:
     """Split a trajectory into smaller trajectories using the JSON file created during setup.
@@ -131,6 +143,10 @@ def split(
         Location of log file
     windows_input : Path, default=$CWD/setup.json
         JSON file
+    average : bool
+        Save the average structure of the trajectory
+    crdfile : Path
+        Average structure of the trajectory
     verbosity : str, default=INFO
         Level of verbosity for logging output
     """
@@ -148,6 +164,15 @@ def split(
         write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
         for traj_file, start, stop in info
     )
-
     loop = asyncio.get_event_loop()
     loop.run_until_complete(asyncio.gather(*tasks))
+
+    if average:
+        logger.info("Saving the average structures of each trajectory...")
+        info = ((outdir / crdfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
+        tasks = (
+            write_average_structure(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
+            for traj_file, start, stop in info
+        )
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(*tasks))

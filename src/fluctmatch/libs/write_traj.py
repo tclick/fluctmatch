@@ -34,12 +34,14 @@
 """Write trajectory files."""
 
 import asyncio
+from pathlib import Path
 
 import MDAnalysis as mda
+from MDAnalysis.analysis.align import AverageStructure
 
 
 async def write_trajectory(
-    universe: mda.Universe, filename: str, start: int | None = None, stop: int | None = None
+    universe: mda.Universe, filename: str | Path, start: int | None = None, stop: int | None = None
 ) -> None:
     """Asynchronously write a trajectory file from a slice of the trajectory.
 
@@ -58,3 +60,24 @@ async def write_trajectory(
         for _ in universe.trajectory[start:stop]:
             w.write(universe.atoms)
             await asyncio.sleep(0)  # Yield control for async behavior
+
+
+async def write_average_structure(
+    universe: mda.Universe, filename: str | Path, start: int | None = None, stop: int | None = None
+) -> None:
+    """Asynchronously write a coordinate file from a slice of the trajectory.
+
+    Parameters
+    ----------
+    universe : mda.Universe
+        Universe to be written.
+    filename : str or Path
+        new trajectory file
+    start : int, optional
+        beginning frame of the trajectory
+    stop : int, optional
+        final frame of the trajectory
+    """
+    average = AverageStructure(universe)
+    average_universe: mda.AtomGroup = average.run(start=start, stop=stop).results.universe.atoms
+    average_universe.convert_to("PARMED").save(filename, overwrite=True)
