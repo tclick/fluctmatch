@@ -55,6 +55,8 @@ __all__: list[str] = [
     "RTF",
     "STR",
     "JSON",
+    "FLUCTPSF",
+    "FLUCTDCD",
 ]
 
 with resources.as_file(_data_ref / "trex1.pdb") as f:
@@ -110,3 +112,9 @@ with resources.as_file(_data_ref / "cg.stream") as f:
 
 with resources.as_file(_data_ref / "cg.json") as f:
     JSON: str = f.as_posix()
+
+with resources.as_file(_data_ref / "fluctmatch.psf") as f:
+    FLUCTPSF: str = f.as_posix()
+
+with resources.as_file(_data_ref / "fluctmatch.dcd") as f:
+    FLUCTDCD: str = f.as_posix()
