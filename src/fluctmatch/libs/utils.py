@@ -131,24 +131,9 @@ def rename_universe(universe: mda.Universe, /) -> None:
     """
     logger.info("Renaming atom names and atom core within the universe.")
     segments: mda.SegmentGroup = universe.segments
-    attributes: dict[str, NDArray] = {
-        "names": np.array([
-            f"{letter}{i:0>5d}"
-            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
-            for i, _ in enumerate(segment.atoms, 1)
-        ]),
-        "resnames": np.array([
-            f"{letter}{i:0>5d}"
-            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
-            for i, _ in enumerate(segment.residues, 1)
-        ]),
-        "types": np.array([
-            f"{letter}{i:0>5d}"
-            for letter, segment in zip(string.ascii_uppercase, segments, strict=False)
-            for i, _ in enumerate(segment.atoms, 1)
-        ]),
-    }
-
-    for attr, value in attributes.items():
-        logger.debug(f"Adding {attr} to the universe")
-        universe.add_TopologyAttr(topologyattr=attr, values=value)
+    for letter, segment in zip(string.ascii_uppercase, segments, strict=False):
+        for i, atom in enumerate(segment.atoms, 1):
+            atom.name = f"{letter}{i:0>5d}"
+            atom.type = f"{letter}{i:0>5d}"
+        for i, residue in enumerate(segment.residues, 1):
+            residue.resname = f"{letter}{i:0>5d}"
