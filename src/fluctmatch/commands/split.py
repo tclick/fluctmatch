@@ -44,8 +44,8 @@ from click_help_colors import HelpColorsCommand
 from loguru import logger
 
 from fluctmatch import __copyright__
+from fluctmatch.libs import write_files
 from fluctmatch.libs.logging import config_logger
-from fluctmatch.libs.write_traj import write_average_structure, write_trajectory
 
 
 @click.command(
@@ -161,7 +161,7 @@ def split(
     logger.info("Splitting trajectory into smaller trajectories...")
     info = ((outdir / outfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
     tasks = (
-        write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
+        write_files.write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
         for traj_file, start, stop in info
     )
     loop = asyncio.get_event_loop()
@@ -171,7 +171,7 @@ def split(
         logger.info("Saving the average structures of each trajectory...")
         info = ((outdir / crdfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
         tasks = (
-            write_average_structure(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
+            write_files.write_average_structure(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
             for traj_file, start, stop in info
         )
         loop = asyncio.get_event_loop()
