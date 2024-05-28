@@ -171,7 +171,6 @@ def setup(
 
     # Create the parent subdirectory
     with windows_output.open(mode="w", newline="") as json_file:
-        print(f"Writing {windows_output}")
         logger.info(f"Writing {windows_output}")
         json.dump(ranges, json_file)
 
