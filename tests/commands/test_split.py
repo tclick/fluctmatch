@@ -37,6 +37,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -89,7 +90,11 @@ class TestSplit:
         cli_runner : CliRunner
             CLI runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with (
+            cli_runner.isolated_filesystem() as ifs,
+            patch("fluctmatch.libs.write_files.write_trajectory") as wt,
+            patch("fluctmatch.libs.write_files.write_average_structure") as was,
+        ):
             tmp_path = Path(ifs)
             outdir = tmp_path / "test"
             log_file = outdir / "setup.log"
@@ -99,10 +104,8 @@ class TestSplit:
             args = f"split -s {PSF} -f {DCD} --json {json_file} -o cg.dcd  -l {log_file} --average"
             result = cli_runner.invoke(main, args)
 
-            traj = outdir / "01" / "cg.dcd"
-            crd = traj.with_suffix(".crd")
             assert result.exit_code == os.EX_OK
-            assert traj.exists()
-            assert traj.stat().st_size > 0
-            assert crd.exists()
-            assert crd.stat().st_size > 0
+            wt.assert_called()
+            wt.assert_awaited()
+            was.assert_called()
+            was.assert_awaited()

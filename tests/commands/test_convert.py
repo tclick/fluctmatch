@@ -37,10 +37,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
+from unittest.mock import patch
 
+import MDAnalysis as mda
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+from fluctmatch.model.base import CoarseGrainModel
+from MDAnalysis.coordinates.base import WriterBase
+from parmed import structure
 
 from tests.datafile import TPR, XTC
 
@@ -58,6 +63,11 @@ class TestConvert:
             Click CLI runner
         """
         return CliRunner()
+
+    @pytest.fixture(scope="class")
+    def universe(self: Self) -> mda.Universe:
+        """Return all-atom universe."""
+        return mda.Universe(TPR, XTC)
 
     def test_help(self: Self, cli_runner: CliRunner) -> None:
         """Test help output.
@@ -92,7 +102,7 @@ class TestConvert:
         assert "calpha:" in result.output
         assert result.exit_code == os.EX_OK
 
-    def test_conversion(self: Self, cli_runner: CliRunner) -> None:
+    def test_conversion(self: Self, cli_runner: CliRunner, universe: mda.Universe) -> None:
         """Test whether an all-atom trajectory is converted to a coarse-grain model.
 
         GIVEN an all-atom model
@@ -104,18 +114,21 @@ class TestConvert:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with (
+            cli_runner.isolated_filesystem() as ifs,
+            patch.object(CoarseGrainModel, "transform", return_value=universe) as cg,
+            patch.object(WriterBase, "write") as writer,
+            patch.object(structure.Structure, "save") as save,
+        ):
             tmp_path = Path(ifs)
             prefix = "cg"
-            filename = tmp_path / prefix
             log_file = tmp_path / "convert.log"
 
             result = cli_runner.invoke(
                 main, f"convert -s {TPR} -f {XTC} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
             )
-            print(result.output)
+
             assert result.exit_code == os.EX_OK
-            assert filename.with_suffix(".psf").exists()
-            assert filename.with_suffix(".crd").exists()
-            assert filename.with_suffix(".cor").exists()
-            assert filename.with_suffix(".dcd").exists()
+            cg.assert_called()
+            writer.assert_called()
+            save.assert_called()

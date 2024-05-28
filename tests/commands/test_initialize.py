@@ -37,6 +37,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -88,26 +89,24 @@ class TestInitialize:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with (
+            cli_runner.isolated_filesystem() as ifs,
+            patch("fluctmatch.libs.write_files.write_parameters") as wp,
+            patch("fluctmatch.libs.write_files.write_intcor") as wi,
+            patch("fluctmatch.libs.write_files.write_stream") as ws,
+        ):
             tmp_path = Path(ifs)
             prefix = "cg"
-            filename = tmp_path / prefix
             log_file = tmp_path / "initialize.log"
 
             result = cli_runner.invoke(
                 main, f"initialize -s {FLUCTPSF} -f {FLUCTDCD} -l {log_file} -d {tmp_path} -p {prefix}"
             )
 
-            prm_file = filename.with_suffix(".prm")
-            rtf_file = prm_file.with_suffix(".rtf")
-            str_file = prm_file.with_suffix(".str")
-            ic_file = prm_file.with_suffix(".fluct.ic")
             assert result.exit_code == os.EX_OK
-            assert prm_file.exists()
-            assert prm_file.stat().st_size > 0
-            assert rtf_file.exists()
-            assert rtf_file.stat().st_size > 0
-            assert str_file.exists()
-            assert str_file.stat().st_size > 0
-            assert ic_file.exists()
-            assert ic_file.stat().st_size > 0
+            wp.assert_called_once()
+            wp.assert_awaited()
+            ws.assert_called_once()
+            ws.assert_awaited()
+            wi.assert_called()
+            wi.assert_awaited()

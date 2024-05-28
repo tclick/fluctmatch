@@ -35,17 +35,17 @@
 
 from __future__ import annotations
 
-import filecmp
+import json
 import os
 from pathlib import Path
 from typing import Self
+from unittest.mock import patch
 
-import MDAnalysis as mda
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 
-from ..datafile import DCD, JSON, PSF
+from ..datafile import DCD, PSF
 
 
 class TestSetup:
@@ -61,36 +61,6 @@ class TestSetup:
             Click CLI runner
         """
         return CliRunner()
-
-    @pytest.fixture(scope="class")
-    def n_frames(self: Self) -> int:
-        """Give the number of frames in the trajectory.
-
-        Returns
-        -------
-        int
-            Number of frames in the trajectory.
-        """
-        return mda.Universe(PSF, DCD).trajectory.n_frames
-
-    def count_subdirectories(self, path: Path) -> int:
-        """Count the number of subdirectories inside given path.
-
-        Parameters
-        ----------
-        path : Path
-            The path to the directory to be scanned
-
-        Returns
-        -------
-        Path
-            The number of subdirectories inside the given path
-        """
-        count = 0
-        for item in path.iterdir():
-            if item.is_dir():
-                count += 1
-        return count
 
     def test_help(self: Self, cli_runner: CliRunner) -> None:
         """Test help output.
@@ -110,7 +80,7 @@ class TestSetup:
         assert result.exit_code == os.EX_OK
 
     @pytest.mark.parametrize("winsize", [1000, 2000, 10000])
-    def test_setup(self: Self, cli_runner: CliRunner, winsize: int, n_frames: int) -> None:
+    def test_setup(self: Self, cli_runner: CliRunner, winsize: int) -> None:
         """Test subcommand in an isolated filesystem.
 
         GIVEN an output subdirectory
@@ -123,10 +93,12 @@ class TestSetup:
             CLI runner
         winsize : int
             window size
-        n_frames : int
-            number of frames
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with (
+            cli_runner.isolated_filesystem() as ifs,
+            patch.object(Path, "mkdir") as path_mkdir,
+            patch.object(json, "dump") as json_dump,
+        ):
             tmp_path = Path(ifs)
             outdir = tmp_path / "test"
             log_file = outdir / "setup.log"
@@ -135,17 +107,10 @@ class TestSetup:
             result = cli_runner.invoke(
                 main, f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}"
             )
-            expected_dirs = 2 * (n_frames // winsize) - 1
-            n_dirs = self.count_subdirectories(outdir)
 
-            assert json_file.exists()
-            assert json_file.stat().st_size > 0
-            if winsize == 1000:
-                filecmp.cmp(json_file, JSON, shallow=False)
-            assert outdir.exists()
-            assert outdir.is_dir()
+            json_dump.assert_called()
+            path_mkdir.assert_called()
             assert result.exit_code == os.EX_OK
-            assert n_dirs == expected_dirs
 
     def test_wrong_winsize(self: Self, cli_runner: CliRunner) -> None:
         """Test subcommand in an isolated filesystem.

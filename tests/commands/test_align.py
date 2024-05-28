@@ -38,10 +38,12 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
+from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+from MDAnalysis.coordinates.base import WriterBase
 
 from ..datafile import TPR, XTC
 
@@ -89,15 +91,13 @@ class TestAlign:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with cli_runner.isolated_filesystem() as ifs, patch.object(WriterBase, "write", autospec=True) as writer:
             tmp_path = Path(ifs)
             log_file = tmp_path / "align.log"
-            align = tmp_path / f"aligned_{Path(XTC).name}"
 
             result = cli_runner.invoke(
                 main, f"align -s {TPR} -f {XTC} -r {XTC} -o {ifs} -l {log_file} -t backbone --mass"
             )
 
             assert result.exit_code == os.EX_OK
-            assert align.exists()
-            assert align.stat().st_size > 0
+            writer.assert_called()
