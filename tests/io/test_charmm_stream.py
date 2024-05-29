@@ -111,8 +111,7 @@ class TestCharmmStream:
         with pytest.raises(AttributeError):
             stream.initialize(universe)
 
-    @pytest.mark.asyncio()
-    async def test_write(self: Self, universe: mda.Universe, tmp_path: Path) -> None:
+    def test_write(self: Self, universe: mda.Universe, stream_file: fake_file.FakeFile) -> None:
         """Test write method.
 
         GIVEN a universe and an initialized CHARMM stream object
@@ -123,14 +122,14 @@ class TestCharmmStream:
         ----------
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
-        tmp_path : Path
-            Location for temporary file
+        param_file : :class:`pyfakefs.fake_file.FakeFile
+            Empty file in memory
         """
-        filename = tmp_path / "charmm.str"
+        filename = Path(stream_file.name)
         stream = CharmmStream(filename=filename)
         stream.initialize(universe)
 
-        await stream.write()
+        stream.write()
 
         assert filename.exists()
         assert filename.stat().st_size > 0

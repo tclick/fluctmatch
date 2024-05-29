@@ -38,7 +38,6 @@ import getpass
 from pathlib import Path
 from typing import Self
 
-import aiofiles
 import MDAnalysis as mda
 from loguru import logger
 
@@ -88,14 +87,14 @@ class CharmmStream:
             line = f"DIST {atom1.segid:<8s} {atom1.resid:>4d} {atom1.name:<8s} {atom2.segid:<8s} {atom2.resid:>4d} {atom2.name:<8s} {0.0:.1f}"
             self._lines.append(line)
 
-    async def write(self: Self) -> None:
+    def write(self: Self) -> None:
         """Write bond data to stream file."""
         logger.info(f"Writing bond data to {self._filename}")
-        async with aiofiles.open(self._filename, mode="w") as stream:
+        with self._filename.open(mode="w") as stream:
             for title in self._title:
-                await stream.write(title + "\n")
+                stream.write(title + "\n")
 
             for line in self._lines:
-                await stream.write(f"IC EDIT\n{line}\nEND\n\n")
+                stream.write(f"IC EDIT\n{line}\nEND\n\n")
 
-            await stream.write("RETURN\n")
+            stream.write("RETURN\n")
