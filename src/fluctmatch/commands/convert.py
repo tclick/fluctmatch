@@ -258,22 +258,23 @@ def convert(
                 model_type, universe, com=com, guess=guess, uniform=uniform, start=start, stop=stop
             )
             multiverse.append(cg_model.transform())
-            click.echo(f"Number of multiverses: {len(multiverse)}")
-        cg_model = utils.merge(*multiverse)
+        logger.info(f"Number of multiverses: {len(multiverse)}")
+        universe = utils.merge(*multiverse)
 
     # Write CHARMM PSF file.
     try:
         new_file = filename.with_suffix(".psf")
         logger.info(f"Saving topology to {new_file}")
-        cg_model.atoms.convert_to("PARMED").save(new_file.as_posix(), overwrite=overwrite)
+        universe.atoms.convert_to("PARMED").save(new_file.as_posix(), overwrite=overwrite)
     except OSError as err:
         message = f"File {new_file} already exists. To overwrite, please use '--overwrite'."
+        err.add_note(message)
         logger.exception(message)
-        raise OSError(message) from err
+        raise
 
     # Determine the average structure of the trajectory and write a CHARMM coordinate file.
     verbose = verbosity == "DEBUG"
-    average = align.AverageStructure(cg_model).run(start=start, stop=stop, verbose=verbose)
+    average = align.AverageStructure(universe).run(start=start, stop=stop, verbose=verbose)
     average_model: mda.Universe = average.results.universe
     try:
         new_file = filename.with_suffix(".crd")
@@ -286,10 +287,11 @@ def convert(
             link_file.symlink_to(new_file, target_is_directory=False)
     except OSError as err:
         message = f"File {new_file} already exists. To overwrite, please use '--overwrite'."
+        err.add_note(message)
         logger.exception(message)
-        raise OSError(message) from err
+        raise
 
     if write_traj:
         with mda.Writer(filename.with_suffix(".dcd").as_posix(), n_atoms=cg_model.atoms.n_atoms) as writer:
-            for _ in cg_model.trajectory:
+            for _ in universe.trajectory:
                 writer.write(cg_model.atoms)
