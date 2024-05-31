@@ -35,7 +35,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 
 import click
@@ -47,7 +46,9 @@ from numpy.typing import NDArray
 from scipy import constants
 
 from fluctmatch import __copyright__
-from fluctmatch.libs import write_files
+from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
+from fluctmatch.io.charmm.parameter import CharmmParameter
+from fluctmatch.io.charmm.stream import CharmmStream
 from fluctmatch.libs.logging import config_logger
 
 
@@ -166,18 +167,28 @@ def initialize(
     fluctuations: NDArray = distances.std(axis=0)
     forces: NDArray = boltzmann / np.square(fluctuations)
 
-    # filenames
+    # CHARMM parameter, topology, and stream files
+    parameters = CharmmParameter()
+    parameters.initialize(universe, forces=forces, lengths=lengths)
     prm_file = directory / prefix.with_suffix(".prm")
     rtf_file = prm_file.with_suffix(".rtf")
+    str_file = prm_file.with_suffix(".str")
+
+    parameters.write(par=prm_file, top=rtf_file, stream=str_file)
+
+    # Stream file with bond information
     str_file = prm_file.with_suffix(".bonds.str")
+    stream = CharmmStream(str_file)
+    stream.initialize(universe)
+    stream.write()
+
+    # Internal coordinate files
     avg_ic_file = prm_file.with_suffix(".average.ic")
     fluct_ic_file = prm_file.with_suffix(".fluct.ic")
+    average_ic = CharmmInternalCoordinates()
+    average_ic.initialize(universe, data=lengths)
+    average_ic.write(avg_ic_file)
 
-    loop = asyncio.get_event_loop()
-    tasks = [
-        write_files.write_parameters(universe, forces=forces, distances=lengths, top=rtf_file, par=prm_file),
-        write_files.write_stream(universe, filename=str_file),
-        write_files.write_intcor(universe, lengths, filename=avg_ic_file),
-        write_files.write_intcor(universe, fluctuations, filename=fluct_ic_file),
-    ]
-    loop.run_until_complete(asyncio.gather(*tasks))
+    fluct_ic = CharmmInternalCoordinates()
+    fluct_ic.initialize(universe, data=forces)
+    fluct_ic.write(fluct_ic_file)

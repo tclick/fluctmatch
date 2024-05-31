@@ -34,7 +34,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 
@@ -160,19 +159,11 @@ def split(
 
     logger.info("Splitting trajectory into smaller trajectories...")
     info = ((outdir / outfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
-    tasks = (
+    for traj_file, start, stop in info:
         write_files.write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
-        for traj_file, start, stop in info
-    )
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(asyncio.gather(*tasks))
 
     if average:
         logger.info("Saving the average structures of each trajectory...")
         info = ((outdir / crdfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
-        tasks = (
+        for traj_file, start, stop in info:
             write_files.write_average_structure(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
-            for traj_file, start, stop in info
-        )
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(asyncio.gather(*tasks))

@@ -37,7 +37,6 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
-from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
@@ -89,12 +88,7 @@ class TestInitialize:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with (
-            cli_runner.isolated_filesystem() as ifs,
-            patch("fluctmatch.libs.write_files.write_parameters") as wp,
-            patch("fluctmatch.libs.write_files.write_intcor") as wi,
-            patch("fluctmatch.libs.write_files.write_stream") as ws,
-        ):
+        with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
             prefix = "cg"
             log_file = tmp_path / "initialize.log"
@@ -104,9 +98,3 @@ class TestInitialize:
             )
 
             assert result.exit_code == os.EX_OK
-            wp.assert_called_once()
-            wp.assert_awaited()
-            ws.assert_called_once()
-            ws.assert_awaited()
-            wi.assert_called()
-            wi.assert_awaited()
