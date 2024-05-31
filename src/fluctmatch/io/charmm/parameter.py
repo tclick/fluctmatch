@@ -45,7 +45,7 @@ from numpy.typing import NDArray
 
 
 class CharmmParameter:
-    """Initialize and write a CHARMM stream data from bond data."""
+    """Initialize, read, or write CHARMM parameter data."""
 
     def __init__(self: Self) -> None:
         """Prepare a CHARMM parameter file."""
@@ -212,6 +212,11 @@ class CharmmParameter:
         ----------
         filename : str or Path
             Parameter file
+
+        Raises
+        ------
+        FileNotFoundError
+            if parameter, topology, or stream file not found
         """
         param_file = Path(filename)
         try:

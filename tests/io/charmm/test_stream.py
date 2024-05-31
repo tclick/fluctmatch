@@ -37,7 +37,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.io.charmm_stream import CharmmStream
+from fluctmatch.io.charmm.stream import CharmmStream
 from pyfakefs import fake_file, fake_filesystem
 
 from tests.datafile import FLUCTDCD, FLUCTPSF

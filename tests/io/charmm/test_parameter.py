@@ -39,7 +39,7 @@ from typing import Self
 import MDAnalysis as mda
 import numpy as np
 import pytest
-from fluctmatch.io.charmm_parameter import CharmmParameter
+from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
 from pyfakefs import fake_file, fake_filesystem
 
@@ -149,8 +149,6 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
-        tmp_path : Path
-            A parameter file
         param_file : :class:`pyfakefs.fake_file.FakeFile
             Empty file in memory
         """
@@ -176,8 +174,6 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
-        tmp_path : Path
-            A parameter file
         """
         rng = np.random.default_rng()
         forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
