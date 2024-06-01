@@ -1,0 +1,40 @@
+calc fluctu  @input + 1
+
+ener
+
+! Minimize structure using steepest descent and ABNR
+mini   sd nstep 100
+mini abnr nstep 2000
+
+coor orie rms mass
+scalar wmain copy mass
+
+ioformat extended
+write coor card name "$nma_coord"
+*
+
+stream "$stream"
+
+ic fill
+write ic card resid name "$average"
+
+calc nmode   ?natom * 3
+set nmodes   @nmode
+set type     temp
+
+open write unit @fluctu card name "fluctuation"
+*
+
+! Perform normal mode analysis at desired temperature for vibrational normal
+! modes
+vibran nmode @nmodes
+    diag fini
+    fluc ic @type @temp tfre 0.0 mode 7 thru @nmodes
+    ic save
+    ic write unit @fluctu resid
+end
+
+close unit @fluctu
+close unit @input
+
+stop
