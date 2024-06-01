@@ -41,7 +41,6 @@ import numpy as np
 import pytest
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
-from pyfakefs import fake_file, fake_filesystem
 
 from tests.datafile import FLUCTDCD, FLUCTPSF, PRM, STR
 
@@ -60,21 +59,21 @@ class TestCharmmParameter:
         """
         return mda.Universe(FLUCTPSF, FLUCTDCD)
 
-    @pytest.fixture(scope="class")
-    def param_file(self: Self, fs_class: fake_filesystem.FakeFilesystem) -> fake_file.FakeFile:
+    @pytest.fixture()
+    def param_file(self: Self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
         ----------
-        fs_class : :class:`pyfakefs.fake_filesystem.FakeFileSystem`
+        tmp_path : Path
             Filesystem
 
         Returns
         -------
-        :class:`pyfakefs.fake_file.FakeFile
+        Path
             Empty file in memory
         """
-        return fs_class.create_file("charmm.prm")
+        return tmp_path / "charmm.prm"
 
     def test_initialize(self: Self, universe: mda.Universe) -> None:
         """Test initialization of a parameter file.
@@ -138,7 +137,7 @@ class TestCharmmParameter:
         with pytest.raises(mda.NoDataError):
             param.initialize(universe, forces=forces, lengths=forces)
 
-    def test_write(self: Self, universe: mda.Universe, param_file: fake_file.FakeFile) -> None:
+    def test_write(self: Self, universe: mda.Universe, param_file: Path) -> None:
         """Test writing a parameter file.
 
         GIVEN a universe and a parameter file
@@ -149,19 +148,18 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
-        param_file : :class:`pyfakefs.fake_file.FakeFile
+        param_file : Path
             Empty file in memory
         """
-        filename = Path(param_file.name)
         rng = np.random.default_rng()
         forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
         lengths = universe.bonds.values()
         param = CharmmParameter()
         param.initialize(universe, forces=forces, lengths=lengths)
 
-        param.write(par=param_file.name)
-        assert filename.exists()
-        assert filename.stat().st_size > 0
+        param.write(par=param_file)
+        assert param_file.exists()
+        assert param_file.stat().st_size > 0
 
     def test_write_fail(self: Self, universe: mda.Universe) -> None:
         """Test writing a parameter file if no filenames are provided.

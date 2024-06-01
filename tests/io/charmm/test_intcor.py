@@ -40,7 +40,6 @@ import numpy as np
 import pytest
 from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from numpy import testing
-from pyfakefs import fake_file, fake_filesystem
 
 from tests.datafile import FLUCTDCD, FLUCTPSF, IC
 
@@ -59,21 +58,21 @@ class TestCharmmInternalCoordinates:
         """
         return mda.Universe(FLUCTPSF, FLUCTDCD)
 
-    @pytest.fixture(scope="class")
-    def intcor_file(self: Self, fs_class: fake_filesystem.FakeFilesystem) -> fake_file.FakeFile:
+    @pytest.fixture()
+    def intcor_file(self: Self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
         ----------
-        fs_class : :class:`pyfakefs.fake_filesystem.FakeFileSystem`
+        tmp_path : Path
             Filesystem
 
         Returns
         -------
-        :class:`pyfakefs.fake_file.FakeFile
+        Path
             Empty file in memory
         """
-        return fs_class.create_file("charmm.ic")
+        return tmp_path / "charmm.ic"
 
     def test_initialize(self: Self, universe: mda.Universe) -> None:
         """Test initialization of an internal coordinate file.
@@ -125,7 +124,7 @@ class TestCharmmInternalCoordinates:
         with pytest.raises(mda.NoDataError):
             intcor.initialize(universe, data=lengths)
 
-    def test_write(self: Self, universe: mda.Universe, intcor_file: fake_file.FakeFile) -> None:
+    def test_write(self: Self, universe: mda.Universe, intcor_file: Path) -> None:
         """Test writing an internal coordinates file.
 
         GIVEN a universe and an internal coordinates file
@@ -136,17 +135,16 @@ class TestCharmmInternalCoordinates:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
-        intcor_file : :class:`pyfakefs.fake_file.FakeFile
+        intcor_file : Path
             Empty file in memory
         """
-        filename = Path(intcor_file.name)
         lengths = universe.bonds.values()
         intcor = CharmmInternalCoordinates()
         intcor.initialize(universe, data=lengths)
 
-        intcor.write(filename)
-        assert filename.exists()
-        assert filename.stat().st_size > 0
+        intcor.write(intcor_file)
+        assert intcor_file.exists()
+        assert intcor_file.stat().st_size > 0
 
     def test_read(self: Self) -> None:
         """Test reading an internal coordinates file.
@@ -167,7 +165,7 @@ class TestCharmmInternalCoordinates:
         WHEN an internal coordinates object is initialized and read
         THEN a FileNotFoundError is raised.
         """
-        intcor_file = "charmm.ic"
+        intcor_file = "fake.ic"
         intcor = CharmmInternalCoordinates()
         with pytest.raises(FileNotFoundError):
             intcor.read(intcor_file)
