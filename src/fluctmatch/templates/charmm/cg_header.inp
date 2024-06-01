@@ -50,11 +50,9 @@ read psf card name "$topology"
 read coor card name "$coordinates"
 coor copy comp
 
-{%if initialize %}stream "{{ data.stream }}"{% endif %}
-
 skip all excl bond
 update inbfrq 0
 
 ! Additional information
-set temp    {{ data.temperature }}
+set temp    $temperature
 set input   10
