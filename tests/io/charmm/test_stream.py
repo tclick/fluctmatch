@@ -38,7 +38,6 @@ from typing import Self
 import MDAnalysis as mda
 import pytest
 from fluctmatch.io.charmm.stream import CharmmStream
-from pyfakefs import fake_file, fake_filesystem
 
 from tests.datafile import FLUCTDCD, FLUCTPSF
 
@@ -57,23 +56,23 @@ class TestCharmmStream:
         """
         return mda.Universe(FLUCTPSF, FLUCTDCD)
 
-    @pytest.fixture(scope="class")
-    def stream_file(self: Self, fs_class: fake_filesystem.FakeFilesystem) -> fake_file.FakeFile:
+    @pytest.fixture()
+    def stream_file(self: Self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
         ----------
-        fs_class : :class:`pyfakefs.fake_filesystem.FakeFileSystem`
+        tmp_path : Path
             Filesystem
 
         Returns
         -------
-        :class:`pyfakefs.fake_file.FakeFile
+        Path
             Empty file in memory
         """
-        return fs_class.create_file("charmm.str")
+        return tmp_path / "charmm.str"
 
-    def test_initialize(self: Self, universe: mda.Universe, stream_file: fake_file.FakeFile) -> None:
+    def test_initialize(self: Self, universe: mda.Universe) -> None:
         """Test initialization of a stream file.
 
         GIVEN an elastic network model
@@ -84,34 +83,27 @@ class TestCharmmStream:
         ----------
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
-        stream_file : :class:`pyfakefs.fake_file.FakeFile
-            Empty file in memory
         """
-        stream = CharmmStream(filename=stream_file)
+        stream = CharmmStream()
         stream.initialize(universe)
 
         assert len(stream._lines) == len(universe.bonds)
         assert "PROA" in stream._lines[0]
 
-    def test_initialize_error(self: Self, stream_file: fake_file.FakeFile) -> None:
+    def test_initialize_error(self: Self) -> None:
         """Test if an error is raised when initializing an empty universe.
 
         GIVEN an empty universe with no bond information
         WHEN the stream object is initialized
         THEN an attribute error is raised.
-
-        Parameters
-        ----------
-        stream_file : :class:`pyfakefs.fake_file.FakeFile
-            Empty file in memory
         """
         universe = mda.Universe.empty(0)
-        stream = CharmmStream(filename=stream_file)
+        stream = CharmmStream()
 
         with pytest.raises(AttributeError):
             stream.initialize(universe)
 
-    def test_write(self: Self, universe: mda.Universe, stream_file: fake_file.FakeFile) -> None:
+    def test_write(self: Self, universe: mda.Universe, stream_file: Path) -> None:
         """Test write method.
 
         GIVEN a universe and an initialized CHARMM stream object
@@ -122,14 +114,13 @@ class TestCharmmStream:
         ----------
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
-        param_file : :class:`pyfakefs.fake_file.FakeFile
-            Empty file in memory
+        stream_file : Path
+            Filename
         """
-        filename = Path(stream_file.name)
-        stream = CharmmStream(filename=filename)
+        stream = CharmmStream()
         stream.initialize(universe)
 
-        stream.write()
+        stream.write(stream_file)
 
-        assert filename.exists()
-        assert filename.stat().st_size > 0
+        assert stream_file.exists()
+        assert stream_file.stat().st_size > 0

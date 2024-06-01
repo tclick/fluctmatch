@@ -45,24 +45,9 @@ from loguru import logger
 class CharmmStream:
     """Initialize and write a CHARMM stream data from bond data."""
 
-    def __init__(self: Self, filename: Path, title: list[str] | None = None) -> None:
-        """Prepare a CHARMM stream file.
-
-        Parameters
-        ----------
-        filename : Path
-            name of CHARMM stream file
-        title : list of str
-            Initial header information
-        """
-        self._filename: Path = filename
+    def __init__(self: Self) -> None:
+        """Prepare a CHARMM stream file."""
         self._lines: list[str] = []
-
-        now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        user: str = getpass.getuser()
-        self._title: list[str] = (
-            title if title is not None else [f"* Created by fluctmatch on {now}.", f"* User: {user}"]
-        )
 
     def initialize(self: Self, universe: mda.Universe) -> None:
         """Initialize a stream file from bond data.
@@ -87,12 +72,16 @@ class CharmmStream:
             line = f"DIST {atom1.segid:<8s} {atom1.resid:>4d} {atom1.name:<8s} {atom2.segid:<8s} {atom2.resid:>4d} {atom2.name:<8s} {0.0:.1f}"
             self._lines.append(line)
 
-    def write(self: Self) -> None:
+    def write(self: Self, filename: str | Path, /, title: list[str] | None = None) -> None:
         """Write bond data to stream file."""
-        logger.info(f"Writing bond data to {self._filename}")
-        with self._filename.open(mode="w") as stream:
-            for title in self._title:
-                stream.write(title + "\n")
+        now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        user: str = getpass.getuser()
+        _title: list[str] = title if title is not None else [f"* Created by fluctmatch on {now}.", f"* User: {user}"]
+
+        logger.info(f"Writing bond data to {filename}")
+        with Path(filename).open(mode="w") as stream:
+            for _ in _title:
+                stream.write(_ + "\n")
 
             for line in self._lines:
                 stream.write(f"IC EDIT\n{line}\nEND\n\n")

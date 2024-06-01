@@ -173,14 +173,13 @@ def initialize(
     prm_file = directory / prefix.with_suffix(".prm")
     rtf_file = prm_file.with_suffix(".rtf")
     str_file = prm_file.with_suffix(".str")
-
     parameters.write(par=prm_file, top=rtf_file, stream=str_file)
 
     # Stream file with bond information
     str_file = prm_file.with_suffix(".bonds.str")
-    stream = CharmmStream(str_file)
+    stream = CharmmStream()
     stream.initialize(universe)
-    stream.write()
+    stream.write(str_file)
 
     # Internal coordinate files
     avg_ic_file = prm_file.with_suffix(".average.ic")
