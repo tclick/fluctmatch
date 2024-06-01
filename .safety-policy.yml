@@ -1,0 +1,45 @@
+version: '3.0'
+
+scanning-settings:
+  max-depth: 6
+  exclude: []
+  include-files: []
+  system:
+    targets: []
+
+
+report:
+  dependency-vulnerabilities:
+    enabled: true
+    auto-ignore-in-report:
+      python:
+        environment-results: true
+        unpinned-requirements: true
+      cvss-severity: []
+
+
+fail-scan-with-exit-code:
+  dependency-vulnerabilities:
+    enabled: true
+    fail-on-any-of:
+      cvss-severity:
+        - high
+        - critical
+        - medium
+      exploitability:
+        - high
+        - critical
+        - medium
+
+security-updates:
+  dependency-vulnerabilities:
+    auto-security-updates-limit:
+      - patch
+
+security:
+  ignore-vulnerabilities: # Here you can list multiple specific vulnerabilities you want to ignore (optionally for a time period)
+    # We recommend making use of the optional `reason` and `expires` keys for each vulnerability that you ignore.
+    70612: # Jinja2
+      reason: Jinja2 is not used over a network.
+      expires: '2029-01-01' # datetime string - date this ignore will expire, best practice to use this variable
+  continue-on-vulnerability-error: False # Suppress non-zero exit codes when vulnerabilities are found. Enable this in pipelines and CI/CD processes if you want to pass builds that have vulnerabilities
