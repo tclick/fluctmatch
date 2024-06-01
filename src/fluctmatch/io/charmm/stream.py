@@ -69,7 +69,10 @@ class CharmmStream:
 
         for bond in universe.bonds:
             atom1, atom2 = bond.atoms
-            line = f"DIST {atom1.segid:<8s} {atom1.resid:>4d} {atom1.name:<8s} {atom2.segid:<8s} {atom2.resid:>4d} {atom2.name:<8s} {0.0:.1f}"
+            line = (
+                f"DIST {atom1.segid:<8s} {atom1.resid:>4d} {atom1.name:<8s} "
+                f"{atom2.segid:<8s} {atom2.resid:>4d} {atom2.name:<8s} {0.0:.1f}"
+            )
             self._lines.append(line)
 
     def write(self: Self, filename: str | Path, /, title: list[str] | None = None) -> None:
