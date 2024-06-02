@@ -35,6 +35,7 @@
 
 from __future__ import annotations
 
+from collections import OrderedDict
 from pathlib import Path
 
 import click
@@ -42,13 +43,14 @@ import MDAnalysis as mda
 import numpy as np
 from click_help_colors import HelpColorsCommand
 from loguru import logger
-from numpy.typing import NDArray
 from scipy import constants
 
 from fluctmatch import __copyright__
+from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from fluctmatch.io.charmm.stream import CharmmStream
+from fluctmatch.libs.bond_info import BondInfo
 from fluctmatch.libs.logging import config_logger
 
 
@@ -162,10 +164,11 @@ def initialize(
     universe = mda.Universe(topology, trajectory)
 
     logger.info("Determining the average bond distance and the corresponding bond fluctuations.")
-    distances = np.asarray([universe.bonds.values() for _ in universe.trajectory])
-    lengths: NDArray = distances.mean(axis=0)
-    fluctuations: NDArray = distances.std(axis=0)
-    forces: NDArray = boltzmann / np.square(fluctuations)
+    bond_info = BondInfo(universe.atoms, verbose=verbosity == "DEBUG")
+    bond_info.run()
+    lengths: BondData = bond_info.results.mean
+    fluct: BondData = bond_info.results.std
+    forces: BondData = OrderedDict({key: boltzmann / np.square(std) for key, std in bond_info.results.std.items()})
 
     # CHARMM parameter, topology, and stream files
     parameters = CharmmParameter()
@@ -183,11 +186,11 @@ def initialize(
 
     # Internal coordinate files
     avg_ic_file = prm_file.with_suffix(".average.ic")
-    fluct_ic_file = prm_file.with_suffix(".fluct.ic")
     average_ic = CharmmInternalCoordinates()
     average_ic.initialize(universe, data=lengths)
     average_ic.write(avg_ic_file)
 
+    fluct_ic_file = prm_file.with_suffix(".fluct.ic")
     fluct_ic = CharmmInternalCoordinates()
-    fluct_ic.initialize(universe, data=forces)
+    fluct_ic.initialize(universe, data=fluct)
     fluct_ic.write(fluct_ic_file)
