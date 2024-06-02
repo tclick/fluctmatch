@@ -34,6 +34,7 @@
 """Various utilities for the models."""
 
 import string
+from collections.abc import MutableMapping
 from concurrent.futures import ProcessPoolExecutor
 
 import MDAnalysis as mda
@@ -137,3 +138,25 @@ def rename_universe(universe: mda.Universe, /) -> None:
             atom.type = f"{letter}{i:0>5d}"
         for i, residue in enumerate(segment.residues, 1):
             residue.resname = f"{letter}{i:0>5d}"
+
+
+def compare_dict_keys(dict1: MutableMapping, dict2: MutableMapping, /, message: str = "") -> None:
+    """Compare two dictionaries by keys.
+
+    Parameters
+    ----------
+    dict1 : MutableMapping
+        The first mutable dictionary
+    dict2 : MutableMapping
+        The second mutable dictionary
+    message : str, optional
+        Message to pass to exception
+
+    Raises
+    ------
+    ValueError
+        If the key sets of the two OrderedDicts don't match.
+    """
+    if set(dict1.keys()) != set(dict2.keys()):
+        _message = message if message else "Key sets do not match."
+        raise ValueError(_message)
