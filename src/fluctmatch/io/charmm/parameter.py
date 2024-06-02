@@ -30,18 +30,20 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false
+# pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false, reportAttributeAccessIssue=false
 """Initialize and write a stream file."""
 
+from collections import OrderedDict
 from pathlib import Path
 from typing import Self
 
 import MDAnalysis as mda
-import numpy as np
 import parmed as pmd
 import parmed.charmm as charmm
 from loguru import logger
-from numpy.typing import NDArray
+
+from fluctmatch.io.charmm import BondData
+from fluctmatch.libs.utils import compare_dict_keys
 
 
 class CharmmParameter:
@@ -63,46 +65,47 @@ class CharmmParameter:
         return self._parameters
 
     @property
-    def forces(self: Self) -> NDArray:
+    def forces(self: Self) -> BondData:
         """Return the force constant data.
 
         Returns
         -------
-        numpy.ndarray
+        OrderedDict[tuple[str, str], float]
             Force constant data
         """
-        return np.asarray([bond_type.k for bond_type in self._parameters.bond_types.values()])
+        return OrderedDict({key: bond_type.k for key, bond_type in self._parameters.bond_types.items()})
 
     @forces.setter
-    def forces(self: Self, k: NDArray) -> None:
+    def forces(self: Self, k: BondData) -> None:
         """Set the force constant data.
 
         Parameters
         ----------
-        k : numpy.ndarray
+        k : OrderedDict[tuple[str, str], float]
             Force constant data
         """
         logger.debug("Updating the equilibrium force constants.")
         try:
-            for bond_type, force in zip(self._parameters.bond_types, k, strict=True):
-                self._parameters.bond_types[bond_type].k = force
+            compare_dict_keys(self._parameters.bond_types, k, message="Bond types do not match.")
+            for bond_type in self._parameters.bond_types:
+                self._parameters.bond_types[bond_type].k = k[bond_type]
         except ValueError as e:
             logger.exception(e)
             raise
 
     @property
-    def distances(self: Self) -> NDArray:
+    def distances(self: Self) -> BondData:
         """Return the equilibrium bond distance data.
 
         Returns
         -------
-        numpy.ndarray
+        OrderedDict[tuple[str, str], float]
             Equilibrium bond distance data
         """
-        return np.asarray([bond_type.req for bond_type in self._parameters.bond_types.values()])
+        return OrderedDict({key: bond_type.req for key, bond_type in self._parameters.bond_types.items()})
 
     @distances.setter
-    def distances(self: Self, req: NDArray) -> None:
+    def distances(self: Self, req: BondData) -> None:
         """Set the equilibrium bond distance data.
 
         Parameters
@@ -112,14 +115,15 @@ class CharmmParameter:
         """
         logger.debug("Updating the equilibrium bond distances.")
         try:
-            for bond_type, distance in zip(self._parameters.bond_types, req, strict=True):
-                self._parameters.bond_types[bond_type].req = distance
+            compare_dict_keys(self._parameters.bond_types, req, message="Bond types do not match.")
+            for bond_type in self._parameters.bond_types:
+                self._parameters.bond_types[bond_type].req = req[bond_type]
         except ValueError as e:
             logger.exception(e)
             raise
 
     def initialize(
-        self: Self, universe: mda.Universe, forces: NDArray | None = None, lengths: NDArray | None = None
+        self: Self, universe: mda.Universe, forces: BondData | None = None, lengths: BondData | None = None
     ) -> None:
         """Fill the parameters with atom types and bond information.
 
@@ -127,9 +131,9 @@ class CharmmParameter:
         ----------
         universe : :class:`mda.Universe`
             Universe with bond information
-        forces : :class:`numpy.ndarray`, optional
+        forces : OrderedDict[tuple[str, str], float], optional
             Force constants between bonded atoms
-        lengths : :class:`numpy.ndarray`, optional
+        lengths : OrderedDict[tuple[str, str], float], optional
             Bond lengths between atoms
 
         Raises
@@ -137,11 +141,11 @@ class CharmmParameter:
         MDAnalysis.NoDataError
             if no bond data exists
         ValueError
-            if number of bonds, force constants, or bond lengths do not match
+            if number or types of bonds, force constants, or bond lengths do not match
         """
         # Prepare atom types
         logger.debug("Adding atom types to the parameter list.")
-        atom_types: dict[str, pmd.AtomType] = {}
+        self._parameters.atom_types.update(self._parameters.atom_types.fromkeys(universe.atoms.names))
         for atom in universe.atoms:
             atom_type = pmd.AtomType(atom.type, -1, atom.mass, charge=atom.charge)
             atom_type.epsilon = 0.0
@@ -149,19 +153,22 @@ class CharmmParameter:
             atom_type.sigma = 0.0
             atom_type.sigma_14 = 0.0
             atom_type.number = -1
-            atom_types[atom.type] = atom_type
-        self._parameters.atom_types.update(atom_types)
+            self._parameters.atom_types[atom.type] = atom_type
 
         # Setup atom bond types
         if forces is not None and lengths is not None:
             try:
                 logger.debug("Adding bond types to the parameter list.")
-                bond_keys = universe.bonds.topDict.keys()
-                bond_type = {
-                    key: pmd.BondType(k=force, req=length)
-                    for key, force, length in zip(bond_keys, forces, lengths, strict=True)
-                }
-                self._parameters.bond_types.update(bond_type)
+                self._parameters.bond_types.update(self._parameters.bond_types.fromkeys(universe.bonds.topDict.keys()))
+                compare_dict_keys(forces, lengths, message="Bond force constants and bond distances do not match.")
+                compare_dict_keys(
+                    self._parameters.bond_types,
+                    forces,
+                    message="Bonds defining force constants and distances do not match bonds in universe.",
+                )
+
+                for bond_type in self._parameters.bond_types:
+                    self._parameters.bond_types[bond_type] = pmd.BondType(k=forces[bond_type], req=lengths[bond_type])
             except mda.NoDataError as e:
                 e.add_note("No bond data found in the universe.")
                 logger.exception(e)

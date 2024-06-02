@@ -35,6 +35,7 @@
 
 import datetime
 import getpass
+from collections import OrderedDict
 from pathlib import Path
 from typing import Self
 
@@ -44,13 +45,16 @@ from loguru import logger
 from numpy.typing import NDArray
 from parmed.utils.fortranformat import FortranRecordReader, FortranRecordWriter
 
+from fluctmatch.io.charmm import Bond, BondData
+from fluctmatch.libs.utils import compare_dict_keys
+
 
 class CharmmInternalCoordinates:
     """Initialize, read, or write CHARMM internal coordinate data."""
 
     def __init__(self: Self) -> None:
         """Prepare internal coordinate data."""
-        self._table: NDArray = np.empty(shape=(0, 22), dtype=object)
+        self._table: OrderedDict[Bond, NDArray] = OrderedDict([])
         self._writer: str = (
             "%10d %-8s %-8d %-8s: %-8s %-8d %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
         )
@@ -60,32 +64,57 @@ class CharmmInternalCoordinates:
 
     @property
     def table(self: Self) -> NDArray:
-        """Return internal coordinate data."""
-        return self._table
+        """Return internal coordinate data.
+
+        Returns
+        -------
+        numpy.ndarray
+            Internal coordinates data
+        """
+        return np.array(list(self._table.values()), dtype=object)
 
     @property
-    def data(self: Self) -> NDArray:
-        """Return bond data."""
-        return self._table[:, -5].astype(float)
+    def data(self: Self) -> BondData:
+        """Return bond data.
+
+        Returns
+        -------
+        OrderedDict[tuple[str, str],float]
+            Bond information
+        """
+        return OrderedDict({k: v[-5] for k, v in self._table.items()})
 
     @data.setter
-    def data(self: Self, data: NDArray) -> None:
-        """Set bond data."""
-        if self._table[:, -5].size != data.size:
-            message = "Size of data array different from internal coordinate data."
-            logger.exception(message)
-            raise IndexError(message)
+    def data(self: Self, data: BondData) -> None:
+        """Set bond data.
 
-        self._table[:, -5] = data.astype(object)
+        Parameters
+        ----------
+        data : OrderedDict[tuple[str, str], float]
+            Data to include in the `r_IJ` column
 
-    def initialize(self: Self, universe: mda.Universe, data: NDArray) -> None:
+        Raises
+        ------
+        ValueError
+            if number of bonds, force constants, or bond lengths do not match
+        """
+        try:
+            compare_dict_keys(self._table, data, message="Provided data does not match bonds in universe.")
+            for k, v in data.items():
+                self._table[k][-5] = v
+        except ValueError as exc:
+            exc.add_note("One or more of the bonds defined within the provided data does not exist in the universe.")
+            logger.exception(exc)
+            raise
+
+    def initialize(self: Self, universe: mda.Universe, /, data: BondData | None = None) -> None:
         """Fill the internal coordinates table with atom types and bond information.
 
         Parameters
         ----------
         universe : :class:`mda.Universe`
             Universe with bond information
-        data : :class:`numpy.ndarray`, optional
+        data : OrderedDict[tuple[str, str], float], optional
             Bond information
 
         Raises
@@ -97,15 +126,24 @@ class CharmmInternalCoordinates:
         """
         other_info: list[str] = 2 * ["??", "??", "??"]
         info: list[float] = np.zeros(5, dtype=universe.bonds.values().dtype).tolist()
-        table: list[list] = []
-        for i, (bond, value) in enumerate(zip(universe.bonds, data, strict=True), 1):
+        table: OrderedDict[Bond, NDArray] = OrderedDict([])
+        for i, (key, bond) in enumerate(zip(universe.bonds.topDict, universe.bonds, strict=True), 1):
             atom1, atom2 = bond.atoms
             atom1_info: list[str | int] = [i, f"{atom1.segid}", atom1.resid, f"{atom1.name}"]
             atom2_info: list[str | int] = [f"{atom2.segid}", atom2.resid, f"{atom2.name}"]
-            info[0] = value
-            table.append(atom1_info + atom2_info + other_info + info)
+            table[key] = np.fromiter(atom1_info + atom2_info + other_info + info, dtype=object)
 
-        self._table = np.asarray(table, dtype=object)
+        try:
+            if data is not None:
+                compare_dict_keys(data, table, message="Provided data does not match bonds in universe.")
+                for key, value in data.items():
+                    table[key][-5] = value
+        except ValueError as exc:
+            exc.add_note("One or more of the bonds defined within the provided data does not exist in the universe.")
+            logger.exception(exc)
+            raise
+
+        self._table = table.copy()
 
     def write(self: Self, filename: Path, /, title: list[str] | None = None) -> None:
         """Write internal coordinate data to a file.
@@ -124,7 +162,7 @@ class CharmmInternalCoordinates:
         header2 = FortranRecordWriter("2I5")
         header1_info = np.zeros(20, dtype=int)
         header1_info[0], header1_info[1] = 30, 2
-        header2_info = np.array([self._table.shape[0], 2], dtype=int)
+        header2_info = np.array([len(self._table), 2], dtype=int)
 
         with filename.open(mode="w") as intcor:
             for _ in _title:
@@ -132,7 +170,7 @@ class CharmmInternalCoordinates:
 
             intcor.write(header1.write(header1_info) + "\n")
             intcor.write(header2.write(header2_info) + "\n")
-            np.savetxt(intcor, self._table, fmt=self._writer)
+            np.savetxt(intcor, self.table, fmt=self._writer)
 
     def read(self: Self, filename: Path | str) -> None:
         """Read an internal coordinate file.
@@ -151,11 +189,13 @@ class CharmmInternalCoordinates:
             with Path(filename).open(mode="r") as intcor:
                 logger.info(f"Reading internal coordinate data from {filename}")
                 for line in intcor:
-                    if not line.startswith("*"):
-                        break
-                for _ in range(2):
-                    line = intcor.readline()
-                self._table = np.asarray([self._reader.read(line) for line in intcor], dtype=object)
+                    if line.startswith("*"):
+                        continue
+                    if all(c.isdigit() for c in line.split()):
+                        continue
+
+                    cols = self._reader.read(line)
+                    self._table[(cols[3], cols[6])] = np.fromiter(cols, dtype=object)
         except FileNotFoundError as err:
             logger.exception(err)
             raise

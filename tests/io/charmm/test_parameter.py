@@ -39,6 +39,7 @@ from typing import Self
 import MDAnalysis as mda
 import numpy as np
 import pytest
+from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
 
@@ -75,7 +76,26 @@ class TestCharmmParameter:
         """
         return tmp_path / "charmm.prm"
 
-    def test_initialize(self: Self, universe: mda.Universe) -> None:
+    @pytest.fixture(scope="class")
+    def bonds(
+        self: Self,
+        universe: mda.Universe,
+    ) -> BondData:
+        """Define dictionary of bonds in CHARMM model.
+
+        Parameters
+        ----------
+        MDAnalysis.Universe
+            Elastic network model
+
+        Returns
+        -------
+        OrderedDict[tuple[str, str], float]
+            Bond data
+        """
+        return OrderedDict(dict(zip(universe.bonds.topDict.keys(), universe.bonds.values(), strict=True)))
+
+    def test_initialize(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file.
 
         GIVEN an elastic network model, bond force constants, and bond lengths
@@ -86,23 +106,28 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         atom_types = OrderedDict({atom.type: "" for atom in universe.atoms})
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         testing.assert_equal(param._parameters.atom_types.keys(), atom_types.keys())
         assert all(key in param._parameters.bond_types for key in universe.bonds.topDict)
         testing.assert_allclose(
             [at.mass for at in param._parameters.atom_types.values()], universe.atoms.masses, rtol=1e-4
         )
-        testing.assert_allclose([bt.k for bt in param._parameters.bond_types.values()], forces, rtol=1e-4)
-        testing.assert_allclose([bt.req for bt in param._parameters.bond_types.values()], lengths, rtol=1e-4)
+        testing.assert_allclose(
+            [bt.k for bt in param._parameters.bond_types.values()], np.fromiter(bonds.values(), dtype=float), rtol=1e-4
+        )
+        testing.assert_allclose(
+            [bt.req for bt in param._parameters.bond_types.values()],
+            np.fromiter(bonds.values(), dtype=float),
+            rtol=1e-4,
+        )
 
-    def test_initialize_unequal_size(self: Self, universe: mda.Universe) -> None:
+    def test_initialize_unequal_size(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file with unequal sizes of forces and bond lengths.
 
         GIVEN an elastic network model with bonds, bond force constants, and bond lengths
@@ -113,14 +138,18 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds) - 1, dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()[:-2]
+        distances = bonds.copy()
+        distances.pop(("C00001", "C00002"))
         param = CharmmParameter()
 
-        with pytest.raises(ValueError):
-            param.initialize(universe, forces=forces, lengths=lengths)
+        with pytest.raises(ValueError, match="Bond force constants and bond distances do not match."):
+            param.initialize(universe, forces=bonds, lengths=distances)
+
+        with pytest.raises(ValueError, match="force constants and distances do not match bonds in universe."):
+            param.initialize(universe, forces=distances, lengths=distances)
 
     def test_initialize_no_bonds(self: Self) -> None:
         """Test initialization of a parameter file with no bond data.
@@ -137,7 +166,7 @@ class TestCharmmParameter:
         with pytest.raises(mda.NoDataError):
             param.initialize(universe, forces=forces, lengths=forces)
 
-    def test_write(self: Self, universe: mda.Universe, param_file: Path) -> None:
+    def test_write(self: Self, universe: mda.Universe, param_file: Path, bonds: BondData) -> None:
         """Test writing a parameter file.
 
         GIVEN a universe and a parameter file
@@ -150,12 +179,11 @@ class TestCharmmParameter:
             An elastic network model
         param_file : Path
             Empty file in memory
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         param.write(par=param_file)
         assert param_file.exists()
@@ -183,7 +211,7 @@ class TestCharmmParameter:
         assert param_file.exists()
         assert param_file.stat().st_size > 0
 
-    def test_write_fail(self: Self, universe: mda.Universe) -> None:
+    def test_write_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test writing a parameter file if no filenames are provided.
 
         GIVEN a universe and no parameter file
@@ -194,12 +222,11 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         with pytest.raises(ValueError):
             param.write()
@@ -252,7 +279,7 @@ class TestCharmmParameter:
         with pytest.raises(OSError):
             param.read(STR)
 
-    def test_parameters_property(self: Self, universe: mda.Universe) -> None:
+    def test_parameters_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test parameters property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -263,20 +290,19 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
         # Initialize parameters
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         # Test parameters getter
         parameters = param.parameters
         assert parameters.atom_types == param._parameters.atom_types
         assert parameters.bond_types == param._parameters.bond_types
 
-    def test_forces_property(self: Self, universe: mda.Universe) -> None:
+    def test_forces_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test getter/setter of forces property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -287,22 +313,30 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         # Test getter
         data = param.forces
-        testing.assert_allclose(data, forces, rtol=1e-05, atol=1e-08, err_msg="Forces don't match.", verbose=True)
+        testing.assert_allclose(
+            list(data.values()),
+            list(bonds.values()),
+            rtol=1e-05,
+            atol=1e-08,
+            err_msg="Forces don't match.",
+            verbose=True,
+        )
 
         # Test setter
-        param.forces = np.zeros_like(forces)
-        testing.assert_allclose(param.forces, 0.0, rtol=1e-05, atol=1e-08, err_msg="Forces don't match.", verbose=True)
+        param.forces = OrderedDict({k: 0.0 for k in bonds})
+        testing.assert_allclose(
+            list(param.forces.values()), 0.0, rtol=1e-05, atol=1e-08, err_msg="Forces don't match.", verbose=True
+        )
 
-    def test_forces_property_fail(self: Self, universe: mda.Universe) -> None:
+    def test_forces_property_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test setter of forces property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -313,18 +347,19 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         # Test setter
+        bad_bonds = bonds.copy()
+        bad_bonds.pop(("C00001", "C00002"))
         with pytest.raises(ValueError):
-            param.forces = np.zeros_like(forces)[:-1]
+            param.forces = OrderedDict({k: 0.0 for k in bad_bonds})
 
-    def test_distances_property(self: Self, universe: mda.Universe) -> None:
+    def test_distances_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test getter/setter of distances property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -335,24 +370,30 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         # Test getter
         data = param.distances
-        testing.assert_allclose(data, lengths, rtol=1e-05, atol=1e-08, err_msg="Distances don't match.", verbose=True)
-
-        # Test setter
-        param.distances = np.zeros_like(lengths)
         testing.assert_allclose(
-            param.distances, 0.0, rtol=1e-05, atol=1e-08, err_msg="Distances don't match.", verbose=True
+            list(data.values()),
+            list(bonds.values()),
+            rtol=1e-05,
+            atol=1e-08,
+            err_msg="Distances don't match.",
+            verbose=True,
         )
 
-    def test_distancess_property_fail(self: Self, universe: mda.Universe) -> None:
+        # Test setter
+        param.distances = OrderedDict({k: 0.0 for k in bonds})
+        testing.assert_allclose(
+            list(param.distances.values()), 0.0, rtol=1e-05, atol=1e-08, err_msg="Distances don't match.", verbose=True
+        )
+
+    def test_distancess_property_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test setter of distances property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -363,13 +404,14 @@ class TestCharmmParameter:
         ----------
         universe : :class:`MDAnalysis.Universe`
             An elastic network model
+        bonds : OrderedDict[tuple[str, str], float]
+            Bond data
         """
-        rng = np.random.default_rng()
-        forces = rng.random(len(universe.bonds), dtype=universe.bonds.values().dtype)
-        lengths = universe.bonds.values()
         param = CharmmParameter()
-        param.initialize(universe, forces=forces, lengths=lengths)
+        param.initialize(universe, forces=bonds, lengths=bonds)
 
         # Test setter
+        bad_bonds = bonds.copy()
+        bad_bonds.pop(("C00001", "C00002"))
         with pytest.raises(ValueError):
-            param.distances = np.zeros_like(lengths)[:-1]
+            param.distances = OrderedDict({k: 0.0 for k in bad_bonds})
