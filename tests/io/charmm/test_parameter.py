@@ -93,7 +93,7 @@ class TestCharmmParameter:
         OrderedDict[tuple[str, str], float]
             Bond data
         """
-        return OrderedDict(dict(zip(universe.bonds.topDict.keys(), universe.bonds.values(), strict=True)))
+        return OrderedDict(dict(zip(universe.bonds.types(), universe.bonds.values(), strict=True)))
 
     def test_initialize(self: Self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file.

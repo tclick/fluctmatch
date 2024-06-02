@@ -159,7 +159,7 @@ class CharmmParameter:
         if forces is not None and lengths is not None:
             try:
                 logger.debug("Adding bond types to the parameter list.")
-                self._parameters.bond_types.update(self._parameters.bond_types.fromkeys(universe.bonds.topDict.keys()))
+                self._parameters.bond_types.update(self._parameters.bond_types.fromkeys(universe.bonds.types()))
                 compare_dict_keys(forces, lengths, message="Bond force constants and bond distances do not match.")
                 compare_dict_keys(
                     self._parameters.bond_types,
