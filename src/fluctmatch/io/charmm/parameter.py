@@ -230,7 +230,7 @@ class CharmmParameter:
             logger.exception(e)
             raise
 
-        if not self._parameters.atom_types or not self._parameters.bond_types:
+        if len(self._parameters.atom_types) == 0 and len(self._parameters.bond_types) == 0:
             message = "No atom types or bond types found in the parameter file"
             logger.exception(message)
             raise OSError(message)
