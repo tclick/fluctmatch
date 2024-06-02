@@ -42,7 +42,7 @@ import pytest
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
 
-from tests.datafile import FLUCTDCD, FLUCTPSF, PRM, STR
+from tests.datafile import FLUCTDCD, FLUCTPSF, PRM, RTF, STR
 
 
 class TestCharmmParameter:
@@ -161,6 +161,28 @@ class TestCharmmParameter:
         assert param_file.exists()
         assert param_file.stat().st_size > 0
 
+    def test_write_empty(self: Self, param_file: Path, caplog) -> None:
+        """Test writing an empty parameter file.
+
+        GIVEN a parameter file
+        WHEN a parameter object is initialized
+        THEN a parameter object is written with no atom or bond types.
+
+        Parameters
+        ----------
+        param_file : Path
+            Empty file in memory
+        caplog
+            Fixture to capture log messages
+        """
+        param = CharmmParameter()
+        param.write(par=param_file)
+
+        warning = "No atom types or bond types were provided. The parameter file will be empty."
+        assert warning in caplog.text
+        assert param_file.exists()
+        assert param_file.stat().st_size > 0
+
     def test_write_fail(self: Self, universe: mda.Universe) -> None:
         """Test writing a parameter file if no filenames are provided.
 
@@ -182,7 +204,7 @@ class TestCharmmParameter:
         with pytest.raises(ValueError):
             param.write()
 
-    def test_read(self: Self) -> None:
+    def test_read_prm(self: Self) -> None:
         """Test reading a parameter file.
 
         GIVEN a parameter file
@@ -194,6 +216,18 @@ class TestCharmmParameter:
 
         assert len(param._parameters.atom_types) > 0, "Atom type definitions don't exist."
         assert len(param._parameters.bond_types) > 0, "Bond definitions don't exist."
+
+    def test_read_rtf(self: Self) -> None:
+        """Test reading a topology file.
+
+        GIVEN a topology file
+        WHEN a parameter object is initialized and read
+        THEN a parameter file is read and loaded into the parameter object.
+        """
+        param = CharmmParameter()
+        param.read(RTF)
+
+        assert len(param._parameters.atom_types) > 0, "Atom type definitions don't exist."
 
     def test_read_no_file(self: Self) -> None:
         """Test reading non-existent parameter file.
@@ -338,4 +372,4 @@ class TestCharmmParameter:
 
         # Test setter
         with pytest.raises(ValueError):
-            param.forces = np.zeros_like(lengths)[:-1]
+            param.distances = np.zeros_like(lengths)[:-1]
