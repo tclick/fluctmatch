@@ -139,10 +139,6 @@ class TestCalpha:
 
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
-        assert len(system.bonds) > 0, "Bonds not generated"
-        assert len(system.angles) > 0, "Angles not generated"
-        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
 
     def test_transformation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
         """Ensure that the all-atom model is transformed into a C-alpha model.
@@ -160,6 +156,10 @@ class TestCalpha:
         testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
         testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
         testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
+        assert len(system.bonds) > 0, "Bonds not generated"
+        assert len(system.angles) > 0, "Angles not generated"
+        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
+        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
 
