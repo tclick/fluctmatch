@@ -31,3 +31,8 @@
 #  DAMAGE.
 # ------------------------------------------------------------------------------
 """Classes for CHARMM I/O."""
+
+from collections import OrderedDict
+
+Bond = tuple[str, str]
+BondData = OrderedDict[Bond, float]
