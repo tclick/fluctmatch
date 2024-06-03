@@ -10,20 +10,20 @@ coor orie rms mass
 scalar wmain copy mass
 
 ioformat extended
-write coor card name "fluctmatch.mini.crd"
+write coor card name "$prefix.mini.crd"
 * Minimized elastic network model
 
-stream "$stream"
+stream "$prefix.str"
 
 ic fill
-write ic card resid name "$average"
+write ic card resid name "$prefix.average.ic"
 * Average bond distances during minimization
 
 calc nmode   ?natom * 3
 set nmodes   @nmode
 set type     temp
 
-open write unit @fluctu card name "$fluctuation"
+open write unit @fluctu card name "$prefix.fluct.ic"
 * Fluctuations of bond distances during minimization
 
 ! Perform normal mode analysis at desired temperature for vibrational normal
