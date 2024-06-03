@@ -43,7 +43,7 @@ bomlev -5 ! This is for CHARMM 39
 
 ! Open CHARMM topology and parameter file
 read rtf card name "$rtf"
-name "$parameter"
+read para card flex name "$parameter"
 
 ! Open PSF and coordinate files
 read psf card name "$topology"
