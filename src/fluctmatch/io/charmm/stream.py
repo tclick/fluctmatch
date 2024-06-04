@@ -70,8 +70,10 @@ class CharmmStream:
         for bond in universe.bonds:
             atom1, atom2 = bond.atoms
             line = (
-                f"DIST {atom1.segid:<8s} {atom1.resid:>4d} {atom1.name:<8s} "
-                f"{atom2.segid:<8s} {atom2.resid:>4d} {atom2.name:<8s} {0.0:.1f}"
+                "IC EDIT\n"
+                f"DIST {atom1.segid:<8s} {atom1.resid:>8d} {atom1.name:<8s} "
+                f"{atom2.segid:<8s} {atom2.resid:>8d} {atom2.name:<8s} {0.0:8.1f}\n"
+                "END\n\n"
             )
             self._lines.append(line)
 
@@ -79,14 +81,12 @@ class CharmmStream:
         """Write bond data to stream file."""
         now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         user: str = getpass.getuser()
-        _title: list[str] = title if title is not None else [f"* Created by fluctmatch on {now}.", f"* User: {user}"]
+        _title: list[str] = (
+            title if title is not None else [f"* Created by fluctmatch on {now}.\n", f"* User: {user}\n"]
+        )
 
         logger.info(f"Writing bond data to {filename}")
         with Path(filename).open(mode="w") as stream:
-            for _ in _title:
-                stream.write(_ + "\n")
-
-            for line in self._lines:
-                stream.write(f"IC EDIT\n{line}\nEND\n\n")
-
+            stream.writelines(_title)
+            stream.writelines(self._lines)
             stream.write("RETURN\n")

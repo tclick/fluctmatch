@@ -157,7 +157,9 @@ class CharmmInternalCoordinates:
         """
         now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         user: str = getpass.getuser()
-        _title: list[str] = title if title is not None else [f"* Created by fluctmatch on {now}.", f"* User: {user}"]
+        _title: list[str] = (
+            title if title is not None else [f"* Created by fluctmatch on {now}.\n", f"* User: {user}\n"]
+        )
         header1 = FortranRecordWriter("20I4")
         header2 = FortranRecordWriter("2I5")
         header1_info = np.zeros(20, dtype=int)
@@ -165,9 +167,7 @@ class CharmmInternalCoordinates:
         header2_info = np.array([len(self._table), 2], dtype=int)
 
         with filename.open(mode="w") as intcor:
-            for _ in _title:
-                intcor.write(_ + "\n")
-
+            intcor.writelines(_title)
             intcor.write(header1.write(header1_info) + "\n")
             intcor.write(header2.write(header2_info) + "\n")
             np.savetxt(intcor, self.table, fmt=self._writer)
