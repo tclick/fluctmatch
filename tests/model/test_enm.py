@@ -111,9 +111,9 @@ class TestElasticNetworkModel:
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
-        testing.assert_equal(len(system.impropers), 0, err_msg="Angles generated")
-        testing.assert_equal(len(system.impropers), 0, err_msg="Dihedral angles generated")
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles generated")
+        assert len(system.angles) == 0, "Angles generated"
+        assert len(system.dihedrals) == 0, "Dihedrals angles generated"
+        assert len(system.impropers) == 0, "Improper dihedral angles generated"
 
     def test_trajectory_addition(self: Self, atoms: mda.AtomGroup, model: enm.ElasticModel) -> None:
         """Ensure that positions match between the all-atom and elastic network model.

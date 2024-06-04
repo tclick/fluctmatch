@@ -120,7 +120,7 @@ class TestCalpha:
         assert len(system.bonds) > 0, "Bonds not generated"
         assert len(system.angles) > 0, "Angles not generated"
         assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
+        assert len(system.impropers) == 0, "Improper dihedral angles generated"
 
     def test_trajectory_addition(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
         """Ensure that positions match between the all-atom and C-alpha model.
@@ -159,7 +159,7 @@ class TestCalpha:
         assert len(system.bonds) > 0, "Bonds not generated"
         assert len(system.angles) > 0, "Angles not generated"
         assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        testing.assert_equal(len(system.impropers), 0, err_msg="Improper dihedral angles not generated")
+        assert len(system.impropers) == 0, "Improper dihedral angles generated"
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
 
