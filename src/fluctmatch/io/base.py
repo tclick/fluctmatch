@@ -30,6 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
+# pyright: reportInvalidTypeVarUse=false
 """Base class for I/O."""
 
 import abc
