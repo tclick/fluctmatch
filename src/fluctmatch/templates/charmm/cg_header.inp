@@ -46,7 +46,7 @@ read rtf card name "$prefix.rtf"
 read para card flex name "$prefix.prm"
 
 ! Open PSF and coordinate files
-read psf card name "$prefix.psf"
+read psf card name "$topology"
 read coor card name "$prefix.crd"
 coor copy comp
 
