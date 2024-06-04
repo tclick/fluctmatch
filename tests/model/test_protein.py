@@ -290,7 +290,7 @@ class TestPolar(TestNcsc):
         return coarse_grain.get("POLAR", universe)
 
 
-class TestBioions(TestCalpha):
+class TestBioions(TestCaside):
     """Test bioion model."""
 
     @pytest.fixture(scope="class")
