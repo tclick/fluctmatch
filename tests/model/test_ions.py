@@ -120,8 +120,7 @@ class TestSolventIons:
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds()
+        model.create_topology().generate_bonds()
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
@@ -141,8 +140,7 @@ class TestSolventIons:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory()
+        model.create_topology().add_trajectory()
         system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in universe.trajectory]

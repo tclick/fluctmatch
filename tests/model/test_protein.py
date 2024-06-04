@@ -113,8 +113,7 @@ class TestCalpha:
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds(guess=True)
+        model.create_topology().generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -129,8 +128,7 @@ class TestCalpha:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory(com=True)
+        model.create_topology().add_trajectory(com=True)
         u = atoms.universe
         system: mda.Universe = model.universe
 
@@ -217,8 +215,7 @@ class TestCaside:
         """
         testing.assert_raises(AttributeError, model.generate_bonds)
 
-        model.create_topology()
-        model.generate_bonds(guess=True)
+        model.create_topology().generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -233,8 +230,7 @@ class TestCaside:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory(com=True)
+        model.create_topology().add_trajectory(com=True)
         u = atoms.universe
         system: mda.Universe = model.universe
 
@@ -329,8 +325,7 @@ class TestBioions(TestCaside):
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds()
+        model.create_topology().generate_bonds()
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")

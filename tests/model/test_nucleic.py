@@ -113,8 +113,7 @@ class TestNucleic3:
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds(guess=True)
+        model.create_topology().generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -129,8 +128,7 @@ class TestNucleic3:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory()
+        model.create_topology().add_trajectory()
 
         system: mda.Universe = model.universe
 

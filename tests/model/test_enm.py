@@ -106,8 +106,7 @@ class TestElasticNetworkModel:
         WHEN transformed into a coarse-grain model
         THEN bonds are formed between respective sites.
         """
-        model.create_topology()
-        model.generate_bonds(guess=False)
+        model.create_topology().generate_bonds(guess=False)
         system: mda.Universe = model.universe
 
         assert len(system.bonds) > 0, "Bonds not generated"
@@ -122,8 +121,7 @@ class TestElasticNetworkModel:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory(com=True)
+        model.create_topology().add_trajectory(com=True)
         u = atoms.universe
         system: mda.Universe = model.universe
 

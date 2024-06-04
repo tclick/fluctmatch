@@ -120,8 +120,7 @@ class TestWater:
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds()
+        model.create_topology().generate_bonds()
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
@@ -141,8 +140,7 @@ class TestWater:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory()
+        model.create_topology().add_trajectory()
         system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in universe.trajectory]
@@ -218,8 +216,7 @@ class TestTip3p(TestWater):
         with pytest.raises(AttributeError):
             model.generate_bonds(guess=True)
 
-        model.create_topology()
-        model.generate_bonds(guess=True)
+        model.create_topology().generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), model.atoms.n_atoms, err_msg="Bonds not generated")
@@ -236,8 +233,7 @@ class TestTip3p(TestWater):
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory()
+        model.create_topology().add_trajectory()
         system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in universe.trajectory]
@@ -313,8 +309,7 @@ class TestDma:
         with pytest.raises(AttributeError):
             model.generate_bonds()
 
-        model.create_topology()
-        model.generate_bonds(guess=True)
+        model.create_topology().generate_bonds(guess=True)
         system: mda.Universe = model.universe
 
         testing.assert_equal(len(system.bonds), system.residues.n_residues * 3, err_msg="Bonds not generated")
@@ -331,8 +326,7 @@ class TestDma:
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
         """
-        model.create_topology()
-        model.add_trajectory()
+        model.create_topology().add_trajectory()
         system: mda.Universe = model.universe
 
         atom_positions = [atoms.positions for _ in universe.trajectory]

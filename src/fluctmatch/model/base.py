@@ -124,8 +124,14 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         """
         return self._universe.atoms
 
-    def create_topology(self: Self) -> None:
-        """Determine the topology attributes and initialize the universe."""
+    def create_topology(self: Self) -> Self:
+        """Determine the topology attributes and initialize the universe.
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
+        """
         # Allocate arrays
         residues: mda.ResidueGroup = self._mobile.residues
 
@@ -186,8 +192,9 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             self._universe.add_TopologyAttr(topologyattr=attr, values=value)
         self._add_masses()
         self._add_charges()
+        return self
 
-    def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> None:
+    def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> Self:
         """Add bonds, angles, dihedrals, and improper dihedrals to the universe.
 
         Parameters
@@ -198,6 +205,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             Maximum bond distance
         guess : bool, optional
             Guess angles and dihedral and improper dihedral angles
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
         """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
@@ -209,9 +221,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             self._add_dihedrals()
             self._add_impropers()
 
+        return self
+
     def add_trajectory(
         self: Self, start: int | None = None, stop: int | None = None, step: int | None = None, com: bool = True
-    ) -> None:
+    ) -> Self:
         """Add coordinates to the new system.
 
         Parameters
@@ -224,6 +238,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             Number of frames to skip
         com : bool, optional
             Define positions either by center of mass (default) or of geometry
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
         """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
@@ -261,6 +280,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             self._universe.load_new(np.asarray(position_array), format=MemoryReader)
             self._universe.trajectory.add_transformations(transform)
         self._mobile.trajectory.rewind()
+        return self
 
     def transform(
         self: Self,
@@ -299,8 +319,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         A coarse-grain model
         """
         logger.debug("Transforming an all-atom system to an elastic network model.")
-        self.create_topology()
-        self.generate_bonds(rmin=rmin, rmax=rmax, guess=guess)
+        self.create_topology().generate_bonds(rmin=rmin, rmax=rmax, guess=guess)
         self.add_trajectory(start=start, stop=stop, step=step, com=com)
         return self._universe
 

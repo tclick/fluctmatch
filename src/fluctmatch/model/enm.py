@@ -61,13 +61,20 @@ class ElasticModel(CoarseGrainModel):
         super().__init__(mobile, **kwargs)
         self._universe = self._mobile.copy()
 
-    def create_topology(self: Self) -> None:
-        """Determine the topology attributes and initialize the universe."""
+    def create_topology(self: Self) -> Self:
+        """Determine the topology attributes and initialize the universe.
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
+        """
         rename_universe(self._universe)
 
         self._universe.add_TopologyAttr(Charges(np.zeros_like(self.atoms.charges)))
+        return self
 
-    def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> None:
+    def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> Self:
         """Add bonds, angles, dihedrals, and improper dihedrals to the universe.
 
         Parameters
@@ -78,6 +85,11 @@ class ElasticModel(CoarseGrainModel):
             Maximum bond distance
         guess : bool, optional
             Guess angles and dihedral and improper dihedral angles
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
         """
         super().generate_bonds(rmin, rmax, guess)
         if not guess:
@@ -85,9 +97,15 @@ class ElasticModel(CoarseGrainModel):
             self._universe.add_TopologyAttr(Dihedrals([]))
             self._universe.add_TopologyAttr(Impropers([]))
 
+        return self
+
     def add_trajectory(
-        self: Self, start: int | None = None, stop: int | None = None, step: int | None = None, com: bool = True
-    ) -> None:
+        self: Self,
+        start: int | None = None,  # noqa: ARG002
+        stop: int | None = None,  # noqa: ARG002
+        step: int | None = None,  # noqa: ARG002
+        com: bool = True,  # noqa: ARG002
+    ) -> Self:
         """Add coordinates to the new system.
 
         Parameters
@@ -100,8 +118,13 @@ class ElasticModel(CoarseGrainModel):
             Number of frames to skip
         com : bool, optional
             Define positions either by center of mass (default) or of geometry
+
+        Returns
+        -------
+        CoarseGrainModel
+            Updated coarse-grain model
         """
-        pass
+        return self
 
     def _add_bonds(self: Self, rmin: float, rmax: float) -> None:
         # Determine the average positions of the system
