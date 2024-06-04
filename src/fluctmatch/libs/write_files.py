@@ -34,9 +34,14 @@
 # pyright: reportArgumentType=false
 """Write trajectory files."""
 
+import datetime
+import getpass
+from importlib import resources
 from pathlib import Path
+from string import Template
 
 import MDAnalysis as mda
+from loguru import logger
 from MDAnalysis.analysis.align import AverageStructure
 
 
@@ -80,3 +85,65 @@ def write_average_structure(
     average = AverageStructure(universe)
     average_universe: mda.AtomGroup = average.run(start=start, stop=stop).results.universe.atoms
     average_universe.convert_to("PARMED").save(filename, overwrite=True)
+
+
+def write_charmm_input(**kwargs: dict[str, Path | str | float]) -> None:
+    """Save the CHARMM input file.
+
+    Parameters
+    ----------
+    directory : Path or str, optional
+        Directory various files are located
+    prefix : Path or str
+        Prefix for output files
+    temperature : float (default 300.0)
+        Temperature in Kelvin
+    sim_type : str (default "fluctmatch")
+        Type of simulation (default: "fluctmatch")
+    trajectory : Path or str (default cg.dcd)
+        Trajectory file
+
+    Notes
+    -----
+    `sim_type` currently can either be "fluctmatch" or "thermodynamics". "Fluctmatch" will prepare the CHARMM input
+    file for normal mode analysis used in fluctuation matching; "Thermodynamics" will prepare the CHARMM input file
+    for the calculation of thermodynamic properties (enthalpy, entropy, and free energy) using the provided
+    'trajectory'.
+    """
+    module: str = "fluctmatch.templates.charmm"
+    directory: Path = Path(kwargs.get("directory", Path.cwd()))
+    now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user: str = getpass.getuser()
+    _title: list[str] = [f"* Created by fluctmatch on {now}.\n", f"* User: {user}\n"]
+    title: str = "".join(_title)
+    lines: list[str] = []
+
+    prefix: Path = directory.joinpath(kwargs.get("prefix", "fluctmatch"))
+    temperature: float = kwargs.get("temperature", 300.0)
+    sim_type: str = kwargs.get("sim_type", "fluctmatch")
+    trajectory: Path = Path(kwargs.get("trajectory", Path.cwd() / "cg.dcd"))
+    filename: Path = directory.joinpath(f"{sim_type}.inp")
+
+    header_file = resources.files(module).joinpath("cg_header.inp")
+    try:
+        logger.debug("Opening the template file for the header of the CHARMM input file.")
+        header: str = header_file.read_text()
+        lines.append(Template(header).substitute(prefix=prefix, temperature=temperature, title=title))
+    except FileNotFoundError as exc:
+        exc.add_note(f"{header_file} seems to be missing. Please make sure you installed 'fluctmatch' properly.")
+        logger.exception(exc)
+        raise
+
+    body_file = resources.files(module).joinpath(f"{sim_type}.inp")
+    try:
+        logger.debug(f"Opening the template file for the body of the CHARMM input file for '{sim_type}' simulation.")
+        body: str = body_file.read_text()
+        lines.append(Template(body).substitute(prefix=prefix, trajectory=trajectory))
+    except FileNotFoundError as exc:
+        exc.add_note(f"{body_file} seems to be missing. Please make sure you installed 'fluctmatch' properly.")
+        logger.exception(exc)
+        raise
+
+    with Path(filename).open("w") as file:
+        logger.info(f"Writing the CHARMM input file to {filename}.")
+        file.write("".join(lines))
