@@ -52,6 +52,7 @@ from fluctmatch.io.charmm.parameter import CharmmParameter
 from fluctmatch.io.charmm.stream import CharmmStream
 from fluctmatch.libs.bond_info import BondInfo
 from fluctmatch.libs.logging import config_logger
+from fluctmatch.libs.write_files import write_charmm_input
 
 
 @click.command(
@@ -194,3 +195,12 @@ def initialize(
     fluct_ic = CharmmInternalCoordinates()
     fluct_ic.initialize(universe, data=fluct)
     fluct_ic.write(fluct_ic_file)
+
+    write_charmm_input(
+        topology=topology,
+        trajectory=trajectory,
+        directory=directory,
+        prefix=prefix,
+        temperature=temperature,
+        sim_type="fluctmatch",
+    )

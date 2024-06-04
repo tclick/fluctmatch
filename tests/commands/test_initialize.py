@@ -90,11 +90,25 @@ class TestInitialize:
         """
         with cli_runner.isolated_filesystem() as ifs:
             tmp_path = Path(ifs)
-            prefix = "cg"
+            prefix = "fluctmatch"
             log_file = tmp_path / "initialize.log"
+
+            prm_file = tmp_path.joinpath(prefix).with_suffix(".prm")
+            rtf_file = tmp_path.joinpath(prefix).with_suffix(".rtf")
+            bonds_str = tmp_path.joinpath(prefix).with_suffix(".bonds.str")
+            average_ic = tmp_path.joinpath(prefix).with_suffix(".average.ic")
+            fluct_ic = tmp_path.joinpath(prefix).with_suffix(".fluct.ic")
+            charmm_input = tmp_path / "fluctmatch.inp"
 
             result = cli_runner.invoke(
                 main, f"initialize -s {FLUCTPSF} -f {FLUCTDCD} -l {log_file} -d {tmp_path} -p {prefix}"
             )
 
             assert result.exit_code == os.EX_OK
+            assert log_file.exists()
+            assert charmm_input.exists()
+            assert prm_file.exists()
+            assert rtf_file.exists()
+            assert bonds_str.exists()
+            assert average_ic.exists()
+            assert fluct_ic.exists()
