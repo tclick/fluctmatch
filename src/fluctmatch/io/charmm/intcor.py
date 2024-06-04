@@ -45,15 +45,17 @@ from loguru import logger
 from numpy.typing import NDArray
 from parmed.utils.fortranformat import FortranRecordReader, FortranRecordWriter
 
+from fluctmatch.io.base import IOBase
 from fluctmatch.io.charmm import Bond, BondData
 from fluctmatch.libs.utils import compare_dict_keys
 
 
-class CharmmInternalCoordinates:
+class CharmmInternalCoordinates(IOBase):
     """Initialize, read, or write CHARMM internal coordinate data."""
 
     def __init__(self: Self) -> None:
         """Prepare internal coordinate data."""
+        super().__init__()
         self._table: OrderedDict[Bond, NDArray] = OrderedDict([])
         self._writer: str = (
             "%10d %-8s %-8d %-8s: %-8s %-8d %-8s: %-8s %-8s %-8s: %-8s %-8s %-8s:%12.6f%12.4f%12.4f%12.4f%12.6f"
@@ -107,7 +109,7 @@ class CharmmInternalCoordinates:
             logger.exception(exc)
             raise
 
-    def initialize(self: Self, universe: mda.Universe, /, data: BondData | None = None) -> None:
+    def initialize(self: Self, universe: mda.Universe, /, data: BondData | None = None) -> Self:
         """Fill the internal coordinates table with atom types and bond information.
 
         Parameters
@@ -116,6 +118,11 @@ class CharmmInternalCoordinates:
             Universe with bond information
         data : OrderedDict[tuple[str, str], float], optional
             Bond information
+
+        Returns
+        -------
+        CharmmInternalCoordinates
+            Self
 
         Raises
         ------
@@ -144,13 +151,14 @@ class CharmmInternalCoordinates:
             raise
 
         self._table = table.copy()
+        return self
 
-    def write(self: Self, filename: Path, /, title: list[str] | None = None) -> None:
+    def write(self: Self, filename: Path | str, /, title: list[str] | None = None) -> None:
         """Write internal coordinate data to a file.
 
         Parameters
         ----------
-        filename : Path
+        filename : Path or str
             Name of output file
         title : list of str, optional
             initial information to write in the file
@@ -166,19 +174,24 @@ class CharmmInternalCoordinates:
         header1_info[0], header1_info[1] = 30, 2
         header2_info = np.array([len(self._table), 2], dtype=int)
 
-        with filename.open(mode="w") as intcor:
+        with Path(filename).open(mode="w") as intcor:
             intcor.writelines(_title)
             intcor.write(header1.write(header1_info) + "\n")
             intcor.write(header2.write(header2_info) + "\n")
             np.savetxt(intcor, self.table, fmt=self._writer)
 
-    def read(self: Self, filename: Path | str) -> None:
+    def read(self: Self, filename: Path | str) -> Self:
         """Read an internal coordinate file.
 
         Parameters
         ----------
         filename : Path or str
             Name of internal coordinate file
+
+        Returns
+        -------
+        CharmmInternalCoordinates
+            Self
 
         Raises
         ------
@@ -199,3 +212,5 @@ class CharmmInternalCoordinates:
         except FileNotFoundError as err:
             logger.exception(err)
             raise
+
+        return self

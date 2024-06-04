@@ -57,7 +57,7 @@ class TestCharmmStream:
         return mda.Universe(FLUCTPSF, FLUCTDCD)
 
     @pytest.fixture()
-    def stream_file(self: Self, tmp_path: Path) -> Path:
+    def stream_file(self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
@@ -72,7 +72,7 @@ class TestCharmmStream:
         """
         return tmp_path / "charmm.str"
 
-    def test_initialize(self: Self, universe: mda.Universe) -> None:
+    def test_initialize(self, universe: mda.Universe) -> None:
         """Test initialization of a stream file.
 
         GIVEN an elastic network model
@@ -84,8 +84,7 @@ class TestCharmmStream:
         universe : :class:`MDAnalysis.Universe`
             Elastic network model
         """
-        stream = CharmmStream()
-        stream.initialize(universe)
+        stream = CharmmStream().initialize(universe)
 
         assert len(stream._lines) == len(universe.bonds)
         assert "PROA" in stream._lines[0]
@@ -98,12 +97,11 @@ class TestCharmmStream:
         THEN an attribute error is raised.
         """
         universe = mda.Universe.empty(0)
-        stream = CharmmStream()
 
         with pytest.raises(AttributeError):
-            stream.initialize(universe)
+            CharmmStream().initialize(universe)
 
-    def test_write(self: Self, universe: mda.Universe, stream_file: Path) -> None:
+    def test_write(self, universe: mda.Universe, stream_file: Path) -> None:
         """Test write method.
 
         GIVEN a universe and an initialized CHARMM stream object

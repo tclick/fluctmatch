@@ -62,7 +62,7 @@ class TestCharmmInternalCoordinates:
 
     @pytest.fixture(scope="class")
     def bonds(
-        self: Self,
+        self,
         universe: mda.Universe,
     ) -> BondData:
         """Define dictionary of bonds in CHARMM model.
@@ -80,7 +80,7 @@ class TestCharmmInternalCoordinates:
         return OrderedDict(dict(zip(universe.bonds.types(), universe.bonds.values(), strict=True)))
 
     @pytest.fixture()
-    def intcor_file(self: Self, tmp_path: Path) -> Path:
+    def intcor_file(self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
@@ -95,7 +95,7 @@ class TestCharmmInternalCoordinates:
         """
         return tmp_path / "charmm.ic"
 
-    def test_initialize(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_initialize(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of an internal coordinate file.
 
         GIVEN an elastic network model and bond lengths
@@ -109,14 +109,13 @@ class TestCharmmInternalCoordinates:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        intcor = CharmmInternalCoordinates()
-        intcor.initialize(universe, data=bonds)
+        intcor = CharmmInternalCoordinates().initialize(universe, data=bonds)
 
         testing.assert_equal(intcor._table.keys(), bonds.keys())
         data = np.array(list(intcor._table.values()), dtype=object)[:, -5]
         testing.assert_allclose(data.astype(float), np.fromiter(list(bonds.values()), dtype=float), rtol=1e-05)
 
-    def test_initialize_unequal_size(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_initialize_unequal_size(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of an internal coordinate file with unequal sizes of bonds and bond lengths.
 
         GIVEN an elastic network model with bonds and bond lengths
@@ -132,10 +131,9 @@ class TestCharmmInternalCoordinates:
         """
         distances = bonds.copy()
         distances.pop(("C00001", "C00002"))
-        intcor = CharmmInternalCoordinates()
 
         with pytest.raises(ValueError, match="Provided data does not match bonds in universe."):
-            intcor.initialize(universe, data=distances)
+            CharmmInternalCoordinates().initialize(universe, data=distances)
 
     def test_initialize_no_bonds(self: Self) -> None:
         """Test initialization of an internal coordinate file with no bond data.
@@ -145,12 +143,11 @@ class TestCharmmInternalCoordinates:
         THEN an internal coordinates object is initialized.
         """
         universe = mda.Universe.empty(0)
-        intcor = CharmmInternalCoordinates()
 
         with pytest.raises(mda.NoDataError):
-            intcor.initialize(universe)
+            CharmmInternalCoordinates().initialize(universe)
 
-    def test_write(self: Self, universe: mda.Universe, intcor_file: Path, bonds: BondData) -> None:
+    def test_write(self, universe: mda.Universe, intcor_file: Path, bonds: BondData) -> None:
         """Test writing an internal coordinates file.
 
         GIVEN a universe and an internal coordinates file
@@ -166,8 +163,7 @@ class TestCharmmInternalCoordinates:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        intcor = CharmmInternalCoordinates()
-        intcor.initialize(universe, data=bonds)
+        intcor = CharmmInternalCoordinates().initialize(universe, data=bonds)
 
         intcor.write(intcor_file)
         assert intcor_file.exists()
@@ -180,8 +176,7 @@ class TestCharmmInternalCoordinates:
         WHEN an internal coordinates object is initialized and read
         THEN an internal coordinates file is read and loaded into the parameter object.
         """
-        intcor = CharmmInternalCoordinates()
-        intcor.read(IC)
+        intcor = CharmmInternalCoordinates().read(IC)
 
         assert len(intcor._table) > 0, "Internal coordinates file is empty."
 
@@ -193,11 +188,10 @@ class TestCharmmInternalCoordinates:
         THEN a FileNotFoundError is raised.
         """
         intcor_file = "fake.ic"
-        intcor = CharmmInternalCoordinates()
         with pytest.raises(FileNotFoundError):
-            intcor.read(intcor_file)
+            CharmmInternalCoordinates().read(intcor_file)
 
-    def test_intcor_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_intcor_property(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test parameters property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -214,8 +208,7 @@ class TestCharmmInternalCoordinates:
             Bond data
         """
         # Initialize parameters
-        intcor = CharmmInternalCoordinates()
-        intcor.initialize(universe, data=bonds)
+        intcor = CharmmInternalCoordinates().initialize(universe, data=bonds)
 
         # Test parameters getter
         table = intcor.table
@@ -228,7 +221,7 @@ class TestCharmmInternalCoordinates:
             err_msg="Some bond values are not close.",
         )
 
-    def test_data_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_data_property(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test getter/setter of data property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -244,8 +237,7 @@ class TestCharmmInternalCoordinates:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        intcor = CharmmInternalCoordinates()
-        intcor.initialize(universe, data=bonds)
+        intcor = CharmmInternalCoordinates().initialize(universe, data=bonds)
 
         # Test getter
         data = intcor.data
@@ -264,7 +256,7 @@ class TestCharmmInternalCoordinates:
             list(intcor.data.values()), 0.0, rtol=1e-05, atol=1e-08, err_msg="Forces don't match.", verbose=True
         )
 
-    def test_data_property_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_data_property_fail(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test setter of data property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -278,8 +270,7 @@ class TestCharmmInternalCoordinates:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        intcor = CharmmInternalCoordinates()
-        intcor.initialize(universe, data=bonds)
+        intcor = CharmmInternalCoordinates().initialize(universe, data=bonds)
 
         # Test setter
         with pytest.raises(IndexError):

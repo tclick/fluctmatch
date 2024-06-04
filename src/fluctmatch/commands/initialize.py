@@ -172,28 +172,22 @@ def initialize(
     forces: BondData = OrderedDict({key: boltzmann / np.square(std) for key, std in bond_info.results.std.items()})
 
     # CHARMM parameter, topology, and stream files
-    parameters = CharmmParameter()
-    parameters.initialize(universe, forces=forces, lengths=lengths)
+    parameters = CharmmParameter().initialize(universe, forces=forces, lengths=lengths)
     prm_file = directory / prefix.with_suffix(".prm")
-    rtf_file = prm_file.with_suffix(".rtf")
-    str_file = prm_file.with_suffix(".str")
-    parameters.write(par=prm_file, top=rtf_file, stream=str_file)
+    parameters.write(prm_file)
 
     # Stream file with bond information
     str_file = prm_file.with_suffix(".bonds.str")
-    stream = CharmmStream()
-    stream.initialize(universe)
+    stream = CharmmStream().initialize(universe)
     stream.write(str_file)
 
     # Internal coordinate files
     avg_ic_file = prm_file.with_suffix(".average.ic")
-    average_ic = CharmmInternalCoordinates()
-    average_ic.initialize(universe, data=lengths)
+    average_ic = CharmmInternalCoordinates().initialize(universe, data=lengths)
     average_ic.write(avg_ic_file)
 
     fluct_ic_file = prm_file.with_suffix(".fluct.ic")
-    fluct_ic = CharmmInternalCoordinates()
-    fluct_ic.initialize(universe, data=fluct)
+    fluct_ic = CharmmInternalCoordinates().initialize(universe, data=fluct)
     fluct_ic.write(fluct_ic_file)
 
     write_charmm_input(

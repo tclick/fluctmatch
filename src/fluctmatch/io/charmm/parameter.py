@@ -42,15 +42,17 @@ import parmed as pmd
 import parmed.charmm as charmm
 from loguru import logger
 
+from fluctmatch.io.base import IOBase
 from fluctmatch.io.charmm import BondData
 from fluctmatch.libs.utils import compare_dict_keys
 
 
-class CharmmParameter:
+class CharmmParameter(IOBase):
     """Initialize, read, or write CHARMM parameter data."""
 
     def __init__(self: Self) -> None:
         """Prepare a CHARMM parameter file."""
+        super().__init__()
         self._parameters = charmm.CharmmParameterSet()
 
     @property
@@ -123,8 +125,8 @@ class CharmmParameter:
             raise
 
     def initialize(
-        self: Self, universe: mda.Universe, forces: BondData | None = None, lengths: BondData | None = None
-    ) -> None:
+        self: Self, universe: mda.Universe, /, forces: BondData | None = None, lengths: BondData | None = None
+    ) -> Self:
         """Fill the parameters with atom types and bond information.
 
         Parameters
@@ -135,6 +137,11 @@ class CharmmParameter:
             Force constants between bonded atoms
         lengths : OrderedDict[tuple[str, str], float], optional
             Bond lengths between atoms
+
+        Returns
+        -------
+        CharmmParameter
+            Self
 
         Raises
         ------
@@ -178,47 +185,46 @@ class CharmmParameter:
                 logger.exception(e)
                 raise
 
-    def write(
-        self: Self, par: str | Path | None = None, top: str | Path | None = None, stream: str | Path | None = None
-    ) -> None:
+        return self
+
+    def write(self: Self, filename: Path | str, /) -> None:
         """Write the parameter data to a parameter, topology, or stream file.
 
         Parameters
         ----------
-        par : str or Path, optional
-            Parameter file
-        top : str or Path, optional
-            Topology file
-        stream : str or Path, optional
-            Stream file
+        filename : Path or str
+            Filename to write the parameter data
 
         Raises
         ------
         ValueError
             if neither the parameter or stream filename is provided
         """
-        if par is not None:
-            logger.info(f"Writing parameter file: {par}")
-        if top is not None:
-            logger.info(f"Writing topology file: {top}")
-        if stream is not None:
-            logger.info(f"Writing stream file: {stream}")
+        par = Path(filename).with_suffix(".prm")
+        top = par.with_suffix(".rtf")
+        stream = par.with_suffix(".str")
+
+        logger.info(f"Writing parameter file: {par}")
+        logger.info(f"Writing topology file: {top}")
+        logger.info(f"Writing stream file: {stream}")
 
         if not self._parameters.atom_types and not self._parameters.bond_types:
             logger.warning("No atom types or bond types were provided. The parameter file will be empty.")
 
-        par = Path(par).as_posix() if par is not None else None
-        top = Path(top).as_posix() if top is not None else None
-        stream = Path(stream).as_posix() if stream is not None else None
-        self._parameters.write(par=par, top=top, stream=stream)
+        self._parameters.write(par=par.as_posix(), top=top.as_posix(), stream=stream.as_posix())
 
-    def read(self: Self, filename: str | Path) -> None:
+    def read(self: Self, filename: str | Path, /) -> Self:
         """Read the parameters from a file.
 
         Parameters
         ----------
         filename : str or Path
             Parameter file
+
+        Returns
+        -------
+        CharmmParameter
+            Self
 
         Raises
         ------
@@ -241,3 +247,5 @@ class CharmmParameter:
             message = "No atom types or bond types found in the parameter file"
             logger.exception(message)
             raise OSError(message)
+
+        return self

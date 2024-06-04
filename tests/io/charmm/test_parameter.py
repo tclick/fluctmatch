@@ -61,7 +61,7 @@ class TestCharmmParameter:
         return mda.Universe(FLUCTPSF, FLUCTDCD)
 
     @pytest.fixture()
-    def param_file(self: Self, tmp_path: Path) -> Path:
+    def param_file(self, tmp_path: Path) -> Path:
         """Return an empty file.
 
         Parameters
@@ -78,7 +78,7 @@ class TestCharmmParameter:
 
     @pytest.fixture(scope="class")
     def bonds(
-        self: Self,
+        self,
         universe: mda.Universe,
     ) -> BondData:
         """Define dictionary of bonds in CHARMM model.
@@ -95,7 +95,7 @@ class TestCharmmParameter:
         """
         return OrderedDict(dict(zip(universe.bonds.types(), universe.bonds.values(), strict=True)))
 
-    def test_initialize(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_initialize(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file.
 
         GIVEN an elastic network model, bond force constants, and bond lengths
@@ -110,8 +110,7 @@ class TestCharmmParameter:
             Bond data
         """
         atom_types = OrderedDict({atom.type: "" for atom in universe.atoms})
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         testing.assert_equal(param._parameters.atom_types.keys(), atom_types.keys())
         assert all(key in param._parameters.bond_types for key in universe.bonds.topDict)
@@ -127,7 +126,7 @@ class TestCharmmParameter:
             rtol=1e-4,
         )
 
-    def test_initialize_unequal_size(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_initialize_unequal_size(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file with unequal sizes of forces and bond lengths.
 
         GIVEN an elastic network model with bonds, bond force constants, and bond lengths
@@ -143,13 +142,12 @@ class TestCharmmParameter:
         """
         distances = bonds.copy()
         distances.pop(("C00001", "C00002"))
-        param = CharmmParameter()
 
         with pytest.raises(ValueError, match="Bond force constants and bond distances do not match."):
-            param.initialize(universe, forces=bonds, lengths=distances)
+            CharmmParameter().initialize(universe, forces=bonds, lengths=distances)
 
         with pytest.raises(ValueError, match="force constants and distances do not match bonds in universe."):
-            param.initialize(universe, forces=distances, lengths=distances)
+            CharmmParameter().initialize(universe, forces=distances, lengths=distances)
 
     def test_initialize_no_bonds(self: Self) -> None:
         """Test initialization of a parameter file with no bond data.
@@ -161,12 +159,11 @@ class TestCharmmParameter:
         """
         universe = mda.Universe.empty(0)
         forces = np.zeros(5, dtype=float)
-        param = CharmmParameter()
 
         with pytest.raises(mda.NoDataError):
-            param.initialize(universe, forces=forces, lengths=forces)
+            CharmmParameter().initialize(universe, forces=forces, lengths=forces)
 
-    def test_write(self: Self, universe: mda.Universe, param_file: Path, bonds: BondData) -> None:
+    def test_write(self, universe: mda.Universe, param_file: Path, bonds: BondData) -> None:
         """Test writing a parameter file.
 
         GIVEN a universe and a parameter file
@@ -182,14 +179,17 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
-        param.write(par=param_file)
+        param.write(param_file)
         assert param_file.exists()
         assert param_file.stat().st_size > 0
+        assert param_file.with_suffix(".rtf").exists()
+        assert param_file.with_suffix(".rtf").stat().st_size > 0
+        assert param_file.with_suffix(".str").exists()
+        assert param_file.with_suffix(".str").stat().st_size > 0
 
-    def test_write_empty(self: Self, param_file: Path, caplog) -> None:
+    def test_write_empty(self, param_file: Path, caplog) -> None:
         """Test writing an empty parameter file.
 
         GIVEN a parameter file
@@ -204,14 +204,14 @@ class TestCharmmParameter:
             Fixture to capture log messages
         """
         param = CharmmParameter()
-        param.write(par=param_file)
+        param.write(param_file)
 
         warning = "No atom types or bond types were provided. The parameter file will be empty."
         assert warning in caplog.text
         assert param_file.exists()
         assert param_file.stat().st_size > 0
 
-    def test_write_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_write_fail(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test writing a parameter file if no filenames are provided.
 
         GIVEN a universe and no parameter file
@@ -225,10 +225,9 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             param.write()
 
     def test_read_prm(self: Self) -> None:
@@ -238,8 +237,7 @@ class TestCharmmParameter:
         WHEN a parameter object is initialized and read
         THEN a parameter file is read and loaded into the parameter object.
         """
-        param = CharmmParameter()
-        param.read(PRM)
+        param = CharmmParameter().read(PRM)
 
         assert len(param._parameters.atom_types) > 0, "Atom type definitions don't exist."
         assert len(param._parameters.bond_types) > 0, "Bond definitions don't exist."
@@ -251,8 +249,7 @@ class TestCharmmParameter:
         WHEN a parameter object is initialized and read
         THEN a parameter file is read and loaded into the parameter object.
         """
-        param = CharmmParameter()
-        param.read(RTF)
+        param = CharmmParameter().read(RTF)
 
         assert len(param._parameters.atom_types) > 0, "Atom type definitions don't exist."
 
@@ -264,9 +261,8 @@ class TestCharmmParameter:
         THEN a FileNotFoundError is raised.
         """
         param_file = "charmm.str"
-        param = CharmmParameter()
         with pytest.raises(FileNotFoundError):
-            param.read(param_file)
+            CharmmParameter().read(param_file)
 
     def test_read_empty_file(self: Self) -> None:
         """Test reading stream file without parameter information.
@@ -275,11 +271,10 @@ class TestCharmmParameter:
         WHEN a parameter object is initialized and read
         THEN an OSError is raised.
         """
-        param = CharmmParameter()
         with pytest.raises(OSError):
-            param.read(STR)
+            CharmmParameter().read(STR)
 
-    def test_parameters_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_parameters_property(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test parameters property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -294,15 +289,14 @@ class TestCharmmParameter:
             Bond data
         """
         # Initialize parameters
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         # Test parameters getter
         parameters = param.parameters
         assert parameters.atom_types == param._parameters.atom_types
         assert parameters.bond_types == param._parameters.bond_types
 
-    def test_forces_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_forces_property(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test getter/setter of forces property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -316,8 +310,7 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         # Test getter
         data = param.forces
@@ -336,7 +329,7 @@ class TestCharmmParameter:
             list(param.forces.values()), 0.0, rtol=1e-05, atol=1e-08, err_msg="Forces don't match.", verbose=True
         )
 
-    def test_forces_property_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_forces_property_fail(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test setter of forces property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -350,8 +343,7 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         # Test setter
         bad_bonds = bonds.copy()
@@ -359,7 +351,7 @@ class TestCharmmParameter:
         with pytest.raises(ValueError):
             param.forces = OrderedDict({k: 0.0 for k in bad_bonds})
 
-    def test_distances_property(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_distances_property(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test getter/setter of distances property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -373,8 +365,7 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         # Test getter
         data = param.distances
@@ -393,7 +384,7 @@ class TestCharmmParameter:
             list(param.distances.values()), 0.0, rtol=1e-05, atol=1e-08, err_msg="Distances don't match.", verbose=True
         )
 
-    def test_distancess_property_fail(self: Self, universe: mda.Universe, bonds: BondData) -> None:
+    def test_distancess_property_fail(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test setter of distances property.
 
         GIVEN an elastic network model, equilibrium force constants, and bond lengths
@@ -407,8 +398,7 @@ class TestCharmmParameter:
         bonds : OrderedDict[tuple[str, str], float]
             Bond data
         """
-        param = CharmmParameter()
-        param.initialize(universe, forces=bonds, lengths=bonds)
+        param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
         # Test setter
         bad_bonds = bonds.copy()

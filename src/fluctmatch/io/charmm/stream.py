@@ -41,21 +41,29 @@ from typing import Self
 import MDAnalysis as mda
 from loguru import logger
 
+from fluctmatch.io.base import IOBase
 
-class CharmmStream:
+
+class CharmmStream(IOBase):
     """Initialize and write a CHARMM stream data from bond data."""
 
     def __init__(self: Self) -> None:
         """Prepare a CHARMM stream file."""
+        super().__init__()
         self._lines: list[str] = []
 
-    def initialize(self: Self, universe: mda.Universe) -> None:
+    def initialize(self: Self, universe: mda.Universe, /) -> Self:
         """Initialize a stream file from bond data.
 
         Parameters
         ----------
         universe : :class:`MDAnalysis.Universe`
             Universe with bond data
+
+        Returns
+        -------
+        CharmmStream
+            Self
 
         Raises
         ------
@@ -77,8 +85,18 @@ class CharmmStream:
             )
             self._lines.append(line)
 
-    def write(self: Self, filename: str | Path, /, title: list[str] | None = None) -> None:
-        """Write bond data to stream file."""
+        return self
+
+    def write(self: Self, filename: Path | str, /, title: list[str] | None = None) -> None:
+        """Write bond data to stream file.
+
+        Parameters
+        ----------
+        filename : Path or str
+            Internal coordinate file
+        title : list of str, optional
+            Title lines at top of CHARMM file
+        """
         now: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         user: str = getpass.getuser()
         _title: list[str] = (
@@ -90,3 +108,8 @@ class CharmmStream:
             stream.writelines(_title)
             stream.writelines(self._lines)
             stream.write("RETURN\n")
+
+    def read(self: Self, filename: str | Path) -> Self:  # noqa: ARG002
+        """Read bond data from stream file."""
+        message = "Method 'read' not implemented."
+        raise NotImplementedError(message)
