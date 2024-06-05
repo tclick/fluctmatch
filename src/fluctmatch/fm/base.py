@@ -107,7 +107,7 @@ class FluctuationMatchingBase(abc.ABC):
         raise NotImplementedError(message)
 
     @abc.abstractmethod
-    def initialize(self: Self) -> None:
+    def initialize(self: Self) -> Self:
         """Initialize data for fluctuation matching."""
         message = "Method 'initialize' not implemented."
         raise NotImplementedError(message)
