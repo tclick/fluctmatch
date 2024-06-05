@@ -85,6 +85,11 @@ class CharmmParameter(IOBase):
         ----------
         k : OrderedDict[tuple[str, str], float]
             Force constant data
+
+        Raises
+        ------
+        ValueError
+            if number or types of bonds, force constants, or bond lengths do not match
         """
         logger.debug("Updating the equilibrium force constants.")
         try:
@@ -114,6 +119,11 @@ class CharmmParameter(IOBase):
         ----------
         req : numpy.ndarray
             Equilibrium bond distance data
+
+        Raises
+        ------
+        ValueError
+            if number or types of bonds or bond lengths do not match
         """
         logger.debug("Updating the equilibrium bond distances.")
         try:
