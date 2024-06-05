@@ -194,11 +194,6 @@ class CharmmParameter(IOBase):
         ----------
         filename : Path or str
             Filename to write the parameter data
-
-        Raises
-        ------
-        ValueError
-            if neither the parameter or stream filename is provided
         """
         par = Path(filename).with_suffix(".prm")
         top = par.with_suffix(".rtf")
