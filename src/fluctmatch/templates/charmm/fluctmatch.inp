@@ -13,7 +13,7 @@ ioformat extended
 write coor card name "$prefix.mini.crd"
 * Minimized elastic network model
 
-stream "$prefix.str"
+stream "$prefix.bonds.str"
 
 ic fill
 write ic card resid name "$prefix.average.ic"
