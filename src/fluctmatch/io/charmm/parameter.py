@@ -197,26 +197,29 @@ class CharmmParameter(IOBase):
 
         return self
 
-    def write(self: Self, filename: Path | str, /) -> None:
+    def write(self: Self, filename: Path | str, /, *, stream: bool = False) -> None:
         """Write the parameter data to a parameter, topology, or stream file.
 
         Parameters
         ----------
         filename : Path or str
             Filename to write the parameter data
+        stream : bool
+            Combine the topology and parameter files into one file. If `False`, write the topology and parameter files
+            separately.
         """
-        par = Path(filename).with_suffix(".prm")
-        top = par.with_suffix(".rtf")
-        stream = par.with_suffix(".str")
-
-        logger.info(f"Writing parameter file: {par}")
-        logger.info(f"Writing topology file: {top}")
-        logger.info(f"Writing stream file: {stream}")
-
         if not self._parameters.atom_types and not self._parameters.bond_types:
             logger.warning("No atom types or bond types were provided. The parameter file will be empty.")
 
-        self._parameters.write(par=par.as_posix(), top=top.as_posix(), stream=stream.as_posix())
+        if stream:
+            stream_file = Path(filename).with_suffix(".str")
+            logger.info(f"Writing stream file: {stream_file}")
+            self._parameters.write(stream=stream_file.as_posix())
+        else:
+            par = Path(filename).with_suffix(".prm")
+            top = par.with_suffix(".rtf")
+            logger.info(f"Writing topology to {top} and parameters to {par}.")
+            self._parameters.write(par=par.as_posix(), top=top.as_posix())
 
     def read(self: Self, filename: str | Path, /) -> Self:
         """Read the parameters from a file.
