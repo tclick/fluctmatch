@@ -65,21 +65,6 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         mobile : MDAnalysis.Universe
             All-atom universe
 
-        Attributes
-        ----------
-        _mobile : MDAnalysis.Universe
-            The all-atom universe
-        _universe : MDAnalysis.Universe
-            The transformed universe
-        _mapping : MappingProxyType
-            A dict-type object defining the bead and the atoms used for determination of the bead position. The value
-            can either be a string or another mapping object.
-        _selection : MappingProxyType
-            A dict-type object defining the selection of the bead and the atoms used for determination of charges and
-            masses. The value can either be a string or another mapping object.
-        _beads : iterable
-            `AtomGroup` defining the bead
-
         Notes
         -----
         Mapping must be a dictionary with atom names as keys. Each name must then correspond to a selection string
