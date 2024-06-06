@@ -40,7 +40,6 @@ from types import MappingProxyType
 from typing import Self
 
 import MDAnalysis as mda
-import MDAnalysis.core.groups as groups
 import MDAnalysis.topology.base as topbase
 import MDAnalysis.topology.guessers as guessers
 import MDAnalysis.transformations as transformations
@@ -56,31 +55,40 @@ coarse_grain = ClassRegistry("model")
 
 
 class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
-    """Base class for creating coarse-grain core.
+    """Base class for creating coarse-grain models."""
 
-    Parameters
-    ----------
-    mobile : Universe
-        All-atom universe
-
-    Attributes
-    ----------
-    _universe : :class:`~MDAnalysis.Universe`
-        The transformed universe
-    """
-
-    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:  # noqa: ARG002
+    def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict) -> None:  # noqa: ARG002
         """Initialise like a normal MDAnalysis Universe but give the mapping and com keywords.
 
-        Mapping must be a dictionary with atom names as keys.
-        Each name must then correspond to a selection string,
-        signifying how to split up a single residue into many beads.
-        eg:
+        Parameters
+        ----------
+        mobile : MDAnalysis.Universe
+            All-atom universe
+
+        Attributes
+        ----------
+        _mobile : MDAnalysis.Universe
+            The all-atom universe
+        _universe : MDAnalysis.Universe
+            The transformed universe
+        _mapping : MappingProxyType
+            A dict-type object defining the bead and the atoms used for determination of the bead position. The value
+            can either be a string or another mapping object.
+        _selection : MappingProxyType
+            A dict-type object defining the selection of the bead and the atoms used for determination of charges and
+            masses. The value can either be a string or another mapping object.
+        _beads : iterable
+            `AtomGroup` defining the bead
+
+        Notes
+        -----
+        Mapping must be a dictionary with atom names as keys. Each name must then correspond to a selection string
+        signifying how to split up a single residue into many beads, e.g.:
+
         mapping = {"CA":"protein and name CA",
-                   "CB":"protein and not name N HN H HT* H1 H2 H3 CA HA* C O OXT
-                   OT*"}
-        would split residues into 2 beads containing the C-alpha atom and the
-        sidechain.
+                   "CB":"protein and not name N HN H HT* H1 H2 H3 CA HA* C O OXT OT*"}}
+
+        would split residues into 2 beads containing the C-alpha atom and the sidechain.
         """
         # Coarse grained Universe
         # Make a blank Universe for myself.
@@ -97,35 +105,34 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
 
         # Beads from all-atom system
         self._beads: list[mda.AtomGroup] = []
-        self._mass_beads: list[mda.AtomGroup] = []
-
-        # Residues with corresponding atoms and selection criteria.
-        self._residues: tuple[tuple[groups.Residue, str, str | mda.ResidueGroup], ...] | None = None
 
     @property
     def universe(self: Self) -> mda.Universe:
-        """Retrieve coarse-grain universe.
+        """Retrieve the coarse-grain universe.
 
         Returns
         -------
         MDAnalysis.Universe
-            coarse-grain model
+            Coarse-grain model
         """
         return self._universe
 
     @property
     def atoms(self: Self) -> mda.AtomGroup:
-        """Retrieve coarse-grain model.
+        """Retrieve the coarse-grain model.
 
         Returns
         -------
         MDAnalysis.AtomGroup
-            coarse-grain model
+            Coarse-grain model
         """
         return self._universe.atoms
 
     def create_topology(self: Self) -> Self:
         """Determine the topology attributes and initialize the universe.
+
+        Creates the corase-grain model using the `_selection`. The beads are assigned names, and the residue names and
+        segment IDs are assigned. Masses and charges are also assigned per bead as per the `_selection` definitions.
 
         Returns
         -------
@@ -136,12 +143,12 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         residues: mda.ResidueGroup = self._mobile.residues
 
         atomnames: list[str] = []
-        self._residues = tuple(
+        residue_list = (
             (residue, key, value) for residue, (key, value) in itertools.product(residues, self._mapping.items())
         )
 
         logger.debug("Creating the coarse-grain topology.")
-        for residue, key, selection in self._residues:
+        for residue, key, selection in residue_list:
             value: str = selection.get(residue.resname) if isinstance(selection, MappingProxyType) else selection
             bead: mda.AtomGroup = residue.atoms.select_atoms(value)
             if bead:
@@ -197,19 +204,32 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
     def generate_bonds(self: Self, rmin: float = 0.0, rmax: float = 10.0, guess: bool = False) -> Self:
         """Add bonds, angles, dihedrals, and improper dihedrals to the universe.
 
+        Determine the connectivity of the beads. The private method `_add_bonds` needs to be defined because that method
+        creates the bond connectivity, which will be used for guessing the other connections if requested via `guess`.
+
         Parameters
         ----------
         rmin : float
-            Minimum bond distance
+            Minimum bond distance between beads
         rmax : bool
-            Maximum bond distance
+            Maximum bond distance between beads
         guess : bool, optional
-            Guess angles and dihedral and improper dihedral angles
+            Guess angles, dihedral angles, and improper dihedral angles
 
         Returns
         -------
         CoarseGrainModel
             Updated coarse-grain model
+
+        Raises
+        ------
+        AttributeError
+            If the universe is empty.
+
+        Notes
+        -----
+        `rmin` and `rmax` aree useful if bonds between 'i,i+4' bonds are needed. They allow a minimum and maximum length
+        for bonds.
         """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
@@ -243,6 +263,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         -------
         CoarseGrainModel
             Updated coarse-grain model
+
+        Raises
+        ------
+        AttributeError
+            If the universe is empty.
         """
         if self._universe.atoms.n_atoms == 0:
             message = "Topologies need to be created before trajectory can be added."
@@ -316,7 +341,8 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
 
         Returns
         -------
-        A coarse-grain model
+        MDAnalysis.Universe
+            A coarse-grain model
         """
         logger.debug("Transforming an all-atom system to an elastic network model.")
         self.create_topology().generate_bonds(rmin=rmin, rmax=rmax, guess=guess)
@@ -324,6 +350,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         return self._universe
 
     def _add_masses(self: Self) -> None:
+        """Assign masses to each bead.
+
+        The masses are assigned to each bead using `_selection`. If no data exists for masses, the beads will be
+        given a mass of 0.0.
+        """
         residues: mda.ResidueGroup = self._mobile.residues
         atoms: mda.AtomGroup = residues.atoms
         selections = itertools.product(residues, self._selection.values())
@@ -344,6 +375,11 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         self._universe.add_TopologyAttr("masses", masses)
 
     def _add_charges(self: Self) -> None:
+        """Assign charges to each bead.
+
+        The charges are assigned to each bead using `_selection`. If no data exists for charges, the beads will be
+        given a charge of 0.0.
+        """
         residues = self._mobile.residues
         atoms = residues.atoms
         selections = itertools.product(self._mobile.residues, self._selection.values())
@@ -369,6 +405,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
         raise NotImplementedError(msg)
 
     def _add_angles(self: Self) -> None:
+        """Determine angles between three beads according to bonds between beads."""
         try:
             logger.debug("Guessing the angles.")
             angles = guessers.guess_angles(self._universe.bonds)
@@ -377,6 +414,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             pass
 
     def _add_dihedrals(self: Self) -> None:
+        """Determine dihedral angles between four beads according to the angles between beads."""
         try:
             logger.debug("Guessing the dihedral angles.")
             dihedrals = guessers.guess_dihedrals(self._universe.angles)
@@ -385,6 +423,7 @@ class CoarseGrainModel(metaclass=AutoRegister(coarse_grain)):
             pass
 
     def _add_impropers(self: Self) -> None:
+        """Determine improper dihedral angles between four beads according to the angles between beads."""
         try:
             logger.debug("Guessing the improper dihedral angles.")
             impropers = guessers.guess_improper_dihedrals(self._universe.angles)
