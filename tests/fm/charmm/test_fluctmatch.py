@@ -30,61 +30,46 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false
-"""Base class for fluctuation matching."""
+"""Tests for fluctuation matching using CHARMM."""
 
-import abc
 from pathlib import Path
 from typing import Self
 
 import MDAnalysis as mda
+import pytest
+from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
+
+from tests.datafile import FLUCTDCD, FLUCTPSF
 
 
-class FluctuationMatchingBase(abc.ABC):
-    """Base class for fluctuation matching."""
+@pytest.fixture(scope="class")
+def universe() -> mda.Universe:
+    """Universe of an elastic network model.
 
-    def __init__(
-        self: Self,
-        universe: mda.Universe,
-        /,
-        *,
-        temperature: float = 300.0,
-        output_dir: Path | str | None = None,
-        prefix: Path | str = "fluctmatch",
-    ) -> None:
-        """Initialize of fluctuation matching.
+    Returns
+    -------
+    MDAnalysis.Universe
+        Elastic network model
+    """
+    return mda.Universe(FLUCTPSF, FLUCTDCD)
+
+
+class TestCharmmFluctuationMatching:
+    """Tests for CharmmFluctuationMatching."""
+
+    def test_initialize(self: Self, universe: mda.Universe, tmp_path: Path) -> None:
+        """Test initialization.
 
         Parameters
         ----------
-        universe : :class:`MDAnalysis.Universe`
-            Elastic network model
-        temperature : float (default: 300.0)
-            Temperature in Kelvin
-        output_dir, str, optional (default=None)
-            Output directory
-        prefix : str, optional (default "fluctmatch")
-            Filename prefix
-
-        Raises
-        ------
-        ValueError
-            If temperature is <= 0.0.
+        universe : MDAnalysis.Universe
+            Universe of an elastic network model
+        tmp_path : Path
+            Temporary path
         """
-        self._universe = universe.copy()
-
-        if temperature <= 0:
-            message = "Temperature cannot be negative or 0 K."
-            raise ValueError(message)
-
-        self._temperature = temperature
-        self._output_dir = Path.home() if output_dir is None else Path(output_dir)
-        self._prefix = Path(prefix)
-
-        # Bond factor mol^2-Ang./kcal^2
-        self.K_FACTOR: float = 0.02
-
-    @abc.abstractmethod
-    def initialize(self: Self) -> Self:
-        """Initialize data for fluctuation matching."""
-        message = "Method 'initialize' not implemented."
-        raise NotImplementedError(message)
+        prefix = "fluctmatch"
+        stem = tmp_path.joinpath(prefix)
+        fm = CharmmFluctuationMatching(universe, output_dir=tmp_path, prefix=prefix).initialize()
+        assert len(fm._parameters.parameters.bond_types) > 0, "Bond data not found."
+        assert stem.with_suffix(".str").exists(), "Parameter file not found."
+        assert stem.with_suffix(".inp").exists(), "CHARMM input file not found."
