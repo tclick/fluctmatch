@@ -207,7 +207,7 @@ class CharmmInternalCoordinates(IOBase):
                     if all(c.isdigit() for c in line.split()):
                         continue
 
-                    cols = self._reader.read(line)
+                    cols = [str.strip(_) if isinstance(_, str) else _ for _ in self._reader.read(line)]
                     self._table[(cols[3], cols[6])] = np.fromiter(cols, dtype=object)
         except FileNotFoundError as err:
             logger.exception(err)
