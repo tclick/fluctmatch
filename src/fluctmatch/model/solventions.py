@@ -51,7 +51,7 @@ class SolventIonModel(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
-        self._mapping: MappingProxyType[str, str] = MappingProxyType({"ION": "name LI LIT K NA F CL BR I"})
+        self._mapping: MappingProxyType[str, str] = MappingProxyType({"ION": "name LI LIT K POT NA SOD F CL CLA BR I"})
         self._selection: MappingProxyType[str, str] = self._mapping
 
     def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002
