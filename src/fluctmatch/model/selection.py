@@ -78,7 +78,7 @@ class WaterSelection(selection.Selection):
     """Contains atoms commonly found in water."""
 
     token: ClassVar[str] = "water"
-    water_atoms: ClassVar[set[str]] = set("OW HW1 HW2 MW".split())
+    water_atoms: ClassVar[set[str]] = set("TIP3 WAT".split())
 
     def _apply(self: Self, group: AtomGroup) -> NDArray:
         """Apply selection to atom group.
@@ -93,14 +93,13 @@ class WaterSelection(selection.Selection):
         NDArray
             Selection of atom names
         """
-        atomnames = group.universe._topology.names
-
-        # filter by atom names
-        name_matches = [ix for (nm, ix) in atomnames.namedict.items() if nm in self.water_atoms]
-        nmidx = atomnames.nmidx[group.ix]
-        group = group[np.in1d(nmidx, name_matches)]
-
-        return group.unique
+        resname_attr = group.universe._topology.resnames
+        # which values in resname attr are in prot_res?
+        matches = [ix for (nm, ix) in resname_attr.namedict.items() if nm in self.water_atoms]
+        # index of each atom's resname
+        nmidx = resname_attr.nmidx[group.resindices]
+        # intersect atom's resname index and matches to prot_res
+        return group[np.isin(nmidx, matches)]
 
 
 class BackboneSelection(selection.BackboneSelection):
