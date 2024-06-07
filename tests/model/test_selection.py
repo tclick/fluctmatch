@@ -34,9 +34,9 @@
 
 from typing import Self
 
+import fluctmatch.model.selection  # noqa: F401
 import MDAnalysis as mda
 import pytest
-from fluctmatch.model.selection import *
 
 from tests.datafile import GRO
 

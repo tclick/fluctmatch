@@ -30,8 +30,8 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse = false, reportCallIssue = false, reportArgumentType = false
-# pyright: reportAssignmentType = false, reportAttributeAccessIssue = false, reportOptionalMemberAccess = false
+# pyright: reportInvalidTypeVarUse=false, reportCallIssue=false, reportArgumentType=false, reportReturnType=false
+# pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportOptionalMemberAccess=false
 """Base classes for the model and the factory."""
 
 import abc
@@ -49,7 +49,7 @@ from loguru import logger
 from MDAnalysis.coordinates.memory import MemoryReader
 from numpy.typing import NDArray
 
-from fluctmatch.model.selection import *
+import fluctmatch.model.selection  # noqa: F401
 
 coarse_grain = ClassRegistry("model")
 
