@@ -51,7 +51,7 @@ class WaterModel(CoarseGrainModel):
     def __init__(self: Self, mobile: mda.Universe, /, **kwargs: dict[str, bool]) -> None:
         super().__init__(mobile, **kwargs)
 
-        self._mapping: MappingProxyType[str, str] = MappingProxyType({"OW": "name OW"})
+        self._mapping: MappingProxyType[str, str] = MappingProxyType({"OW": "water and name OW OH2"})
         self._selection: MappingProxyType[str, str] = MappingProxyType({"OW": "water"})
 
     def _add_bonds(self: Self, rmin: float, rmax: float) -> None:  # noqa: ARG002

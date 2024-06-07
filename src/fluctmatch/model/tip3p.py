@@ -53,14 +53,14 @@ class Tip3pModel(CoarseGrainModel):
         super().__init__(mobile, **kwargs)
 
         self._mapping: MappingProxyType[str, str] = MappingProxyType({
-            "OW": "name OW",
-            "HW1": "name HW1",
-            "HW2": "name HW2",
+            "OW": "water and name OW OH2",
+            "HW1": "water and name HW1 H1",
+            "HW2": "water and name HW2 H2",
         })
         self._selection: MappingProxyType[str, str] = MappingProxyType({
-            "OW": "name OW MW",
-            "HW1": "name HW1",
-            "HW2": "name HW2",
+            "OW": "water and name OW MW OH2",
+            "HW1": "water and name HW1 H1",
+            "HW2": "water and name HW2 H2",
         })
         self._types: MappingProxyType[str, int] = MappingProxyType({
             key: value + 1 for key, value in zip(self._mapping.keys(), range(len(self._mapping)), strict=True)
