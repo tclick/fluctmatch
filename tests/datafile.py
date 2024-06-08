@@ -37,12 +37,6 @@ from importlib import resources
 _data_ref = resources.files("tests.data")
 
 __all__: list[str] = [
-    "PDB",
-    "GRO",
-    "DNA",
-    "TIP3P",
-    "TIP4P",
-    "IONS",
     "DMA",
     "TPR",
     "XTC",
@@ -55,8 +49,8 @@ __all__: list[str] = [
     "RTF",
     "STR",
     "JSON",
-    "FLUCTPSF",
-    "FLUCTDCD",
+    "PSF_ENM",
+    "DCD_CG",
 ]
 
 with resources.as_file(_data_ref / "trex1.pdb") as f:
@@ -114,7 +108,7 @@ with resources.as_file(_data_ref / "cg.json") as f:
     JSON: str = f.as_posix()
 
 with resources.as_file(_data_ref / "fluctmatch.psf") as f:
-    FLUCTPSF: str = f.as_posix()
+    PSF_ENM: str = f.as_posix()
 
-with resources.as_file(_data_ref / "fluctmatch.dcd") as f:
-    FLUCTDCD: str = f.as_posix()
+with resources.as_file(_data_ref / "cg.dcd") as f:
+    DCD_CG: str = f.as_posix()
