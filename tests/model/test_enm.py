@@ -35,12 +35,19 @@
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
 from fluctmatch.model import enm
 from fluctmatch.model.base import coarse_grain
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysisTests.datafiles import DCD2, PSF
 from numpy import testing
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
-from tests.datafile import DCD, PSF
+# Number of residues to test
+N_RESIDUES: int = 5
+N_FRAMES: int = 5
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -52,7 +59,11 @@ def universe() -> mda.Universe:
     Universe
         universe with protein, DNA, and water
     """
-    return mda.Universe(PSF, DCD)
+    u = mda.Universe(PSF, DCD2)
+    new = mda.Merge(u.residues[:N_RESIDUES].atoms)
+    n_atoms = new.atoms.n_atoms
+    pos = np.array([u.atoms.positions[:n_atoms] for _ in u.trajectory[:N_FRAMES]])
+    return new.load_new(pos, format=MemoryReader, order="fac")
 
 
 class TestElasticNetworkModel:
@@ -130,3 +141,21 @@ class TestElasticNetworkModel:
 
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
         testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
+
+    def test_transformation(self: Self, model: enm.ElasticModel) -> None:
+        """Ensure that the all-atom model is transformed into a C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN trajectory is added to the universe with the same number of frames.
+
+        Parameters
+        ----------
+        MDAnalysis.Universe
+            All-atom universe
+        """
+        with Replacer() as replace:
+            mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())
+            model.transform(guess=True)
+
+            mock_bonds.assert_called_once()

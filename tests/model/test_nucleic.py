@@ -45,6 +45,8 @@ from MDAnalysis.coordinates.memory import MemoryReader
 from MDAnalysisTests.datafiles import RNA_PDB, RNA_PSF
 from numpy import testing
 from numpy.typing import NDArray
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
 # Number of residues to test
 N_RESIDUES: int = 5
@@ -150,6 +152,26 @@ class TestNucleic3:
             if residue.atoms.select_atoms(value):
                 positions.append(residue.atoms.select_atoms(value).center_of_mass())
         testing.assert_allclose(positions, system.atoms.positions, err_msg="The coordinates do not match.")
+
+    def test_transformation(self: Self, model: nucleic3.NucleicModel) -> None:
+        """Ensure that the all-atom model is transformed into a C-alpha model.
+
+        GIVEN an all-atom universe
+        WHEN transformed into a coarse-grain model
+        THEN trajectory is added to the universe with the same number of frames.
+
+        Parameters
+        ----------
+        MDAnalysis.Universe
+            All-atom universe
+        """
+        with Replacer() as replace:
+            mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())
+            mock_traj = replace("fluctmatch.model.base.CoarseGrainModel.add_trajectory", Mock())
+            model.transform(guess=True)
+
+            mock_bonds.assert_called_once()
+            mock_traj.assert_called_once()
 
 
 class TestNucleic4(TestNucleic3):

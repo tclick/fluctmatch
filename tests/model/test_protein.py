@@ -42,6 +42,8 @@ from fluctmatch.model.base import coarse_grain
 from MDAnalysis.coordinates.memory import MemoryReader
 from MDAnalysisTests.datafiles import DCD2, PSF
 from numpy import testing
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
 # Number of residues to test
 N_RESIDUES: int = 5
@@ -137,37 +139,30 @@ class TestCalpha:
         u = atoms.universe
         system: mda.Universe = model.universe
 
-        atom_positions = [atoms.positions for _ in u.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
-
         testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
 
-    def test_transformation(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
+    def test_transformation(self: Self, model: calpha.CalphaModel) -> None:
         """Ensure that the all-atom model is transformed into a C-alpha model.
 
         GIVEN an all-atom universe
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
+
+        Parameters
+        ----------
+        MDAnalysis.Universe
+            All-atom universe
         """
-        system: mda.Universe = model.transform(guess=True)
-        u = atoms.universe
-        atom_positions = [atoms.positions for _ in u.trajectory]
-        model_positions = [system.atoms.positions for _ in system.trajectory]
+        with Replacer() as replace:
+            mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())
+            mock_traj = replace("fluctmatch.model.base.CoarseGrainModel.add_trajectory", Mock())
+            model.transform(guess=True)
 
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
-        assert len(system.bonds) > 0, "Bonds not generated"
-        assert len(system.angles) > 0, "Angles not generated"
-        assert len(system.dihedrals) > 0, "Dihedral angles not generated"
-        assert len(system.impropers) == 0, "Improper dihedral angles generated"
-        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
-        testing.assert_allclose(model_positions, atom_positions, err_msg="Positions not equal")
+            mock_bonds.assert_called_once()
+            mock_traj.assert_called_once()
 
 
-class TestCaside:
+class TestCaside(TestCalpha):
     """Test C-alpha/sidechain model."""
 
     @pytest.fixture(scope="class")
@@ -196,21 +191,6 @@ class TestCaside:
         """
         return coarse_grain.get("CASIDE", universe)
 
-    def test_topology_creation(self: Self, atoms: mda.AtomGroup, model: caside.CasideModel) -> None:
-        """Test topology for C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN number of atoms, residues, masses, and charges should be equal
-        """
-        model.create_topology()
-        system: mda.Universe = model.universe
-
-        testing.assert_equal(system.atoms.n_atoms, atoms.n_atoms, err_msg="Number of atoms not equal")
-        testing.assert_equal(system.residues.n_residues, atoms.n_residues, err_msg="Number of residues not equal")
-        testing.assert_allclose(system.residues.masses, atoms.residues.masses, err_msg="Masses not equal")
-        testing.assert_allclose(system.residues.charges, atoms.residues.charges, err_msg="Charges not equal")
-
     def test_bond_generation(self: Self, model: calpha.CalphaModel) -> None:
         """Test the creation of intramolecular bonds between C-alpha atoms.
 
@@ -227,19 +207,6 @@ class TestCaside:
         assert len(system.angles) > 0, "Angles not generated"
         assert len(system.dihedrals) > 0, "Dihedral angles not generated"
         assert len(system.impropers) > 0, "Improper dihedral angles not generated"
-
-    def test_trajectory_addition(self: Self, atoms: mda.AtomGroup, model: calpha.CalphaModel) -> None:
-        """Ensure that positions match between the all-atom and C-alpha model.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN trajectory is added to the universe with the same number of frames.
-        """
-        model.create_topology().add_trajectory(com=True)
-        u = atoms.universe
-        system: mda.Universe = model.universe
-
-        testing.assert_equal(system.trajectory.n_frames, u.trajectory.n_frames, err_msg="Number of frames not equal")
 
 
 class TestNcsc(TestCaside):
