@@ -170,6 +170,11 @@ class TestWater:
         GIVEN an all-atom universe
         WHEN transformed into a coarse-grain model
         THEN trajectory is added to the universe with the same number of frames.
+
+        Parameters
+        ----------
+        model : MDAnalysis.Universe
+            Coarse-grain model
         """
         with Replacer() as replace:
             mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())
@@ -367,8 +372,8 @@ class TestDma:
 
         Parameters
         ----------
-        MDAnalysis.Universe
-            All-atom universe
+        model : MDAnalysis.Universe
+            Coarse-grain model
         """
         with Replacer() as replace:
             mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())

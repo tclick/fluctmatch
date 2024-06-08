@@ -162,8 +162,8 @@ class TestNucleic3:
 
         Parameters
         ----------
-        MDAnalysis.Universe
-            All-atom universe
+        model : MDAnalysis.Universe
+            Coarse-grain model
         """
         with Replacer() as replace:
             mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())

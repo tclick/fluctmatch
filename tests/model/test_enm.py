@@ -151,11 +151,13 @@ class TestElasticNetworkModel:
 
         Parameters
         ----------
-        MDAnalysis.Universe
-            All-atom universe
+        model : MDAnalysis.Universe
+            Coarse-grain model
         """
         with Replacer() as replace:
             mock_bonds = replace("fluctmatch.model.base.CoarseGrainModel.generate_bonds", Mock())
+            mock_traj = replace("fluctmatch.model.base.CoarseGrainModel.add_trajectory", Mock())
             model.transform(guess=True)
 
             mock_bonds.assert_called_once()
+            mock_traj.assert_not_called()
