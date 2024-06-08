@@ -37,13 +37,17 @@ from types import MappingProxyType
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
 from fluctmatch.model import nucleic3, nucleic4
 from fluctmatch.model.base import coarse_grain
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysisTests.datafiles import RNA_PDB, RNA_PSF
 from numpy import testing
 from numpy.typing import NDArray
 
-from tests.datafile import DNA
+# Number of residues to test
+N_RESIDUES: int = 5
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -53,9 +57,13 @@ def universe() -> mda.Universe:
     Returns
     -------
     Universe
-        universe with DNA
+        universe with protein, DNA, and water
     """
-    return mda.Universe(DNA)
+    u = mda.Universe(RNA_PSF, RNA_PDB)
+    new = mda.Merge(u.residues[:N_RESIDUES].atoms)
+    n_atoms = new.atoms.n_atoms
+    pos = np.array([u.atoms.positions[:n_atoms] for _ in u.trajectory])
+    return new.load_new(pos, format=MemoryReader, order="fac")
 
 
 class TestNucleic3:
@@ -70,7 +78,7 @@ class TestNucleic3:
         MDAnalysis.AtomGroup
             Atom group with C-alpha atoms and bioions
         """
-        return universe.select_atoms("all")
+        return universe.select_atoms("nucleic")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> nucleic3.NucleicModel:

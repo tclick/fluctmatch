@@ -38,27 +38,36 @@ import itertools
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
 from fluctmatch.model import solventions
 from fluctmatch.model.base import CoarseGrainModel, coarse_grain
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysisTests.datafiles import RNA_PDB, RNA_PSF
 from numpy import testing
 
-from tests.datafile import IONS
+# Number of residues to test
+N_RESIDUES: int = 5
+
+
+@pytest.fixture(autouse=True, scope="class")
+def universe() -> mda.Universe:
+    """Fixture for a universe.
+
+    Returns
+    -------
+    Universe
+        universe with protein, DNA, and water
+    """
+    u = mda.Universe(RNA_PSF, RNA_PDB)
+    new = mda.Merge(u.residues[-N_RESIDUES:].atoms)
+    n_atoms = new.atoms.n_atoms
+    pos = np.array([u.atoms.positions[-n_atoms:] for _ in u.trajectory])
+    return new.load_new(pos, format=MemoryReader, order="fac")
 
 
 class TestSolventIons:
     """Test conversion of all-atom water to O-only."""
-
-    @pytest.fixture()
-    def universe(self: Self) -> mda.Universe:
-        """Fixture for a universe.
-
-        Returns
-        -------
-        Universe
-            universe with protein, DNA, and water
-        """
-        return mda.Universe(IONS)
 
     @pytest.fixture()
     def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
@@ -69,7 +78,7 @@ class TestSolventIons:
         MDAnalysis.AtomGroup
             Atom group with O atoms
         """
-        return universe.select_atoms("name K CL")
+        return universe.select_atoms("all")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> CoarseGrainModel:

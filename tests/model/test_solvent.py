@@ -38,27 +38,38 @@ import itertools
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
 from fluctmatch.model import dma, tip3p, water
 from fluctmatch.model.base import CoarseGrainModel, coarse_grain
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysisTests.datafiles import DCD_TRICLINIC, PSF_TRICLINIC
 from numpy import testing
 
-from tests.datafile import DMA, TIP3P
+from tests.datafile import DMA
+
+# Number of residues to test
+N_RESIDUES: int = 5
+
+
+@pytest.fixture()
+def universe() -> mda.Universe:
+    """Fixture for a universe.
+
+    Returns
+    -------
+    MDAnalysis.Universe
+        Universe with protein, DNA, and water
+    """
+    u = mda.Universe(PSF_TRICLINIC, DCD_TRICLINIC)
+    new = mda.Merge(u.residues[:N_RESIDUES].atoms)
+    n_atoms = new.atoms.n_atoms
+    pos = np.array([u.atoms.positions[:n_atoms] for _ in u.trajectory])
+    return new.load_new(pos, format=MemoryReader, order="fac")
 
 
 class TestWater:
     """Test conversion of all-atom water to O-only."""
-
-    @pytest.fixture()
-    def universe(self: Self) -> mda.Universe:
-        """Fixture for a universe.
-
-        Returns
-        -------
-        Universe
-            universe with protein, DNA, and water
-        """
-        return mda.Universe(TIP3P)
 
     @pytest.fixture()
     def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
@@ -69,7 +80,7 @@ class TestWater:
         MDAnalysis.AtomGroup
             Atom group with O atoms
         """
-        return universe.select_atoms("name OW")
+        return universe.select_atoms("water and name OW OH2")
 
     @pytest.fixture()
     def model(self: Self, universe: mda.Universe) -> CoarseGrainModel:
@@ -154,17 +165,6 @@ class TestWater:
 
 class TestTip3p(TestWater):
     """Test conversion of all-atom water to a water with three bonds."""
-
-    @pytest.fixture()
-    def universe(self: Self) -> mda.Universe:
-        """Fixture for a universe.
-
-        Returns
-        -------
-        Universe
-            universe with protein, DNA, and water
-        """
-        return mda.Universe(TIP3P)
 
     @pytest.fixture()
     def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
@@ -257,7 +257,11 @@ class TestDma:
         Universe
             universe with dimethylamide (DMA)
         """
-        return mda.Universe(DMA)
+        u = mda.Universe(DMA)
+        new = mda.Merge(u.residues[:N_RESIDUES].atoms)
+        n_atoms = new.atoms.n_atoms
+        pos = np.array([u.atoms.positions[:n_atoms] for _ in u.trajectory])
+        return new.load_new(pos, format=MemoryReader, order="fac")
 
     @pytest.fixture()
     def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:

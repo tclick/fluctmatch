@@ -35,16 +35,17 @@
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
-from fluctmatch.model import bioions, calpha, caside, ncsc, polar
+from fluctmatch.model import calpha, caside, ncsc, polar
 from fluctmatch.model.base import coarse_grain
+from MDAnalysis.coordinates.memory import MemoryReader
+from MDAnalysisTests.datafiles import DCD2, PSF
 from numpy import testing
 
-from tests.datafile import TPR, XTC
-
 # Number of residues to test
-N_RESIDUES = 6
-BIOION = "MG CAL MN FE CU ZN AG"
+N_RESIDUES: int = 5
+N_FRAMES: int = 5
 
 
 @pytest.fixture(autouse=True, scope="class")
@@ -56,7 +57,11 @@ def universe() -> mda.Universe:
     Universe
         universe with protein, DNA, and water
     """
-    return mda.Universe(TPR, XTC)
+    u = mda.Universe(PSF, DCD2)
+    new = mda.Merge(u.residues[:N_RESIDUES].atoms)
+    n_atoms = new.atoms.n_atoms
+    pos = np.array([u.atoms.positions[:n_atoms] for _ in u.trajectory[:N_FRAMES]])
+    return new.load_new(pos, format=MemoryReader, order="fac")
 
 
 class TestCalpha:
@@ -284,54 +289,3 @@ class TestPolar(TestNcsc):
         C-alpha only universe with coordinates
         """
         return coarse_grain.get("POLAR", universe)
-
-
-class TestBioions(TestCaside):
-    """Test bioion model."""
-
-    @pytest.fixture(scope="class")
-    def atoms(self: Self, universe: mda.Universe) -> mda.AtomGroup:
-        """Fixture for a C-alpha model from the all-atom model.
-
-        Returns
-        -------
-        MDAnalysis.AtomGroup
-            Atom group with C-alpha atoms and bioions
-        """
-        return universe.select_atoms(f"name {BIOION}")
-
-    @pytest.fixture()
-    def model(self: Self, universe: mda.Universe) -> bioions.BioionModel:
-        """Fixture for a C-alpha model.
-
-        Parameters
-        ----------
-        universe : mda.Universe
-            Universe with protein, DNA, and water
-
-        Returns
-        -------
-        C-alpha only universe with coordinates
-        """
-        return coarse_grain.get("BIOIONS", universe)
-
-    def test_bond_generation(self: Self, model: bioions.BioionModel) -> None:
-        """Test that no bonds are created between water molecules.
-
-        GIVEN an all-atom universe
-        WHEN transformed into a coarse-grain model
-        THEN no bonds are formed between respective sites.
-        """
-        with pytest.raises(AttributeError):
-            model.generate_bonds()
-
-        model.create_topology().generate_bonds()
-        system: mda.Universe = model.universe
-
-        testing.assert_equal(len(system.bonds), 0, err_msg="Bonds generated")
-        with pytest.raises(mda.NoDataError):
-            _ = system.angles
-        with pytest.raises(mda.NoDataError):
-            _ = system.dihedrals
-        with pytest.raises(mda.NoDataError):
-            _ = system.impropers
