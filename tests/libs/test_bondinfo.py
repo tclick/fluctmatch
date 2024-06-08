@@ -41,7 +41,7 @@ from fluctmatch.io.charmm import Bond, BondData
 from fluctmatch.libs.bond_info import BondInfo
 from numpy import testing
 
-from tests.datafile import FLUCTDCD, FLUCTPSF
+from tests.datafile import DCD_CG, PSF_ENM
 
 STOP: int = 10
 
@@ -55,7 +55,7 @@ def universe() -> mda.Universe:
     :class:`MDAnalysis.Universe`
         Elastic network model
     """
-    return mda.Universe(FLUCTPSF, FLUCTDCD)
+    return mda.Universe(PSF_ENM, DCD_CG)
 
 
 @pytest.fixture(scope="class")

@@ -39,7 +39,7 @@ import MDAnalysis as mda
 import pytest
 from fluctmatch.io.charmm.stream import CharmmStream
 
-from tests.datafile import FLUCTDCD, FLUCTPSF
+from tests.datafile import DCD_CG, PSF_ENM
 
 
 class TestCharmmStream:
@@ -54,7 +54,7 @@ class TestCharmmStream:
         MDAnalysis.Universe
             Elastic network model
         """
-        return mda.Universe(FLUCTPSF, FLUCTDCD)
+        return mda.Universe(PSF_ENM, DCD_CG)
 
     @pytest.fixture()
     def stream_file(self, tmp_path: Path) -> Path:
@@ -87,7 +87,7 @@ class TestCharmmStream:
         stream = CharmmStream().initialize(universe)
 
         assert len(stream._lines) == len(universe.bonds)
-        assert "PROA" in stream._lines[0]
+        assert "4AKE" in stream._lines[0]
 
     def test_initialize_error(self: Self) -> None:
         """Test if an error is raised when initializing an empty universe.

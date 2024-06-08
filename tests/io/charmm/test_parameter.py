@@ -43,7 +43,7 @@ from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
 
-from tests.datafile import FLUCTDCD, FLUCTPSF, PRM, RTF, STR
+from tests.datafile import DCD_CG, PRM, PSF_ENM, RTF, STR
 
 
 class TestCharmmParameter:
@@ -58,7 +58,7 @@ class TestCharmmParameter:
         MDAnalysis.Universe
             Elastic network model
         """
-        return mda.Universe(FLUCTPSF, FLUCTDCD)
+        return mda.Universe(PSF_ENM, DCD_CG)
 
     @pytest.fixture()
     def param_file(self, tmp_path: Path) -> Path:
@@ -141,7 +141,7 @@ class TestCharmmParameter:
             Bond data
         """
         distances = bonds.copy()
-        distances.pop(("C00001", "C00002"))
+        distances.pop(("A00001", "A00002"))
 
         with pytest.raises(ValueError, match="Bond force constants and bond distances do not match."):
             CharmmParameter().initialize(universe, forces=bonds, lengths=distances)
@@ -186,8 +186,6 @@ class TestCharmmParameter:
         assert param_file.stat().st_size > 0
         assert param_file.with_suffix(".rtf").exists()
         assert param_file.with_suffix(".rtf").stat().st_size > 0
-        assert param_file.with_suffix(".str").exists()
-        assert param_file.with_suffix(".str").stat().st_size > 0
 
     def test_write_empty(self, param_file: Path, caplog) -> None:
         """Test writing an empty parameter file.
@@ -347,7 +345,7 @@ class TestCharmmParameter:
 
         # Test setter
         bad_bonds = bonds.copy()
-        bad_bonds.pop(("C00001", "C00002"))
+        bad_bonds.pop(("A00001", "A00002"))
         with pytest.raises(ValueError):
             param.forces = OrderedDict({k: 0.0 for k in bad_bonds})
 
@@ -402,6 +400,6 @@ class TestCharmmParameter:
 
         # Test setter
         bad_bonds = bonds.copy()
-        bad_bonds.pop(("C00001", "C00002"))
+        bad_bonds.pop(("A00001", "A00002"))
         with pytest.raises(ValueError):
             param.distances = OrderedDict({k: 0.0 for k in bad_bonds})

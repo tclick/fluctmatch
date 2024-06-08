@@ -43,7 +43,7 @@ from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from numpy import testing
 
-from tests.datafile import FLUCTDCD, FLUCTPSF, IC
+from tests.datafile import DCD_CG, IC, PSF_ENM
 
 
 class TestCharmmInternalCoordinates:
@@ -58,7 +58,7 @@ class TestCharmmInternalCoordinates:
         MDAnalysis.Universe
             Elastic network model
         """
-        return mda.Universe(FLUCTPSF, FLUCTDCD)
+        return mda.Universe(PSF_ENM, DCD_CG)
 
     @pytest.fixture(scope="class")
     def bonds(
@@ -130,7 +130,7 @@ class TestCharmmInternalCoordinates:
             Bond data
         """
         distances = bonds.copy()
-        distances.pop(("C00001", "C00002"))
+        distances.pop(("A00001", "A00002"))
 
         with pytest.raises(ValueError, match="Provided data does not match bonds in universe."):
             CharmmInternalCoordinates().initialize(universe, data=distances)
