@@ -41,8 +41,10 @@ from typing import Self
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
-from tests.datafile import FLUCTDCD, FLUCTPSF
+from tests.datafile import DCD_CG, PSF_ENM
 
 
 class TestInitialize:
@@ -88,27 +90,20 @@ class TestInitialize:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
             tmp_path = Path(ifs)
             prefix = "fluctmatch"
             log_file = tmp_path / "initialize.log"
 
-            prm_file = tmp_path.joinpath(prefix).with_suffix(".prm")
-            rtf_file = tmp_path.joinpath(prefix).with_suffix(".rtf")
-            bonds_str = tmp_path.joinpath(prefix).with_suffix(".bonds.str")
-            average_ic = tmp_path.joinpath(prefix).with_suffix(".average.ic")
-            fluct_ic = tmp_path.joinpath(prefix).with_suffix(".fluct.ic")
-            charmm_input = tmp_path / "fluctmatch.inp"
-
+            mock_param_init = replace("fluctmatch.io.charmm.parameter.CharmmParameter.initialize", Mock())
+            mock_intcor_init = replace("fluctmatch.io.charmm.intcor.CharmmInternalCoordinates.initialize", Mock())
+            mock_stream_init = replace("fluctmatch.io.charmm.stream.CharmmStream.initialize", Mock())
             result = cli_runner.invoke(
-                main, f"initialize -s {FLUCTPSF} -f {FLUCTDCD} -l {log_file} -d {tmp_path} -p {prefix}"
+                main, f"initialize -s {PSF_ENM} -f {DCD_CG} -l {log_file} -d {tmp_path} -p {prefix}"
             )
 
             assert result.exit_code == os.EX_OK
             assert log_file.exists()
-            assert charmm_input.exists()
-            assert prm_file.exists()
-            assert rtf_file.exists()
-            assert bonds_str.exists()
-            assert average_ic.exists()
-            assert fluct_ic.exists()
+            mock_param_init.assert_called_once()
+            mock_stream_init.assert_called_once()
+            mock_intcor_init.assert_called()
