@@ -37,37 +37,36 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Self
-from unittest.mock import patch
 
 import MDAnalysis as mda
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
-from fluctmatch.model.base import CoarseGrainModel
-from MDAnalysis.coordinates.base import WriterBase
-from parmed import structure
+from MDAnalysisTests.datafiles import TPR, XTC
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
-from tests.datafile import TPR, XTC
+
+@pytest.fixture(scope="class")
+def cli_runner() -> CliRunner:
+    """Fixture for CLI runner.
+
+    Returns
+    -------
+    CliRunner
+        Click CLI runner
+    """
+    return CliRunner()
+
+
+@pytest.fixture(scope="class")
+def universe() -> mda.Universe:
+    """Return all-atom universe."""
+    return mda.Universe(TPR, XTC)
 
 
 class TestConvert:
     """Run test for convert subcommand."""
-
-    @pytest.fixture(scope="class")
-    def cli_runner(self: Self) -> CliRunner:
-        """Fixture for CLI runner.
-
-        Returns
-        -------
-        CliRunner
-            Click CLI runner
-        """
-        return CliRunner()
-
-    @pytest.fixture(scope="class")
-    def universe(self: Self) -> mda.Universe:
-        """Return all-atom universe."""
-        return mda.Universe(TPR, XTC)
 
     def test_help(self: Self, cli_runner: CliRunner) -> None:
         """Test help output.
@@ -114,21 +113,18 @@ class TestConvert:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with (
-            cli_runner.isolated_filesystem() as ifs,
-            patch.object(CoarseGrainModel, "transform", return_value=universe) as cg,
-            patch.object(WriterBase, "write") as writer,
-            patch.object(structure.Structure, "save") as save,
-        ):
+        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
+            replace("fluctmatch.model.base.CoarseGrainModel.transform", lambda self: universe)  # noqa: ARG005
+            mock_write = replace("MDAnalysis.coordinates.base.WriterBase.write", Mock())
+            mock_save = replace("parmed.structure.Structure.save", Mock())
             tmp_path = Path(ifs)
             prefix = "cg"
-            log_file = tmp_path / "convert.log"
+            log_file = tmp_path.joinpath("convert.log")
 
             result = cli_runner.invoke(
                 main, f"convert -s {TPR} -f {XTC} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
             )
 
             assert result.exit_code == os.EX_OK
-            cg.assert_called()
-            writer.assert_called()
-            save.assert_called()
+            mock_write.assert_called()
+            mock_save.assert_called()
