@@ -158,12 +158,13 @@ def split(
     universe = mda.Universe(topology, trajectory)
 
     logger.info("Splitting trajectory into smaller trajectories...")
-    info = ((outdir / outfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
+    info = ((Path(outdir).joinpath(outfile), data["start"], data["stop"]) for outdir, data in setup_input.items())
     for traj_file, start, stop in info:
+        traj_file.parent.mkdir(exist_ok=True)
         write_files.write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
 
     if average:
         logger.info("Saving the average structures of each trajectory...")
-        info = ((outdir / crdfile, data["start"], data["stop"]) for outdir, data in setup_input.items())
-        for traj_file, start, stop in info:
-            write_files.write_average_structure(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
+        info = ((Path(outdir).joinpath(crdfile), data["start"], data["stop"]) for outdir, data in setup_input.items())
+        for crd_file, start, stop in info:
+            write_files.write_average_structure(universe.copy(), crd_file.as_posix(), start=start, stop=stop)

@@ -243,7 +243,7 @@ def convert(
 
     config_logger(name=__name__, logfile=logfile, level=verbosity)
 
-    filename = outdir / prefix
+    filename = outdir.joinpath(prefix)
     universe = mda.Universe(topology, trajectory)
 
     if "enm" in model:

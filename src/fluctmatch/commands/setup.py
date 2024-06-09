@@ -164,7 +164,7 @@ def setup(
     trajectory_range = zip_longest(beginning, end)
     width = len(str(total_windows))
     ranges = {
-        str(outdir / f"{n:>0{width}d}"): {"start": i, "stop": j}
+        str(outdir.joinpath(f"{n:>0{width}d}")): {"start": i, "stop": j}
         for n, (i, j) in enumerate(trajectory_range, 1)
         if j is not None
     }

@@ -173,7 +173,7 @@ def initialize(
 
     # CHARMM parameter, topology, and stream files
     parameters = CharmmParameter().initialize(universe, forces=forces, lengths=lengths)
-    prm_file = directory / prefix.with_suffix(".prm")
+    prm_file = directory.joinpath(prefix).with_suffix(".prm")
     parameters.write(prm_file)
 
     # Stream file with bond information

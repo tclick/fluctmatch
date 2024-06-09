@@ -160,7 +160,7 @@ def align(
         "backbone": "backbone or nucleicbackbone",
     }
     weight = "mass" if mass else None
-    output = outdir / f"aligned_{trajectory.name}"
+    output = outdir.joinpath(f"aligned_{trajectory.name}")
     click.echo(output)
 
     universe = mda.Universe(topology, trajectory)
