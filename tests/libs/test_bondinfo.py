@@ -43,6 +43,7 @@ from numpy import testing
 
 from tests.datafile import DCD_CG, PSF_ENM
 
+N_RESIDUES = 5
 STOP: int = 10
 
 
@@ -55,7 +56,8 @@ def universe() -> mda.Universe:
     :class:`MDAnalysis.Universe`
         Elastic network model
     """
-    return mda.Universe(PSF_ENM, DCD_CG)
+    u = mda.Universe(PSF_ENM, DCD_CG)
+    return mda.Merge(u.residues[:N_RESIDUES].atoms)
 
 
 @pytest.fixture(scope="class")
