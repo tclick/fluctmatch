@@ -35,16 +35,16 @@
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
 from typing import Self
-from unittest.mock import patch
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 from MDAnalysisTests.datafiles import DCD, PSF
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
 
 class TestSetup:
@@ -78,7 +78,7 @@ class TestSetup:
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
 
-    @pytest.mark.parametrize("winsize", [1000, 2000, 10000])
+    @pytest.mark.parametrize("winsize", [2, 5, 17])
     def test_setup(self: Self, cli_runner: CliRunner, winsize: int) -> None:
         """Test subcommand in an isolated filesystem.
 
@@ -93,22 +93,20 @@ class TestSetup:
         winsize : int
             window size
         """
-        with (
-            cli_runner.isolated_filesystem() as ifs,
-            patch.object(Path, "mkdir") as path_mkdir,
-            patch.object(json, "dump") as json_dump,
-        ):
+        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
+            mock_mkdir = replace("pathlib.Path.mkdir", Mock())
+            mock_dump = replace("json.dump", Mock())
             tmp_path = Path(ifs)
-            outdir = tmp_path / "test"
-            log_file = outdir / "setup.log"
+            outdir = tmp_path.joinpath("test")
+            log_file = outdir.joinpath("setup.log")
             json_file = log_file.with_suffix(".json")
 
             result = cli_runner.invoke(
                 main, f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}"
             )
 
-            json_dump.assert_called()
-            path_mkdir.assert_called()
+            mock_dump.assert_called()
+            mock_mkdir.assert_called()
             assert result.exit_code == os.EX_OK
 
     def test_wrong_winsize(self: Self, cli_runner: CliRunner) -> None:
