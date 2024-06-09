@@ -41,8 +41,11 @@ from typing import Self
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+from MDAnalysisTests.datafiles import DCD2, PSF
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
-from ..datafile import DCD, PSF
+from tests.datafile import JSON
 
 
 class TestSplit:
@@ -89,14 +92,17 @@ class TestSplit:
         cli_runner : CliRunner
             CLI runner
         """
-        with cli_runner.isolated_filesystem() as ifs:
+        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
             tmp_path = Path(ifs)
-            outdir = tmp_path / "test"
-            log_file = outdir / "setup.log"
-            json_file = log_file.with_suffix(".json")
+            outdir = tmp_path.joinpath("test")
+            log_file = outdir.joinpath("split.log")
+            crd_file = outdir.joinpath(PSF).with_suffix(".crd")
+            traj_file = outdir.joinpath(PSF).with_suffix(".dcd")
+            mock_average = replace("fluctmatch.libs.write_files.write_average_structure", Mock())
 
-            cli_runner.invoke(main, f"setup -s {PSF} -f {DCD} -o {outdir} --json {json_file}  -w 1000 -l {log_file}")
-            args = f"split -s {PSF} -f {DCD} --json {json_file} -o cg.dcd  -l {log_file} --average"
+            args = f"split -s {PSF} -f {DCD2} --json {JSON} -o {traj_file} -c {crd_file} -l {log_file} --average"
             result = cli_runner.invoke(main, args)
 
             assert result.exit_code == os.EX_OK
+            assert log_file.exists()
+            mock_average.assert_called()
