@@ -44,8 +44,7 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
-
-from ..datafile import DCD, PSF
+from MDAnalysisTests.datafiles import DCD, PSF
 
 
 class TestSetup:

@@ -38,8 +38,7 @@ import MDAnalysis as mda
 import pytest
 from fluctmatch.libs.utils import merge
 from MDAnalysis.coordinates.base import ReaderBase
-
-from tests.datafile import DCD, PSF, TPR, XTC
+from MDAnalysisTests.datafiles import DCD2, PSF, TPR, XTC
 
 
 class TestMerge:
@@ -54,7 +53,7 @@ class TestMerge:
         mda.Universe
             An all-atom universe
         """
-        return mda.Universe(TPR, XTC)
+        return mda.Universe(PSF, DCD2)
 
     @pytest.fixture(scope="class")
     def cg_universe(self: Self) -> mda.Universe:
@@ -65,7 +64,7 @@ class TestMerge:
         mda.Universe
             A coarse-grain universe
         """
-        return mda.Universe(PSF, DCD)
+        return mda.Universe(TPR, XTC)
 
     def test_merge(self: Self, aa_universe: mda.Universe) -> None:
         """Test the merging of two universes.
