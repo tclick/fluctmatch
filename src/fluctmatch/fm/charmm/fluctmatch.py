@@ -46,6 +46,8 @@ version (< c36).
 """
 
 import copy
+import shlex
+import subprocess
 from collections import OrderedDict
 from pathlib import Path
 from typing import Self
@@ -157,3 +159,28 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
             temperature=self._temperature,
         )
         return self
+
+    def simulate(self: Self, executable: Path | str) -> None:
+        """Run fluctuation matching.
+
+        Parameters
+        ----------
+        executable : Path or str
+            Path for executable file used for molecular dynamics program
+        """
+        _executable = Path(executable)
+        if not _executable.exists():
+            message = f"{_executable} does not exist."
+            raise FileNotFoundError(message)
+
+        logfile = self._stem.with_suffix(".log")
+        input_file = self._stem.with_suffix(".inp")
+        cmd: list[str] = shlex.split(f"{_executable} -i {input_file}")
+        try:
+            with input_file.open() as inp, logfile.open("w") as log:
+                logger.debug(f"Running command {' '.join(cmd)}")
+                subprocess.run(cmd, stdin=inp, stdout=subprocess.PIPE, stderr=log, check=True)  # noqa: S603
+        except subprocess.CalledProcessError as e:
+            e.add_note(f"{shlex.join(cmd)} failed.")
+            logger.exception(e)
+            raise

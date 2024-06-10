@@ -32,14 +32,18 @@
 # ------------------------------------------------------------------------------
 """Tests for fluctuation matching using CHARMM."""
 
+import subprocess
 from pathlib import Path
+from subprocess import CalledProcessError
 from typing import Self
 
 import MDAnalysis as mda
 import pytest
 from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
+from testfixtures.mock import Mock
+from testfixtures.replace import Replacer
 
-from tests.datafile import FLUCTDCD, FLUCTPSF
+from tests.datafile import DCD_CG, PSF_ENM
 
 
 @pytest.fixture(scope="class")
@@ -51,25 +55,106 @@ def universe() -> mda.Universe:
     MDAnalysis.Universe
         Elastic network model
     """
-    return mda.Universe(FLUCTPSF, FLUCTDCD)
+    return mda.Universe(PSF_ENM, DCD_CG)
+
+
+@pytest.fixture()
+def fluctmatch(universe: mda.Universe, tmp_path: Path) -> CharmmFluctuationMatching:
+    """Object for fluctuation matching using CHARMM.
+
+    Parameters
+    ----------
+    universe : MDAnalysis.Universe
+        Universe of an elastic network model
+    tmp_path : Path
+        Temporary path
+
+    Returns
+    -------
+    CharmmFluctuationMatching
+        Object for fluctuation matching using CHARMM
+    """
+    return CharmmFluctuationMatching(universe, output_dir=tmp_path, prefix="fluctmatch")
 
 
 class TestCharmmFluctuationMatching:
     """Tests for CharmmFluctuationMatching."""
 
-    def test_initialize(self: Self, universe: mda.Universe, tmp_path: Path) -> None:
+    def test_initialize(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test initialization.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN the object is initialized
+        THEN check the object is initialized.
 
         Parameters
         ----------
-        universe : MDAnalysis.Universe
-            Universe of an elastic network model
-        tmp_path : Path
-            Temporary path
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
         """
-        prefix = "fluctmatch"
-        stem = tmp_path.joinpath(prefix)
-        fm = CharmmFluctuationMatching(universe, output_dir=tmp_path, prefix=prefix).initialize()
+        stem = fluctmatch._output_dir.joinpath(fluctmatch._prefix)
+        fm = fluctmatch.initialize()
         assert len(fm._parameters.parameters.bond_types) > 0, "Bond data not found."
         assert stem.with_suffix(".str").exists(), "Parameter file not found."
         assert stem.with_suffix(".inp").exists(), "CHARMM input file not found."
+
+    def test_simulate(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test simulation.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN  the object is initialized and `simulate` is called
+        THEN a subprocess call to `charmm` is called.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        with Replacer() as replace:
+            mock_path = replace("pathlib.Path.exists", Mock(autospec=Path))
+            mock_path.return_value = True
+            mock_result = Mock(spec=subprocess.CompletedProcess, autospec=True)
+            mock_run = replace("subprocess.run", mock_result)
+            fluctmatch.initialize().simulate(executable=Path("charmm"))
+            mock_run.assert_called_once()
+
+    def test_simulate_no_executable(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test simulation with no executable file.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN  the object is initialized and `simulate` is called
+        THEN an exception is raised when no executable is found.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        with Replacer() as replace:
+            mock_path = replace("pathlib.Path.exists", Mock(autospec=Path))
+            mock_path.return_value = False
+            mock_result = Mock(spec=subprocess.CompletedProcess, autospec=True)
+            replace("subprocess.run", mock_result)
+            with pytest.raises(FileNotFoundError):
+                fluctmatch.initialize().simulate(executable=Path("charmm"))
+
+    def test_simulate_fail(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test simulation failure if executable fails during run.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN  the object is initialized and `simulate` is called
+        THEN an exception is raised when executable fails during run.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        with Replacer() as replace:
+            mock_path = replace("pathlib.Path.exists", Mock(autospec=Path))
+            mock_path.return_value = True
+            mock_result = Mock(spec=subprocess.CompletedProcess, autospec=True)
+            mock_result.side_effect = CalledProcessError(returncode=1, cmd="charmm")
+            replace("subprocess.run", mock_result)
+            with pytest.raises(CalledProcessError):
+                fluctmatch.initialize().simulate(executable=Path("charmm"))

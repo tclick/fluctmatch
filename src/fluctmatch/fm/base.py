@@ -88,3 +88,15 @@ class FluctuationMatchingBase(abc.ABC):
         """Initialize data for fluctuation matching."""
         message = "Method 'initialize' not implemented."
         raise NotImplementedError(message)
+
+    @abc.abstractmethod
+    def simulate(self: Self, executable: Path) -> None:
+        """Run fluctuation matching.
+
+        Parameters
+        ----------
+        executable : Path
+            Path for executable file used for molecular dynamics program
+        """
+        message = "Method 'simulate' not implemented."
+        raise NotImplementedError(message)
