@@ -37,8 +37,7 @@ from typing import Self
 import fluctmatch.model.selection  # noqa: F401
 import MDAnalysis as mda
 import pytest
-
-from tests.datafile import GRO
+from MDAnalysisTests.datafiles import DCD2, DCD_TRICLINIC, PSF, PSF_TRICLINIC, RNA_PDB, RNA_PSF, PDB_elements
 
 
 @pytest.fixture()
@@ -50,7 +49,13 @@ def universe() -> mda.Universe:
     Universe
         universe with protein, DNA, and water
     """
-    return mda.Universe(GRO)
+    multiverse = [
+        mda.Universe(PSF, DCD2),
+        mda.Universe(PSF_TRICLINIC, DCD_TRICLINIC),
+        mda.Universe(RNA_PSF, RNA_PDB),
+        mda.Universe(PDB_elements),
+    ]
+    return mda.Merge(*[_.atoms for _ in multiverse])
 
 
 class TestSelection:
