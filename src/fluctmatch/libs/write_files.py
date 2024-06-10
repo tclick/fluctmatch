@@ -84,7 +84,7 @@ def write_average_structure(
     """
     average = AverageStructure(universe)
     average_universe: mda.AtomGroup = average.run(start=start, stop=stop).results.universe.atoms
-    average_universe.convert_to("PARMED").save(filename, overwrite=True)
+    average_universe.convert_to("PARMED").save(filename.as_posix(), overwrite=True)
 
 
 def write_charmm_input(
@@ -110,8 +110,13 @@ def write_charmm_input(
         Prefix for output files
     temperature : float (default 300.0)
         Temperature in Kelvin
-    sim_type : str (default "fluctmatch")
-        Type of simulation (default: "fluctmatch")
+    sim_type : {'fluctmatch', 'thermodynamics'}, optional
+        Type of simulation
+
+    Raises
+    ------
+    FileNotFound
+        Either because an incorrect `sim_type` was selected or the header template is missing.
 
     Notes
     -----
