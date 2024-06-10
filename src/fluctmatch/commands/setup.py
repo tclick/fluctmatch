@@ -144,15 +144,25 @@ def setup(
     click.echo(__copyright__)
 
     n_frames = mda.Universe(topology, trajectory).trajectory.n_frames
+    if n_frames % 2 > 0:
+        msg = "An uneven number of frames exists. This will cause the size of windows to be unequal."
+        logger.warning(msg)
+        UserWarning(msg)
     if winsize > n_frames:
         msg = f"Window size is larger than the number of frames. ({winsize} > {n_frames})"
         logger.exception(msg)
         raise ValueError(msg)
     if winsize == n_frames:
-        logger.warning("Window size is equivalent to the number of frames. You will only have one subdirectory.")
+        msg = "Window size is equivalent to the number of frames. You will only have one subdirectory."
+        logger.warning(msg)
+        UserWarning(msg)
 
     half_size = winsize // 2
     total_windows = (n_frames // half_size) - 1
+    if winsize % 2 > 0 or n_frames % half_size > 0:
+        msg = "Unexpected results may occur with an uneven number of frames."
+        logger.warning(msg)
+        UserWarning(msg)
 
     start = 1 if trajectory.suffix == ".trr" or trajectory.suffix == ".xtc" or trajectory.suffix == ".tng" else 0
     stop = n_frames + 1
