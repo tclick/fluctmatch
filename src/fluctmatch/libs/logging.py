@@ -37,6 +37,7 @@ from __future__ import annotations
 import getpass
 import logging
 import sys
+import warnings
 from pathlib import Path
 
 from loguru import logger
@@ -73,6 +74,7 @@ def config_logger(name: str, logfile: str | Path | None = None, level: str | int
             {"sink": logfile, "format": "{time:YYYY-MM-DD HH:mm} | {level} | {message}", "level": level},
         )
 
+    logger.add(warnings.warn, format="{message}", filter=lambda record: record["level"].name == "WARNING")
     logger.remove()
     logger.configure(**config)
     setup_loguru_logging_intercept(level=logging.DEBUG, modules=f"root {name}".split())
