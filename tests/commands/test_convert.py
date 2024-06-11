@@ -42,9 +42,9 @@ import MDAnalysis as mda
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
-from MDAnalysisTests.datafiles import TPR, XTC
+from MDAnalysisTests.datafiles import DCD2, PSF
+from testfixtures import Replacer
 from testfixtures.mock import Mock
-from testfixtures.replace import Replacer
 
 
 @pytest.fixture(scope="class")
@@ -62,7 +62,7 @@ def cli_runner() -> CliRunner:
 @pytest.fixture(scope="class")
 def universe() -> mda.Universe:
     """Return all-atom universe."""
-    return mda.Universe(TPR, XTC)
+    return mda.Universe(PSF, DCD2)
 
 
 class TestConvert:
@@ -122,7 +122,7 @@ class TestConvert:
             log_file = tmp_path.joinpath("convert.log")
 
             result = cli_runner.invoke(
-                main, f"convert -s {TPR} -f {XTC} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
+                main, f"convert -s {PSF} -f {DCD2} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
             )
 
             assert result.exit_code == os.EX_OK
