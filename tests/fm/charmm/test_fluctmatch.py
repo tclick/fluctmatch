@@ -40,8 +40,8 @@ from typing import Self
 import MDAnalysis as mda
 import pytest
 from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
+from testfixtures import Replacer, ShouldRaise
 from testfixtures.mock import Mock
-from testfixtures.replace import Replacer
 
 from tests.datafile import DCD_CG, PSF_ENM
 
@@ -79,6 +79,23 @@ def fluctmatch(universe: mda.Universe, tmp_path: Path) -> CharmmFluctuationMatch
 
 class TestCharmmFluctuationMatching:
     """Tests for CharmmFluctuationMatching."""
+
+    def test_invalid_temperature(self: Self, universe: mda.Universe, tmp_path: Path) -> None:
+        """Construct an object with an invalid temperature.
+
+        GIVEN an invalid temperature
+        WHEN constructing the object
+        THEN an exception is raised.
+
+        Parameters
+        ----------
+        universe : MDAnalysis.Universe
+            Universe of an elastic network model
+        tmp_path : Path
+            Temporary path
+        """
+        with ShouldRaise(ValueError):
+            CharmmFluctuationMatching(universe, output_dir=tmp_path, prefix="fluctmatch", temperature=0)
 
     def test_initialize(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test initialization.
