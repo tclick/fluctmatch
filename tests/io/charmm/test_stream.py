@@ -38,6 +38,7 @@ from typing import Self
 import MDAnalysis as mda
 import pytest
 from fluctmatch.io.charmm.stream import CharmmStream
+from testfixtures import ShouldRaise
 
 from tests.datafile import DCD_CG, PSF_ENM
 
@@ -122,3 +123,13 @@ class TestCharmmStream:
 
         assert stream_file.exists()
         assert stream_file.stat().st_size > 0
+
+    def test_read(self: Self) -> None:
+        """Test read method.
+
+        GIVEN an elastic network model
+        WHEN the read method is called
+        THEN an exception is raised.
+        """
+        with ShouldRaise(NotImplementedError):
+            CharmmStream().read(DCD_CG)
