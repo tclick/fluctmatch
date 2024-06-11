@@ -108,17 +108,15 @@ class NcscModel(CoarseGrainModel):
         for cg, aa in zip(self._universe.residues, self._mobile.residues, strict=False):
             amine: mda.AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
             carboxyl: mda.AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
-            if aa.atoms.select_atoms("hcalpha"):
-                ca_mass: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_mass()
-                amine.masses += ca_mass
-                carboxyl.masses += ca_mass
+            ca_mass: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_mass()
+            amine.masses += ca_mass
+            carboxyl.masses += ca_mass
 
     def _add_charges(self: Self) -> None:
         super()._add_charges()
         for cg, aa in zip(self._universe.residues, self._mobile.residues, strict=False):
             amine: mda.AtomGroup = cg.atoms.select_atoms(self._mapping["N"])
             carboxyl: mda.AtomGroup = cg.atoms.select_atoms(self._mapping["O"])
-            if aa.atoms.select_atoms("hcalpha"):
-                ca_charge: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_charge()
-                amine.charges += ca_charge
-                carboxyl.charges += ca_charge
+            ca_charge: float = 0.5 * aa.atoms.select_atoms("hcalpha").total_charge()
+            amine.charges += ca_charge
+            carboxyl.charges += ca_charge
