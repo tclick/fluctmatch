@@ -51,6 +51,8 @@ __all__: list[str] = [
     "JSON",
     "PSF_ENM",
     "DCD_CG",
+    "IC_FLUCT",
+    "IC_AVERAGE",
 ]
 
 with resources.as_file(_data_ref / "trex1.pdb") as f:
@@ -112,3 +114,9 @@ with resources.as_file(_data_ref / "fluctmatch.psf") as f:
 
 with resources.as_file(_data_ref / "cg.dcd") as f:
     DCD_CG: str = f.as_posix()
+
+with resources.as_file(_data_ref / "fluctmatch.fluct.ic") as f:
+    IC_FLUCT: str = f.as_posix()
+
+with resources.as_file(_data_ref / "fluctmatch.average.ic") as f:
+    IC_AVERAGE: str = f.as_posix()
