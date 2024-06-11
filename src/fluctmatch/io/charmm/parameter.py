@@ -173,27 +173,36 @@ class CharmmParameter(IOBase):
             self._parameters.atom_types[atom.type] = atom_type
 
         # Setup atom bond types
-        if forces is not None and lengths is not None:
-            try:
-                logger.debug("Adding bond types to the parameter list.")
-                self._parameters.bond_types.update(self._parameters.bond_types.fromkeys(universe.bonds.types()))
-                compare_dict_keys(forces, lengths, message="Bond force constants and bond distances do not match.")
-                compare_dict_keys(
-                    self._parameters.bond_types,
-                    forces,
-                    message="Bonds defining force constants and distances do not match bonds in universe.",
-                )
+        try:
+            logger.debug("Adding bond types to the parameter list.")
+            self._parameters.bond_types.update({k: pmd.BondType(k=0.0, req=0.0) for k in universe.bonds.types()})
 
-                for bond_type in self._parameters.bond_types:
-                    self._parameters.bond_types[bond_type] = pmd.BondType(k=forces[bond_type], req=lengths[bond_type])
-            except mda.NoDataError as e:
-                e.add_note("No bond data found in the universe.")
-                logger.exception(e)
-                raise
-            except ValueError as e:
-                e.add_note("Forces or lengths are not equal to the number of bonds.")
-                logger.exception(e)
-                raise
+            # Set bond force constants
+            k = forces if forces is not None else OrderedDict({k: 0.0 for k in universe.bonds.types()})
+            compare_dict_keys(
+                self._parameters.bond_types,
+                k,
+                message="Bonds defining force constants do not match bonds in universe.",
+            )
+
+            # Set equilibrium bond distances
+            req = lengths if lengths is not None else OrderedDict({k: 0.0 for k in universe.bonds.types()})
+            compare_dict_keys(
+                self._parameters.bond_types,
+                req,
+                message="Bonds defining bond lengths do not match bonds in universe.",
+            )
+
+            if forces is None and lengths is None:
+                logger.warning("Both force constants and bond lengths are set to 0.")
+            for bond_type in self._parameters.bond_types:
+                self._parameters.bond_types[bond_type] = pmd.BondType(k=k[bond_type], req=req[bond_type])
+        except mda.NoDataError as exception:
+            logger.exception(exception)
+            raise
+        except ValueError as exception:
+            logger.exception(exception)
+            raise
 
         return self
 

@@ -42,6 +42,7 @@ import pytest
 from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from numpy import testing
+from testfixtures import ShouldRaise
 
 from tests.datafile import DCD_CG, PRM, PSF_ENM, RTF, STR
 
@@ -126,6 +127,29 @@ class TestCharmmParameter:
             rtol=1e-4,
         )
 
+    def test_no_forces_or_distances(self: Self, universe: mda.Universe) -> None:
+        """Test initialization of a parameter file when no force constants or distances are provided.
+
+        GIVEN an elastic network model
+        WHEN no force constants or distances are provided
+        THEN a parameter object is initialized with default values of 0.0 for both.
+
+        Parameters
+        ----------
+        universe : :class:`MDAnalysis.Universe`
+            Elastic network model
+        """
+        atom_types = OrderedDict({atom.type: "" for atom in universe.atoms})
+        param = CharmmParameter().initialize(universe)
+
+        testing.assert_equal(param._parameters.atom_types.keys(), atom_types.keys())
+        assert all(key in param._parameters.bond_types for key in universe.bonds.topDict)
+        testing.assert_allclose(
+            [at.mass for at in param._parameters.atom_types.values()], universe.atoms.masses, rtol=1e-4
+        )
+        testing.assert_allclose([bt.k for bt in param._parameters.bond_types.values()], 0.0, rtol=1e-4)
+        testing.assert_allclose([bt.req for bt in param._parameters.bond_types.values()], 0.0, rtol=1e-4)
+
     def test_initialize_unequal_size(self, universe: mda.Universe, bonds: BondData) -> None:
         """Test initialization of a parameter file with unequal sizes of forces and bond lengths.
 
@@ -143,10 +167,10 @@ class TestCharmmParameter:
         distances = bonds.copy()
         distances.pop(("A00001", "A00002"))
 
-        with pytest.raises(ValueError, match="Bond force constants and bond distances do not match."):
+        with ShouldRaise(ValueError):
             CharmmParameter().initialize(universe, forces=bonds, lengths=distances)
 
-        with pytest.raises(ValueError, match="force constants and distances do not match bonds in universe."):
+        with ShouldRaise(ValueError):
             CharmmParameter().initialize(universe, forces=distances, lengths=distances)
 
     def test_initialize_no_bonds(self: Self) -> None:
@@ -157,10 +181,11 @@ class TestCharmmParameter:
         THEN a parameter object is initialized.
 
         """
-        universe = mda.Universe.empty(0)
-        forces = np.zeros(5, dtype=float)
+        n_atoms = 5
+        universe = mda.Universe.empty(n_atoms)
+        forces = np.zeros(n_atoms, dtype=float)
 
-        with pytest.raises(mda.NoDataError):
+        with ShouldRaise(mda.NoDataError):
             CharmmParameter().initialize(universe, forces=forces, lengths=forces)
 
     def test_write(self, universe: mda.Universe, param_file: Path, bonds: BondData) -> None:
@@ -225,7 +250,7 @@ class TestCharmmParameter:
         """
         param = CharmmParameter().initialize(universe, forces=bonds, lengths=bonds)
 
-        with pytest.raises(TypeError):
+        with ShouldRaise(TypeError):
             param.write()
 
     def test_read_prm(self: Self) -> None:
@@ -259,7 +284,7 @@ class TestCharmmParameter:
         THEN a FileNotFoundError is raised.
         """
         param_file = "charmm.str"
-        with pytest.raises(FileNotFoundError):
+        with ShouldRaise(FileNotFoundError):
             CharmmParameter().read(param_file)
 
     def test_read_empty_file(self: Self) -> None:
@@ -269,7 +294,7 @@ class TestCharmmParameter:
         WHEN a parameter object is initialized and read
         THEN an OSError is raised.
         """
-        with pytest.raises(OSError):
+        with ShouldRaise(OSError):
             CharmmParameter().read(STR)
 
     def test_parameters_property(self, universe: mda.Universe, bonds: BondData) -> None:
@@ -346,7 +371,7 @@ class TestCharmmParameter:
         # Test setter
         bad_bonds = bonds.copy()
         bad_bonds.pop(("A00001", "A00002"))
-        with pytest.raises(ValueError):
+        with ShouldRaise(ValueError):
             param.forces = OrderedDict({k: 0.0 for k in bad_bonds})
 
     def test_distances_property(self, universe: mda.Universe, bonds: BondData) -> None:
@@ -401,5 +426,5 @@ class TestCharmmParameter:
         # Test setter
         bad_bonds = bonds.copy()
         bad_bonds.pop(("A00001", "A00002"))
-        with pytest.raises(ValueError):
+        with ShouldRaise(ValueError):
             param.distances = OrderedDict({k: 0.0 for k in bad_bonds})
