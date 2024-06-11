@@ -215,7 +215,7 @@ select = [
     # pandas-vet
     "PD",
     # NumPy-specific rules
-    "NPY",
+    "NPY201",
 ]
 ignore = [
     # LineTooLong
