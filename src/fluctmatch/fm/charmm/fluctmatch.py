@@ -112,6 +112,8 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
         self._average_dist: CharmmInternalCoordinates = CharmmInternalCoordinates().initialize(universe)
         self._fluct_dist: CharmmInternalCoordinates = copy.deepcopy(self._average_dist)
         self._target: CharmmInternalCoordinates = copy.deepcopy(self._average_dist)
+        self._parameters: CharmmParameter = CharmmParameter().initialize(universe)
+        self._param_ddist: CharmmParameter = copy.deepcopy(self._parameters)
 
         self._stem: Path = self._output_dir.joinpath(self._prefix)
         self.BOLTZMANN: float = temperature * Boltzmann * Avogadro / (calorie * kilo)
@@ -138,9 +140,11 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
         forces: BondData = (self.BOLTZMANN / pd.Series(fluct).apply(np.square)).to_dict(into=OrderedDict)
 
         # CHARMM parameter, topology, and stream files
-        self._parameters: CharmmParameter = CharmmParameter().initialize(self._universe, forces=forces, lengths=lengths)
-        self._param_ddist: CharmmParameter = copy.deepcopy(self._parameters)
+        self._parameters.forces = forces
+        self._parameters.distances = lengths
         self._parameters.write(self._stem, stream=True)
+        self._param_ddist.forces = forces
+        self._param_ddist.distances = lengths
         self._stream.write(self._stem.with_suffix(".bonds.str"))
 
         # Internal coordinate files
@@ -184,3 +188,26 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
             e.add_note(f"{shlex.join(cmd)} failed.")
             logger.exception(e)
             raise
+
+    def load_target(self: Self, filename: str | Path, /) -> Self:
+        """Load target bond fluctuations.
+
+        Parameters
+        ----------
+        filename : path_like
+            Name of internal coordinates file containing target bond fluctuations
+        """
+        self._target.read(filename)
+        return self
+
+    def load_parameters(self: Self, filename: str | Path, /) -> Self:
+        """Load CHARMM parameter file.
+
+        Parameters
+        ----------
+        filename : path_like
+            Name of CHARMM parameter file
+        """
+        self._parameters.read(filename)
+        self._param_ddist.read(filename)
+        return self

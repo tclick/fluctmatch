@@ -43,7 +43,7 @@ from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
 from testfixtures import Replacer, ShouldRaise
 from testfixtures.mock import Mock
 
-from tests.datafile import DCD_CG, PSF_ENM
+from tests.datafile import DCD_CG, IC, PRM, PSF_ENM
 
 
 @pytest.fixture(scope="class")
@@ -175,3 +175,34 @@ class TestCharmmFluctuationMatching:
             replace("subprocess.run", mock_result)
             with pytest.raises(CalledProcessError):
                 fluctmatch.initialize().simulate(executable=Path("charmm"))
+
+    def test_load_target(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test loading a file containing target bond fluctuations.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN `load_target` is called with an internal coordinate file
+        THEN a file is read and the information loaded.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        fm = fluctmatch.load_target(IC)
+        assert len(fm._target.table) > 0
+
+    def test_load_parameters(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test loading a parameter file.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN `load_parameter` is called with a CHARMM parameter file
+        THEN a file is read and the information loaded.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        fm = fluctmatch.load_parameters(PRM)
+        assert len(fm._parameters.parameters.bond_types) > 0
+        assert len(fm._param_ddist.parameters.bond_types) > 0

@@ -100,3 +100,27 @@ class FluctuationMatchingBase(abc.ABC):
         """
         message = "Method 'simulate' not implemented."
         raise NotImplementedError(message)
+
+    @abc.abstractmethod
+    def load_target(self: Self, filename: str | Path, /) -> Self:
+        """Load target bond fluctuations.
+
+        Parameters
+        ----------
+        filename : path_like
+            Name of internal coordinates file containing target bond fluctuations
+        """
+        message = "Method 'load_target' not implemented."
+        raise NotImplementedError(message)
+
+    @abc.abstractmethod
+    def load_parameters(self: Self, filename: str | Path, /) -> Self:
+        """Load a parameter file.
+
+        Parameters
+        ----------
+        filename : path_like
+            Name of CHARMM parameter file
+        """
+        message = "Method 'load_parameters' not implemented."
+        raise NotImplementedError(message)
