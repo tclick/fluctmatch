@@ -36,6 +36,7 @@ netcdf4 = "*"
 phx-class-registry = "*"
 pandas = "*"
 parmed = "*"
+scikit-learn = "*"
 
 [tool.poetry.dev-dependencies]
 Pygments = "*"

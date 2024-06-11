@@ -1723,13 +1723,13 @@ files = [
 
 [[package]]
 name = "packaging"
-version = "24.0"
+version = "24.1"
 description = "Core utilities for Python packages"
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "packaging-24.0-py3-none-any.whl", hash = "sha256:2ddfb553fdf02fb784c234c7ba6ccc288296ceabec964ad2eae3777778130bc5"},
-    {file = "packaging-24.0.tar.gz", hash = "sha256:eb82c5e3e56209074766e6885bb04b8c38a0c015d0a30036ebe7ece34c9989e9"},
+    {file = "packaging-24.1-py3-none-any.whl", hash = "sha256:5b8f2217dbdbd2f7f384c41c628544e6d52f2d0f53c6d0c3ea61aa5d1d7ff124"},
+    {file = "packaging-24.1.tar.gz", hash = "sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002"},
 ]
 
 [[package]]
@@ -2481,13 +2481,13 @@ files = [
 
 [[package]]
 name = "safety"
-version = "3.2.1"
+version = "3.2.3"
 description = "Checks installed dependencies for known vulnerabilities and licenses."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "safety-3.2.1-py3-none-any.whl", hash = "sha256:9f53646717ba052e1bf631bd54fb3da0fafa58e85d578b20a8b9affdcf81889e"},
-    {file = "safety-3.2.1.tar.gz", hash = "sha256:770aed6ff46536e5363a409e8cca411d8636d07dc33be53a8ac69bf750ab8df3"},
+    {file = "safety-3.2.3-py3-none-any.whl", hash = "sha256:cda1e91749f610337a18b7f21f78267c127e44ebbbbcbbd419c83284279a5024"},
+    {file = "safety-3.2.3.tar.gz", hash = "sha256:414154934f1727daf8a6473493944fecb380540c3f00875dc1ae377382f7d83f"},
 ]
 
 [package.dependencies]
@@ -2994,13 +2994,13 @@ full = ["httpx (>=0.22.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.7
 
 [[package]]
 name = "testfixtures"
-version = "8.2.0"
+version = "8.3.0"
 description = "A collection of helpers and mock objects for unit tests and doc tests."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "testfixtures-8.2.0-py3-none-any.whl", hash = "sha256:2896b81ece2e30356baf8d76931a7bf4b8f0d58a707ea120dd5d021b20e7d5af"},
-    {file = "testfixtures-8.2.0.tar.gz", hash = "sha256:ef43b657134c87e8a3044f4b02a32ae2ebddf44b2b97bc7989a20116403988ee"},
+    {file = "testfixtures-8.3.0-py3-none-any.whl", hash = "sha256:3d1e0e0005c4d6ac2a2ab27916704c6471047f0d2f78f2e54adf20abdacc7b10"},
+    {file = "testfixtures-8.3.0.tar.gz", hash = "sha256:d4c0b84af2f267610f908009b50d6f983a4e58ade22c67bab6787b5a402d59c0"},
 ]
 
 [package.extras]
@@ -3104,13 +3104,13 @@ typing-extensions = ">=3.7.4.3"
 
 [[package]]
 name = "typing-extensions"
-version = "4.12.1"
+version = "4.12.2"
 description = "Backported and Experimental Type Hints for Python 3.8+"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "typing_extensions-4.12.1-py3-none-any.whl", hash = "sha256:6024b58b69089e5a89c347397254e35f1bf02a907728ec7fee9bf0fe837d203a"},
-    {file = "typing_extensions-4.12.1.tar.gz", hash = "sha256:915f5e35ff76f56588223f15fdd5938f9a1cf9195c0de25130c627e4d597f6d1"},
+    {file = "typing_extensions-4.12.2-py3-none-any.whl", hash = "sha256:04e5ca0351e0f3f85c6853954072df659d0d13fac324d0072316b67d7794700d"},
+    {file = "typing_extensions-4.12.2.tar.gz", hash = "sha256:1a7ead55c7e559dd4dee8856e3a88b41225abfe1ce8df57b7c13915fe121ffb8"},
 ]
 
 [[package]]
@@ -3363,13 +3363,13 @@ dev = ["black (>=19.3b0)", "pytest (>=4.6.2)"]
 
 [[package]]
 name = "xdoctest"
-version = "1.1.4"
+version = "1.1.5"
 description = "A rewrite of the builtin doctest module"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "xdoctest-1.1.4-py3-none-any.whl", hash = "sha256:2ee7920603e1a977749cabf611dfde1935165c6ac83dcfb2c9bdf8fc3ac1ec26"},
-    {file = "xdoctest-1.1.4.tar.gz", hash = "sha256:eb3fbad5a9ac4d47b2fafa60435ac15f2cbcd33dc860bf1e759a1f63bfeddc10"},
+    {file = "xdoctest-1.1.5-py3-none-any.whl", hash = "sha256:f36fe64d7c0ad0553dbff39ff05c43a0aab69d313466f24a38d00e757182ade0"},
+    {file = "xdoctest-1.1.5.tar.gz", hash = "sha256:89b0c3ad7fe03a068e22a457ab18c38fc70c62329c2963f43954b83c29374e66"},
 ]
 
 [package.dependencies]
@@ -3391,4 +3391,4 @@ tests-strict = ["pytest (==4.6.0)", "pytest (==4.6.0)", "pytest (==6.2.5)", "pyt
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11, <4.0"
-content-hash = "e36cef5d88dd0d4c9d91581250580362c4c5ce475cc085618abaef284691ce14"
+content-hash = "8a01651bab5171fd17e2b93ad51773c704f4634e22d6895b1483e7e863b82a95"
