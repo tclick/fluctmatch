@@ -103,7 +103,8 @@ class TestWriteFiles:
         assert filename.exists()
         assert filename.stat().st_size > 0
 
-    def test_write_input(self: Self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize("sim_type", ["fluctmatch", "thermodynamics"])
+    def test_write_input(self: Self, tmp_path: Path, sim_type: str) -> None:
         """Test writing a CHARMM input file.
 
         GIVEN a tempory directory
@@ -113,10 +114,11 @@ class TestWriteFiles:
         Parameters
         ----------
         tmp_path : Path
-            Temporary directory.
+            Temporary directory
+        sim_type : str
+            Simulation type
         """
         prefix = "4AKE"
-        sim_type = "fluctmach"
         input_file = tmp_path.joinpath(sim_type).with_suffix(".inp")
         write_files.write_charmm_input(
             topology=PSF, trajectory=DCD2, directory=tmp_path, prefix=prefix, sim_type=sim_type
