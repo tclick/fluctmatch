@@ -36,35 +36,41 @@ from typing import Self
 
 import MDAnalysis as mda
 import pytest
-from fluctmatch.libs.utils import merge
+from fluctmatch.libs.utils import compare_dict_keys, merge, rename_universe
 from MDAnalysis.coordinates.base import ReaderBase
-from MDAnalysisTests.datafiles import DCD2, PSF, TPR, XTC
+from MDAnalysisTests.datafiles import DCD2, PSF
+from numpy import testing
+from testfixtures import ShouldRaise
+
+from tests.datafile import DCD_CG, DMA, PSF_CG
 
 
-class TestMerge:
+@pytest.fixture()
+def aa_universe() -> mda.Universe:
+    """Create an all-atom universe.
+
+    Returns
+    -------
+    MDAnalysis.Universe
+        An all-atom universe
+    """
+    return mda.Universe(PSF, DCD2)
+
+
+@pytest.fixture()
+def cg_universe() -> mda.Universe:
+    """Create a coarse-grain universe.
+
+    Returns
+    -------
+    MDAnalysis.Universe
+        A coarse-grain universe
+    """
+    return mda.Universe(PSF_CG, DCD_CG)
+
+
+class TestUtils:
     """Test utility functions."""
-
-    @pytest.fixture(scope="class")
-    def aa_universe(self: Self) -> mda.Universe:
-        """Create an all-atom universe.
-
-        Returns
-        -------
-        mda.Universe
-            An all-atom universe
-        """
-        return mda.Universe(PSF, DCD2)
-
-    @pytest.fixture(scope="class")
-    def cg_universe(self: Self) -> mda.Universe:
-        """Create a coarse-grain universe.
-
-        Returns
-        -------
-        mda.Universe
-            A coarse-grain universe
-        """
-        return mda.Universe(TPR, XTC)
 
     def test_merge(self: Self, aa_universe: mda.Universe) -> None:
         """Test the merging of two universes.
@@ -72,6 +78,11 @@ class TestMerge:
         GIVEN a universe
         WHEN merging it with itself
         THEN check the universe is doubled in size with the same trajectory length
+
+        Parameters
+        ----------
+        aa_universe : MDAnalysis.Universe
+            An all-atom universe
         """
         atoms: mda.AtomGroup = aa_universe.atoms
         trajectory: ReaderBase = aa_universe.trajectory
@@ -84,12 +95,72 @@ class TestMerge:
         assert merged.atoms.n_atoms == n_atoms * 2
         assert merged.trajectory.n_frames == n_frames
 
-    def test_merge_fail(self: Self, aa_universe: mda.Universe, cg_universe: mda.Universe) -> None:
+    def test_merge_fail(self: Self, aa_universe: mda.Universe) -> None:
         """Test the merging of two universes fails.
 
         GIVEN two universes with unequal length trajectories
         WHEN merging them together
         THEN a ValueError should be raised
+
+        Parameters
+        ----------
+        aa_universe : MDAnalysis.Universe
+            An all-atom universe
         """
-        with pytest.raises(ValueError):
-            merge(aa_universe, cg_universe)
+        dma = mda.Universe(DMA)
+        with ShouldRaise(ValueError):
+            merge(aa_universe, dma)
+
+    def test_rename_universe(self: Self, cg_universe: mda.Universe) -> None:
+        """Test function for renaming atoms and residues of a universe.
+
+        GIVEN a universe
+        WHEN renaming atoms and residues of a universe
+        THEN the original atom and residue names are changed.
+
+        Parameters
+        ----------
+        cg_universe : MDAnalysis.Universe
+            A coarse-grain universe
+        """
+        rename_universe(cg_universe)
+
+        testing.assert_string_equal(cg_universe.atoms[0].name, "A00001")
+        testing.assert_string_equal(cg_universe.atoms[-1].name, "A00622")
+        testing.assert_string_equal(cg_universe.residues[0].resname, "A00001")
+        testing.assert_string_equal(cg_universe.residues[-1].resname, "A00214")
+        assert "4AKE" in cg_universe.segments.segids
+
+    def test_key_comparison(self: Self, aa_universe: mda.Universe) -> None:
+        """Test the key comparison between two dictionaries.
+
+        GIVEN a universe
+        WHEN comparing the bond dictionary to itself
+        THEN the two dictionaries are equal.
+
+        Parameters
+        ----------
+        aa_universe : MDAnalysis.Universe
+            An all-atom universe
+        """
+        bond_dict = aa_universe.bonds.topDict
+        assert compare_dict_keys(bond_dict, bond_dict) is None
+
+    def test_compare_different_dict_keys(self: Self, aa_universe: mda.Universe, cg_universe: mda.Universe) -> None:
+        """Test the key comparison between two dictionaries that are not equivalent.
+
+        GIVEN two different universes
+        WHEN comparing the bond dictionaries
+        THEN an exception is raised.
+
+        Parameters
+        ----------
+        aa_universe : MDAnalysis.Universe
+            An all-atom universe
+        cg_universe : MDAnalysis.Universe
+            A coarse-grain universe
+        """
+        aa_bonds = aa_universe.bonds.topDict
+        cg_bonds = cg_universe.bonds.topDict
+        with ShouldRaise(ValueError):
+            compare_dict_keys(aa_bonds, cg_bonds)
