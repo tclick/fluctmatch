@@ -124,3 +124,9 @@ class FluctuationMatchingBase(abc.ABC):
         """
         message = "Method 'load_parameters' not implemented."
         raise NotImplementedError(message)
+
+    @abc.abstractmethod
+    def calculate(self: Self) -> float:
+        """Caluclate the new force constants from the optimized bond fluctuations."""
+        message = "Method 'calculate' not implemented."
+        raise NotImplementedError(message)

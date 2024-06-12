@@ -32,18 +32,21 @@
 # ------------------------------------------------------------------------------
 """Tests for fluctuation matching using CHARMM."""
 
+import shutil
 import subprocess
+from collections import OrderedDict
 from pathlib import Path
 from subprocess import CalledProcessError
 from typing import Self
 
 import MDAnalysis as mda
+import numpy as np
 import pytest
 from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
 from testfixtures import Replacer, ShouldRaise
 from testfixtures.mock import Mock
 
-from tests.datafile import DCD_CG, IC, PRM, PSF_ENM
+from tests.datafile import DCD_CG, IC_FLUCT, PRM, PSF_ENM
 
 
 @pytest.fixture(scope="class")
@@ -97,6 +100,7 @@ class TestCharmmFluctuationMatching:
         with ShouldRaise(ValueError):
             CharmmFluctuationMatching(universe, output_dir=tmp_path, prefix="fluctmatch", temperature=0)
 
+    @pytest.mark.slow()
     def test_initialize(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test initialization.
 
@@ -115,6 +119,7 @@ class TestCharmmFluctuationMatching:
         assert stem.with_suffix(".str").exists(), "Parameter file not found."
         assert stem.with_suffix(".inp").exists(), "CHARMM input file not found."
 
+    @pytest.mark.slow()
     def test_simulate(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test simulation.
 
@@ -127,6 +132,7 @@ class TestCharmmFluctuationMatching:
         fluctmatch : CharmmFluctuationMatching
             Object for fluctuation matching using CHARMM
         """
+        shutil.copy(IC_FLUCT, fluctmatch._output_dir.joinpath(fluctmatch._prefix).with_suffix(".ic"))
         with Replacer() as replace:
             mock_path = replace("pathlib.Path.exists", Mock(autospec=Path))
             mock_path.return_value = True
@@ -135,6 +141,7 @@ class TestCharmmFluctuationMatching:
             fluctmatch.initialize().simulate(executable=Path("charmm"))
             mock_run.assert_called_once()
 
+    @pytest.mark.slow()
     def test_simulate_no_executable(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test simulation with no executable file.
 
@@ -152,9 +159,10 @@ class TestCharmmFluctuationMatching:
             mock_path.return_value = False
             mock_result = Mock(spec=subprocess.CompletedProcess, autospec=True)
             replace("subprocess.run", mock_result)
-            with pytest.raises(FileNotFoundError):
+            with ShouldRaise(FileNotFoundError):
                 fluctmatch.initialize().simulate(executable=Path("charmm"))
 
+    @pytest.mark.slow()
     def test_simulate_fail(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test simulation failure if executable fails during run.
 
@@ -173,7 +181,7 @@ class TestCharmmFluctuationMatching:
             mock_result = Mock(spec=subprocess.CompletedProcess, autospec=True)
             mock_result.side_effect = CalledProcessError(returncode=1, cmd="charmm")
             replace("subprocess.run", mock_result)
-            with pytest.raises(CalledProcessError):
+            with ShouldRaise(CalledProcessError):
                 fluctmatch.initialize().simulate(executable=Path("charmm"))
 
     def test_load_target(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
@@ -188,9 +196,10 @@ class TestCharmmFluctuationMatching:
         fluctmatch : CharmmFluctuationMatching
             Object for fluctuation matching using CHARMM
         """
-        fm = fluctmatch.load_target(IC)
+        fm = fluctmatch.load_target(IC_FLUCT)
         assert len(fm._target.table) > 0
 
+    @pytest.mark.slow()
     def test_load_parameters(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
         """Test loading a parameter file.
 
@@ -206,3 +215,27 @@ class TestCharmmFluctuationMatching:
         fm = fluctmatch.load_parameters(PRM)
         assert len(fm._parameters.parameters.bond_types) > 0
         assert len(fm._param_ddist.parameters.bond_types) > 0
+
+    @pytest.mark.slow()
+    def test_calculate(self: Self, fluctmatch: CharmmFluctuationMatching) -> None:
+        """Test calculations from fluctuation matching to get updated force constants.
+
+        GIVEN a CharmmFluctuationMatching object
+        WHEN  the object is initialized and `calculate` is called
+        THEN a new set of force constants are calculated.
+
+        Parameters
+        ----------
+        fluctmatch : CharmmFluctuationMatching
+            Object for fluctuation matching using CHARMM
+        """
+        rng = np.random.default_rng()
+        fluctmatch._parameters.read(PRM)
+        forces = fluctmatch._parameters.forces.copy()
+        fluctmatch._target.read(IC_FLUCT)
+        fluctmatch._optimized.data.update(fluctmatch._target.data)
+        fluctmatch._optimized.data = OrderedDict({key: rng.random() for key in fluctmatch._optimized.data})
+        error = fluctmatch.calculate()
+
+        assert set(fluctmatch._parameters.forces.values()) != set(forces.values()), "Calculation didn't work"
+        assert error > 0.0

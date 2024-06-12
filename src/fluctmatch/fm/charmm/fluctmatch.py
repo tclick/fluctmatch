@@ -57,6 +57,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 from scipy.constants import Avogadro, Boltzmann, calorie, kilo
+from sklearn.metrics import root_mean_squared_error
 
 from fluctmatch.fm.base import FluctuationMatchingBase
 from fluctmatch.io.charmm import BondData
@@ -64,6 +65,7 @@ from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from fluctmatch.io.charmm.stream import CharmmStream
 from fluctmatch.libs.bond_info import BondInfo
+from fluctmatch.libs.utils import compare_dict_keys
 from fluctmatch.libs.write_files import write_charmm_input
 
 
@@ -110,7 +112,7 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
 
         self._stream: CharmmStream = CharmmStream().initialize(universe)
         self._average_dist: CharmmInternalCoordinates = CharmmInternalCoordinates().initialize(universe)
-        self._fluct_dist: CharmmInternalCoordinates = copy.deepcopy(self._average_dist)
+        self._optimized: CharmmInternalCoordinates = copy.deepcopy(self._average_dist)
         self._target: CharmmInternalCoordinates = copy.deepcopy(self._average_dist)
         self._parameters: CharmmParameter = CharmmParameter().initialize(universe)
         self._param_ddist: CharmmParameter = copy.deepcopy(self._parameters)
@@ -150,9 +152,9 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
         # Internal coordinate files
         self._average_dist.data = lengths
         self._average_dist.write(self._stem.with_suffix(".average.ic"))
-        self._fluct_dist.data = fluct
+        self._optimized.data = fluct
         self._target.data = fluct
-        self._fluct_dist.write(self._stem.with_suffix(".fluct.ic"))
+        self._optimized.write(self._stem.with_suffix(".fluct.ic"))
         self._target.write(self._output_dir.joinpath("target").with_suffix(".ic"))
 
         write_charmm_input(
@@ -189,6 +191,8 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
             logger.exception(e)
             raise
 
+        self._optimized.read(self._stem.with_suffix(".ic"))
+
     def load_target(self: Self, filename: str | Path, /) -> Self:
         """Load target bond fluctuations.
 
@@ -209,5 +213,40 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
             Name of CHARMM parameter file
         """
         self._parameters.read(filename)
-        self._param_ddist.read(filename)
+        self._param_ddist.parameters.atom_types.update(self._parameters.parameters.atom_types)
+        self._param_ddist.parameters.bond_types.update(self._parameters.parameters.bond_types)
         return self
+
+    def calculate(self: Self) -> float:
+        """Calculate the new force constants from the optimized bond fluctuations and write the updated file.
+
+        Returns
+        -------
+        float
+            Root mean squared error between the target and the optimized bond fluctuations.
+
+        Raises
+        ------
+        ValueError
+            If the bond descriptions between the target and the optimized bond fluctuations are incorrect.
+        """
+        try:
+            compare_dict_keys(self._target.data, self._optimized.data)
+        except ValueError:
+            message = "Target and optimized bonds do not match."
+            logger.exception(message)
+            raise
+
+        logger.info("Calculating the new force constants.")
+        target: pd.Series = pd.Series(self._target.data)
+        optimized: pd.Series = pd.Series(self._optimized.data)
+        forces: pd.Series = (optimized - target).multiply(self.BOLTZMANN * self.K_FACTOR)
+        forces[forces < 0] = 0.0
+        self._parameters.forces = forces.to_dict(into=OrderedDict)
+
+        logger.info(f"Writing the updated parameter file to {self._stem.with_suffix('.str')}.")
+        self._parameters.write(self._stem, stream=True)
+
+        rmse = root_mean_squared_error(target, optimized)
+        logger.info(f"Root mean squared error: {rmse:.4f}")
+        return rmse
