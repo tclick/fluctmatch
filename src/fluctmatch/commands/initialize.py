@@ -35,24 +35,16 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 from pathlib import Path
 
 import click
 import MDAnalysis as mda
-import numpy as np
 from click_help_colors import HelpColorsCommand
 from loguru import logger
-from scipy import constants
 
 from fluctmatch import __copyright__
-from fluctmatch.io.charmm import BondData
-from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
-from fluctmatch.io.charmm.parameter import CharmmParameter
-from fluctmatch.io.charmm.stream import CharmmStream
-from fluctmatch.libs.bond_info import BondInfo
+from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
 from fluctmatch.libs.logging import config_logger
-from fluctmatch.libs.write_files import write_charmm_input
 
 
 @click.command(
@@ -159,42 +151,6 @@ def initialize(
     config_logger(name=__name__, logfile=logfile, level=verbosity)
     click.echo(__copyright__)
 
-    boltzmann: float = temperature * (constants.k * constants.N_A / (constants.calorie * constants.kilo))
-
     logger.info("Loading the universe.")
     universe = mda.Universe(topology, trajectory)
-
-    logger.info("Determining the average bond distance and the corresponding bond fluctuations.")
-    bond_info = BondInfo(universe.atoms, verbose=verbosity == "DEBUG")
-    bond_info.run()
-    lengths: BondData = bond_info.results.mean
-    fluct: BondData = bond_info.results.std
-    forces: BondData = OrderedDict({key: boltzmann / np.square(std) for key, std in bond_info.results.std.items()})
-
-    # CHARMM parameter, topology, and stream files
-    parameters = CharmmParameter().initialize(universe, forces=forces, lengths=lengths)
-    prm_file = directory.joinpath(prefix).with_suffix(".prm")
-    parameters.write(prm_file)
-
-    # Stream file with bond information
-    str_file = prm_file.with_suffix(".bonds.str")
-    stream = CharmmStream().initialize(universe)
-    stream.write(str_file)
-
-    # Internal coordinate files
-    avg_ic_file = prm_file.with_suffix(".average.ic")
-    average_ic = CharmmInternalCoordinates().initialize(universe, data=lengths)
-    average_ic.write(avg_ic_file)
-
-    fluct_ic_file = prm_file.with_suffix(".fluct.ic")
-    fluct_ic = CharmmInternalCoordinates().initialize(universe, data=fluct)
-    fluct_ic.write(fluct_ic_file)
-
-    write_charmm_input(
-        topology=topology,
-        trajectory=trajectory,
-        directory=directory,
-        prefix=prefix,
-        temperature=temperature,
-        sim_type="fluctmatch",
-    )
+    CharmmFluctuationMatching(universe, temperature=temperature, output_dir=directory, prefix=prefix).initialize()

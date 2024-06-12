@@ -35,14 +35,13 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Self
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
+from testfixtures import Replacer, TempDirectory
 from testfixtures.mock import Mock
-from testfixtures.replace import Replacer
 
 from tests.datafile import DCD_CG, PSF_ENM
 
@@ -78,7 +77,8 @@ class TestInitialize:
         assert "Usage:" in result.output
         assert result.exit_code == os.EX_OK
 
-    def test_initiailization(self: Self, cli_runner: CliRunner) -> None:
+    @pytest.mark.slow()
+    def test_initialization(self: Self, cli_runner: CliRunner) -> None:
         """Test whether parameter, topology and stream files are written.
 
         GIVEN a coarse-grain model
@@ -90,10 +90,11 @@ class TestInitialize:
         cli_runner : CliRunner
             Command-line cli_runner
         """
-        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
-            tmp_path = Path(ifs)
+        with TempDirectory() as tmpdir, Replacer() as replace:
+            tmp_path = tmpdir.as_path()
             prefix = "fluctmatch"
-            log_file = tmp_path / "initialize.log"
+            log_file = tmp_path.joinpath("initialize.log")
+            inp_file = tmp_path.joinpath(f"{prefix}.inp")
 
             mock_param_init = replace("fluctmatch.io.charmm.parameter.CharmmParameter.initialize", Mock())
             mock_intcor_init = replace("fluctmatch.io.charmm.intcor.CharmmInternalCoordinates.initialize", Mock())
@@ -104,6 +105,8 @@ class TestInitialize:
 
             assert result.exit_code == os.EX_OK
             assert log_file.exists()
+            assert inp_file.exists()
+            assert inp_file.stat().st_size > 0
             mock_param_init.assert_called_once()
             mock_stream_init.assert_called_once()
             mock_intcor_init.assert_called()
