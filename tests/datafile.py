@@ -41,8 +41,7 @@ __all__: list[str] = [
     "TPR",
     "XTC",
     "NCSC",
-    "PSF",
-    "DCD",
+    "PSF_CG",
     "IC",
     "COR",
     "PRM",
@@ -85,11 +84,8 @@ with resources.as_file(_data_ref / "dma.gro") as f:
 with resources.as_file(_data_ref / "ncsc.pdb") as f:
     NCSC: str = f.as_posix()
 
-with resources.as_file(_data_ref / "cg.xplor.psf") as f:
-    PSF: str = f.as_posix()
-
-with resources.as_file(_data_ref / "cg.dcd") as f:
-    DCD: str = f.as_posix()
+with resources.as_file(_data_ref / "cg.psf") as f:
+    PSF_CG: str = f.as_posix()
 
 with resources.as_file(_data_ref / "fluct.ic") as f:
     IC: str = f.as_posix()
