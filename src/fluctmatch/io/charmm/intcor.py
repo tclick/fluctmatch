@@ -30,7 +30,7 @@
 #  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
 #  DAMAGE.
 # ------------------------------------------------------------------------------
-# pyright: reportInvalidTypeVarUse=false, reportArgumentType=false
+# pyright: reportInvalidTypeVarUse=false, reportArgumentType=false, reportReturnType=false
 """Class to read and write CHARMM internal coordinate files."""
 
 import datetime
@@ -41,6 +41,7 @@ from typing import Self
 
 import MDAnalysis as mda
 import numpy as np
+import pandas as pd
 from loguru import logger
 from numpy.typing import NDArray
 from parmed.utils.fortranformat import FortranRecordReader, FortranRecordWriter
@@ -214,3 +215,32 @@ class CharmmInternalCoordinates(IOBase):
             raise
 
         return self
+
+    def to_dataframe(self: Self) -> pd.DataFrame:
+        """Convert internal coordinate data to pandas dataframe.
+
+        Columns will be labeled according to the internal coordinate file.
+
+        Returns
+        -------
+        pandas.DataFrame
+            Internal coordinate data
+        """
+        cols = tuple("# segidI resI I segidJ resJ J segidK resK K segidL resL L r_IJ T_IJK P_IJKL T_JKL r_KL".split())
+        table = pd.DataFrame.from_dict(self._table, orient="index")
+        table.columns = cols
+        return table.set_index("#")
+
+    def to_series(self: Self) -> pd.Series:
+        """Convert internal coordinate data to pandas Series containing only the `r_IJ` data.
+
+        The series will be indexed by the first six columns.
+
+        Returns
+        -------
+        pandas.Series
+            Bond distance data between atoms I and J
+        """
+        table = self.to_dataframe()
+        table = table.set_index(table.columns.to_list()[:6])
+        return table["r_IJ"]

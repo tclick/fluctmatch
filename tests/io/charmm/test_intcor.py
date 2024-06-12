@@ -43,7 +43,7 @@ from fluctmatch.io.charmm import BondData
 from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from numpy import testing
 
-from tests.datafile import DCD_CG, IC, PSF_ENM
+from tests.datafile import DCD_CG, IC_FLUCT, PSF_ENM
 
 
 class TestCharmmInternalCoordinates:
@@ -176,7 +176,7 @@ class TestCharmmInternalCoordinates:
         WHEN an internal coordinates object is initialized and read
         THEN an internal coordinates file is read and loaded into the parameter object.
         """
-        intcor = CharmmInternalCoordinates().read(IC)
+        intcor = CharmmInternalCoordinates().read(IC_FLUCT)
 
         assert len(intcor._table) > 0, "Internal coordinates file is empty."
 
@@ -275,3 +275,29 @@ class TestCharmmInternalCoordinates:
         # Test setter
         with pytest.raises(IndexError):
             intcor.data = np.zeros_like(bonds.values())[:-1]
+
+    def test_dataframe(self: Self) -> None:
+        """Test the conversion of an internal coordinates file to a `pandas.DataFrame`.
+
+        GIVEN an internal coordinates filename
+        WHEN an internal coordinates object is read
+        THEN a `pandas.DataFrame` is created.
+        """
+        ic = CharmmInternalCoordinates().read(IC_FLUCT)
+        table = ic.to_dataframe()
+
+        assert table.reset_index().shape == ic.table.shape, "The DataFrame does not have the expected shape."
+        testing.assert_equal(table, ic.table[:, 1:], err_msg="DataFrame does not match the IC table.")
+
+    def test_series(self: Self) -> None:
+        """Test the conversion of an internal coordinates file to a `pandas.Series`.
+
+        GIVEN an internal coordinates filename
+        WHEN an internal coordinates object is read
+        THEN a `pandas.Series` is created.
+        """
+        ic = CharmmInternalCoordinates().read(IC_FLUCT)
+        table = ic.to_series()
+
+        assert table.size == ic.table.shape[0], "The Series does not have the expected size."
+        testing.assert_allclose(table, ic.table[:, -5].astype(float), err_msg="Series does not match the IC table.")
