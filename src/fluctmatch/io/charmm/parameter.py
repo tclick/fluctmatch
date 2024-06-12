@@ -33,7 +33,6 @@
 # pyright: reportInvalidTypeVarUse=false, reportGeneralTypeIssues=false, reportAttributeAccessIssue=false
 """Initialize and write a stream file."""
 
-import copy
 from collections import OrderedDict
 from pathlib import Path
 from typing import Self
@@ -263,11 +262,8 @@ class CharmmParameter(IOBase):
             raise OSError(message)
 
         # Remove duplicates with a key (atom2, atom1)
-        duplicates = [(max(key), min(key)) for key in self._parameters.bond_types]
-        bond_types = OrderedDict({
-            key: value for key, value in self._parameters.bond_types.items() if key not in duplicates
-        })
-        self._parameters.bond_types = copy.deepcopy(bond_types)
+        keys = set(filter(lambda key: key != (max(key), min(key)), self._parameters.bond_types))
+        self._parameters.bond_types = OrderedDict({k: self._parameters.bond_types[k] for k in keys})
         return self
 
 
