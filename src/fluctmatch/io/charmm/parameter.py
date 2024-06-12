@@ -53,7 +53,7 @@ class CharmmParameter(IOBase):
     def __init__(self: Self) -> None:
         """Prepare a CHARMM parameter file."""
         super().__init__()
-        self._parameters = CharmmParameterSet()
+        self._parameters = charmm.CharmmParameterSet()
 
     @property
     def parameters(self: Self) -> charmm.CharmmParameterSet:
@@ -265,110 +265,3 @@ class CharmmParameter(IOBase):
         keys = set(filter(lambda key: key != (max(key), min(key)), self._parameters.bond_types))
         self._parameters.bond_types = OrderedDict({k: self._parameters.bond_types[k] for k in keys})
         return self
-
-
-class CharmmParameterSet(charmm.CharmmParameterSet):
-    """CHARMM parameter set."""
-
-    def __init__(self: Self, *args: str) -> None:
-        """Construct a CHARMM parameter set."""
-        super().__init__(*args)
-
-    def _write_par_to(self: Self, f: str) -> None:  # noqa: C901
-        """Private method to write parameter items to open file object.
-
-        Notes
-        -----
-        This method is almost identical to its parent. The primary difference is that the BONDS and ANGLES section
-        have four decimal places instead of two. This is for increased accuracy for fluctuation matching.
-        """
-        # Find out what the 1-4 electrostatic scaling factors and the 1-4
-        # van der Waals scaling factors are
-        scee, scnb = set(), set()
-        for _, typ in self.dihedral_types.items():
-            for t in typ:
-                if t.scee:
-                    scee.add(t.scee)
-                if t.scnb:
-                    scnb.add(t.scnb)
-        if len(scee) > 1 or len(scnb) > 1:
-            message = "Mixed 1-4 scaling not supported"
-            raise ValueError(message)
-        scee = 1.0 if not scee else scee.pop()
-        scnb = 1.0 if not scnb else scnb.pop()
-
-        f.write("ATOMS\n")
-        self._write_top_to(f, False)
-        f.write("\nBONDS\n")
-        written = set()
-        for key, typ in self.bond_types.items():
-            if key in written:
-                continue
-            written.add(key)
-            written.add(tuple(reversed(key)))
-            f.write(f"{key[0]:<6s} {key[1]:<6s} {typ.k:7.4f} {typ.req:10.4f}\n")
-        f.write("\nANGLES\n")
-        written = set()
-        for key, typ in self.angle_types.items():
-            if key in written:
-                continue
-            written.add(key)
-            written.add(tuple(reversed(key)))
-            f.write(f"{key[0]:<6s} {key[1]:<6s} {key[2]:<6s} {typ.k:7.4f} {typ.theteq:8.4f}\n")
-        f.write("\nDIHEDRALS\n")
-        written = set()
-        for key, typ in self.dihedral_types.items():
-            if key in written:
-                continue
-            written.add(key)
-            written.add(tuple(reversed(key)))
-            for tor in typ:
-                f.write(
-                    f"{key[0]:<6s} {key[1]:<6s} {key[2]:<6s} {key[3]:<6s} {tor.phi_k:11.4f} {tor.per:2d} {tor.phase:8.2f}\n"
-                )
-        f.write("\nIMPROPERS\n")
-        written = set()
-        for key, typ in sorted(self.improper_periodic_types.items(), key=lambda x: x[0]):
-            f.write(
-                f"{key[0]:<6s} {key[1]:<6s} {key[2]:<6s} {key[3]:<6s} {typ.phi_k:11.4f} {int(typ.per):2d} {typ.phase:8.2f}\n"
-            )
-        for key, typ in self.improper_types.items():
-            f.write(f"{key[0]:<6s} {key[1]:<6s} {key[2]:<6s} {key[3]:<6s} {typ.psi_k:11.4f} {0:2d} {typ.psi_eq:8.2f}\n")
-        if self.cmap_types:
-            f.write("\nCMAPS\n")
-            written = set()
-            for key, typ in self.cmap_types.items():
-                if key in written:
-                    continue
-                written.add(key)
-                written.add(tuple(reversed(key)))
-                f.write(
-                    f"{key[0]:<6s} {key[1]:<6s} {key[2]:<6s} {key[3]:<6s} {key[4]:<6s} "
-                    f"{key[5]:<6s} {key[6]:<6s} {key[7]:<6s} {typ.resolution:5d}\n\n"
-                )
-                i = 0
-                for val in typ.grid:
-                    if i:
-                        if i % 5 == 0:
-                            f.write("\n")
-                            if i % typ.resolution == 0:
-                                f.write("\n")
-                                i = 0
-                        elif i % typ.resolution == 0:
-                            f.write("\n\n")
-                            i = 0
-                    i += 1
-                    f.write(f" {val:13.6f}")
-                f.write("\n\n\n")
-        comb_rule = " GEOM" if self.combining_rule == "geometric" else ""
-        f.write(
-            "\nNONBONDED  nbxmod  5 atom cdiel fshift vatom vdistance vfswitch -\ncutnb 14.0 "
-            f"ctofnb 12.0 ctonnb 10.0 eps 1.0 e14fac {1 / scee} wmin 1.5{comb_rule}\n\n"
-        )
-        for key, typ in self.atom_types.items():
-            f.write(f"{key:<6s} {0:14.6f} {-abs(typ.epsilon):10.6f} {typ.rmin:14.6f}")
-            if typ.epsilon == typ.epsilon_14 and typ.rmin == typ.rmin_14:
-                f.write(f"{0:10.6f} {-abs(typ.epsilon) / scnb:10.6f} {typ.rmin:14.6f}\n")
-            else:
-                f.write(f"{0:10.6f} {-abs(typ.epsilon_14):10.6f} {typ.rmin_14:14.6f}\n")
-        f.write("\nEND\n")
