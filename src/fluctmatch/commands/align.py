@@ -19,7 +19,17 @@
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportAttributeAccessIssue=false
-"""Align a trajectory to its first frame or to a reference structure."""
+"""Trajectory alignment.
+
+This script aligns a trajectory to a reference structure. If no reference structure is provided, the first frame of
+the trajectory will be used. The alignment will attempt to remove translational and rotational motion while seeing to
+minimize the r.m.s.d. of each frame. The frames will be aligned with the reference structure according to the atom(s)
+provided by the `--select` option, and the alignment can be mass-weighted. The aligned trajectory will be written to
+a file with the name 'aligned_{trajectory}'
+
+Warnings: Depending upon the length of the trajectory and the size of the universe, the alignment process can take
+several minutes.
+"""
 
 from pathlib import Path
 
@@ -36,7 +46,7 @@ from fluctmatch.libs.logging import config_logger
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\nAlign a trajectory.",
+    help=f"{__copyright__}\n{__doc__}",
     short_help="Align a trajectory to the first frame or to a reference structure",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -65,7 +75,7 @@ from fluctmatch.libs.logging import config_logger
     "--ref",
     "reference",
     metavar="FILE",
-    default=Path.cwd() / "ref.pdb",
+    default=Path.cwd().joinpath("ref.pdb"),
     show_default=True,
     type=click.Path(exists=False, file_okay=True, dir_okay=False, resolve_path=True, path_type=Path),
     help="Reference file",
@@ -82,9 +92,9 @@ from fluctmatch.libs.logging import config_logger
 @click.option(
     "-l",
     "--logfile",
-    metavar="WARNING",
+    metavar="FILE",
     show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
@@ -178,11 +188,7 @@ def align(
 
     universe = mda.Universe(topology, trajectory)
     mobile = universe.select_atoms(selection[select])
-    if reference.is_file():
-        ref = mda.Universe(topology, reference).select_atoms(selection[select])
-    else:
-        logger.warning("Reference file defaulting to the first frame of the trajectory.")
-        ref = mobile
+    ref = mda.Universe(topology, reference) if reference.is_file() else universe
 
     transform = transformations.fit_rot_trans(mobile, ref, weights=weight)
     universe.trajectory.add_transformations(transform)

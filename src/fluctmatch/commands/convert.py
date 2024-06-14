@@ -20,7 +20,17 @@
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportArgumentType=false, reportAssignmentType=false, reportAttributeAccessIssue=false
 # pyright: reportPossiblyUnboundVariable=false, reportOptionalMemberAccess=false
-"""Convert an all-atom system to a coarse-grain model."""
+"""Transformation of all-atom systems.
+
+This script transforms an all-atom system to a coarse-grain (CG) system. Several models currently can be selected and
+combined. Additionally, a user can transform a CG model into an elastic network model, which contains bonds defined
+by `--rmax`. The user needs to provide the location of the topology and trajectory files, and new topology and
+trajectory files will be written with 'prefix' as the stem of the filename. The CG beads can either be based upon
+center of geometry or center of mass depending upon the inclusion of `--com`.
+
+Note: The transformation may take several minutes depending upon the size of the system, the number of models
+selected, and the length of the trajectory.
+"""
 
 import importlib
 import pkgutil
@@ -44,7 +54,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\nAA -> CG conversion.",
+    help=f"{__copyright__}\n{__doc__}",
     short_help="Convert an all-atom system to a coarse-grain model.",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -73,7 +83,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
     "--logfile",
     metavar="WARNING",
     show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )

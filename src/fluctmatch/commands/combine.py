@@ -21,10 +21,9 @@
 # pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportOperatorIssue=false
 """Combination of force constants.
 
-This script allows the user to combine the force constants from multiple parameter files. The parameter files should be
-within subdirectories. The script will load the individual parameter files and extract the force constants. The
-table will only include data in ascending order of resI. The table will be saved as a CSV file with the following
-columns:
+This script combines the force constants from multiple parameter files. The parameter files should be within
+subdirectories. The script will load the individual parameter files and extract the force constants. The table will
+only include data in ascending order of resI. The table will be saved as a CSV file with the following columns:
 
     - segidI resI I segidJ resJ J dir1 dir2 ... dirX
 
@@ -38,9 +37,6 @@ residue tables will be saved as a CSV file with the following columns:
     - interresidue:   segidI resI segidJ resJ dir1 dir2 ... dirX
 
     - residue: segidI resI I dir1 dir2 ... dirX
-
-This script requires that `pandas` and `loguru` be installed within the Python environment you are running this
-script in.
 """
 
 from pathlib import Path
@@ -105,7 +101,7 @@ from fluctmatch.libs.logging import config_logger
     "--logfile",
     metavar="FILE",
     show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
@@ -168,12 +164,18 @@ def combine(
         Save residue force constants to resi.csv
     filter_res : bool
         Filter force constants only to include >resI,resI+3
-    verbosity : str
+    verbosity : {INFO, DEBUG, WARNING, ERROR, CRITICAL}
         Logging verbosity level
 
     Returns
     -------
     None
+
+    Notes
+    -----
+    The function initializes the logger to record messages to the specified log file and console. It selects atoms from
+    the trajectory and reference structure based on the provided selection criteria. A transformation is applied to
+    align the trajectory to the reference, and the aligned trajectory is written to the output directory.
     """
     config_logger(name=__name__, logfile=logfile, level=verbosity)
     click.echo(__copyright__)

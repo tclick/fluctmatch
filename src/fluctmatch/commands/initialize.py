@@ -19,7 +19,16 @@
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportGeneralTypeIssues=false, reportAttributeAccessIssue=false, reportArgumentType=false
-"""Split a trajectory into smaller trajectories."""
+"""Simulation initialization.
+
+This script allows the user to automate the creation of the simulation file that will be used for fluctuation
+matching. Using `--directory` and `--prefix`, the user can set the location of the input file. `--temperature` is
+specific to the calculation of thermodynamic properties. `--topology` and `--trajectory` specify the locations of the
+topology and trajectory files that will be used during the simulation.
+
+Note: Currently, this script will create an input file specific for CHARMM. A future version of this script should have
+options for other software packages like Amber or Gromacs.
+"""
 
 from pathlib import Path
 
@@ -35,7 +44,7 @@ from fluctmatch.libs.logging import config_logger
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\nInitialize files for fluctuation matching.",
+    help=f"{__copyright__}\n{__doc__}",
     short_help="Initialize files for fluctuation matching.",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -81,9 +90,9 @@ from fluctmatch.libs.logging import config_logger
 @click.option(
     "-l",
     "--logfile",
-    metavar="WARNING",
+    metavar="FILE",
     show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
@@ -94,7 +103,7 @@ from fluctmatch.libs.logging import config_logger
     metavar="TEMP",
     show_default=True,
     default=300.0,
-    type=click.FloatRange(min=1.0, clamp=True),
+    type=click.FloatRange(min=0.1, clamp=True),
     help="Simulation temperature (in K)",
 )
 @click.option(
@@ -103,6 +112,7 @@ from fluctmatch.libs.logging import config_logger
     metavar="LEVEL",
     default="INFO",
     show_default=True,
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split()),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
@@ -131,7 +141,7 @@ def initialize(
         Location of log file
     temperature : float, default=300.0
         Simulation temperature
-    verbosity : str, default=INFO
+    verbosity : {INFO, DEBUG, WARNING, ERROR, CRITICAL}
         Level of verbosity for logging output
     """
     config_logger(name=__name__, logfile=logfile, level=verbosity)
