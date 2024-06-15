@@ -31,8 +31,8 @@ import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 from MDAnalysis.analysis.rms import RMSD
-from MDAnalysisTests.datafiles import DCD2, PSF
-from testfixtures import TempDirectory
+from MDAnalysisTests.datafiles import CRD, DCD2, PSF
+from testfixtures import ShouldRaise, TempDirectory
 
 
 @pytest.fixture()
@@ -44,7 +44,7 @@ def reference() -> mda.Universe:
     MDAnalysis.Universe
         Reference structure
     """
-    return mda.Universe(PSF, DCD2)
+    return mda.Universe(PSF, CRD)
 
 
 class TestAlign:
@@ -67,11 +67,6 @@ class TestAlign:
         GIVEN the init subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "align -h")
 
@@ -79,9 +74,16 @@ class TestAlign:
         assert result.exit_code == os.EX_OK
 
     @pytest.mark.parametrize(
-        "selection", [("all", "all"), ("ca", "name CA"), ("cab", "name CA CB"), ("backbone", "backbone")]
+        "selection",
+        [
+            ("all", "all"),
+            ("protein", "protein and not name H*"),
+            ("ca", "protein and name CA"),
+            ("cab", "protein and name CA CB"),
+            ("backbone", "backbone"),
+        ],
     )
-    def test_align(self, cli_runner: CliRunner, selection: tuple[str, str], reference: mda.Universe) -> None:
+    def test_align(self: Self, cli_runner: CliRunner, selection: tuple[str, str], reference: mda.Universe) -> None:
         """Test the align function for proper trajectory alignment.
 
         GIVEN: Paths to the topology, trajectory, reference files, and output directory
@@ -98,23 +100,15 @@ class TestAlign:
         - Proper logging in the specified log file
         - Handling of the 'mass' option for mass-weighted alignment
         - Function's response to various 'select' options for atom selection
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
-        selection : str
-            Atom selection used for alignment between the trajectory and the reference structure.
-        reference : mda.Universe
-            Reference structure
         """
         with TempDirectory(create=True) as tempdir:
             tmp_path = tempdir.as_path()
-            log_file = tmp_path.joinpath("align.log")
-            traj_file = tmp_path.joinpath(f"aligned_{Path(DCD2).name}")
+            log_file = tempdir.as_path("align.log")
+            traj_file = tempdir.as_path(f"aligned_{Path(DCD2).name}")
 
             result = cli_runner.invoke(
-                main, f"align -s {PSF} -f {DCD2} -o {tmp_path} -l {log_file} -t {selection[0]} --mass"
+                main,
+                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t {selection[0]} --mass",
             )
 
             # Check outcome of CLI including file creation.
@@ -130,8 +124,48 @@ class TestAlign:
             max_rmsd = 4.0
             aligned = mda.Universe(PSF, traj_file.as_posix()).select_atoms(selection[1])
             rmsd = (
-                RMSD(aligned, reference, select=selection[1], groupselections=group_selection, weights="mass")
+                RMSD(aligned, reference=reference, select=selection[1], groupselections=group_selection, weights="mass")
                 .run()
                 .results.rmsd[:, 3]
             )
             assert np.all(rmsd < max_rmsd), f"r.m.s.d. should be less than {max_rmsd:.1f}."
+
+    def test_align_error(self: Self, cli_runner: CliRunner) -> None:
+        """Test the align function to ensure failure if invalid selection is given.
+
+        GIVEN: Paths to the topology, trajectory, reference files, and output directory
+        WHEN: The align function is invoked with an invalid atom selection and options
+        THEN: The script fails.
+        """
+        with TempDirectory(create=True) as tempdir:
+            tmp_path = tempdir.as_path()
+            log_file = tempdir.as_path("align.log")
+
+            result = cli_runner.invoke(
+                main,
+                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t sidechain --mass",
+            )
+
+            # Check outcome of CLI including file creation.
+            assert result.exit_code != os.EX_OK
+            assert not log_file.is_file(), f"{log_file} exists."
+
+    def test_bad_selection(self: Self, cli_runner: CliRunner) -> None:
+        """Test the align function to ensure failure if wrong selection is given.
+
+        GIVEN: Paths to the topology, trajectory, reference files, and output directory
+        WHEN: The align function is invoked with an invalid atom selection and options
+        THEN: The script raises a ValueError.
+        """
+        with TempDirectory(create=True) as tempdir, ShouldRaise(ValueError):
+            tmp_path = tempdir.as_path()
+            log_file = tempdir.as_path("align.log")
+
+            result = cli_runner.invoke(
+                main,
+                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t nucleic --mass",
+                catch_exceptions=False,
+            )
+
+            assert result.exit_code != os.EX_OK
+            assert not log_file.is_file(), f"{log_file} exists."

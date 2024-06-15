@@ -35,13 +35,25 @@ from pathlib import Path
 
 import click
 import MDAnalysis as mda
+import numpy as np
 from click_help_colors import HelpColorsCommand
 from loguru import logger
-from MDAnalysis import transformations
+from MDAnalysis.analysis.align import AlignTraj
 
+import fluctmatch.model.selection  # noqa: F401
 from fluctmatch import __copyright__
 from fluctmatch.commands import FILE_MODE
 from fluctmatch.libs.logging import config_logger
+
+selection: dict[str, str] = {
+    "all": "all",
+    "protein": "protein and not name H*",
+    "ca": "calpha",
+    "cab": "calpha or cbeta",
+    "backbone": "backbone or nucleicbackbone",
+    "sugar": "nucleicsugar and not name H*",
+    "nucleic": "nucleic and not name H*",
+}
 
 
 @click.command(
@@ -104,7 +116,7 @@ from fluctmatch.libs.logging import config_logger
     metavar="TYPE",
     show_default=True,
     default="ca",
-    type=click.Choice("all ca cab backbone".split()),
+    type=click.Choice(list(selection.keys()), case_sensitive=False),
     help="Atom selection for alignment",
 )
 @click.option("--mass", is_flag=True, help="Mass-weighted alignment")
@@ -113,7 +125,7 @@ from fluctmatch.libs.logging import config_logger
     "--verbosity",
     default="INFO",
     show_default=True,
-    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split()),
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split(), case_sensitive=False),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
@@ -172,29 +184,31 @@ def align(
     the trajectory and reference structure based on the provided selection criteria. A transformation is applied to
     align the trajectory to the reference, and the aligned trajectory is written to the output directory.
     """
-    config_logger(name=__name__, logfile=logfile, level=verbosity)
+    config_logger(name=__name__, logfile=logfile, level=verbosity.upper())
     click.echo(__copyright__)
 
-    selection = {
-        "all": "all",
-        "ca": "protein and name CA",
-        "cab": "protein and name CA CB",
-        "backbone": "backbone or nucleicbackbone",
-    }
     weight = "mass" if mass else None
     outdir.mkdir(mode=FILE_MODE, parents=True, exist_ok=True)
-    output = outdir.joinpath(f"aligned_{trajectory.name}")
-    click.echo(output)
+    prefix = outdir.joinpath("aligned_").as_posix()
 
     universe = mda.Universe(topology, trajectory)
-    mobile = universe.select_atoms(selection[select])
     ref = mda.Universe(topology, reference) if reference.is_file() else universe
 
-    transform = transformations.fit_rot_trans(mobile, ref, weights=weight)
-    universe.trajectory.add_transformations(transform)
-
-    with mda.Writer(output.as_posix(), n_atoms=universe.atoms.n_atoms) as out:
+    try:
         logger.info("Aligning trajectory to the reference structure.")
-        for _ in universe.trajectory:
-            out.write(universe.atoms)
-        logger.info(f"The structure has been aligned in {output}.")
+        verbose = verbosity.upper() == "DEBUG"
+        aligned = AlignTraj(
+            universe, ref, select=selection[select], prefix=prefix, weight=weight, verbose=verbose
+        ).run()
+        rms_min, rms_max = np.min(aligned.results.rmsd), np.max(aligned.results.rmsd)
+        logger.info(f"The structure has been aligned in {aligned.filename}.")
+        logger.info(
+            f"Comparison with reference structure: Min. r.m.s.d.: {rms_min:>8.3f} Max. r.m.s.d.: {rms_max:>8.3f}"
+        )
+    except ValueError as exception:
+        exception.add_note(
+            "Could not align trajectory to reference structure. Please ensure that you provided a valid "
+            "selection criteria for your system."
+        )
+        logger.exception(exception)
+        raise
