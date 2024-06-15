@@ -45,7 +45,7 @@ from fluctmatch import __copyright__
 from fluctmatch.commands import FILE_MODE
 from fluctmatch.libs.logging import config_logger
 
-selection: dict[str, str] = {
+SELECTION: dict[str, str] = {
     "all": "all",
     "protein": "protein and not name H*",
     "ca": "calpha",
@@ -116,7 +116,7 @@ selection: dict[str, str] = {
     metavar="TYPE",
     show_default=True,
     default="ca",
-    type=click.Choice(list(selection.keys()), case_sensitive=False),
+    type=click.Choice(list(SELECTION.keys()), case_sensitive=False),
     help="Atom selection for alignment",
 )
 @click.option("--mass", is_flag=True, help="Mass-weighted alignment")
@@ -198,7 +198,7 @@ def align(
         logger.info("Aligning trajectory to the reference structure.")
         verbose = verbosity.upper() == "DEBUG"
         aligned = AlignTraj(
-            universe, ref, select=selection[select], prefix=prefix, weight=weight, verbose=verbose
+            universe, ref, select=SELECTION[select], prefix=prefix, weight=weight, verbose=verbose
         ).run()
         rms_min, rms_max = np.min(aligned.results.rmsd), np.max(aligned.results.rmsd)
         logger.info(f"The structure has been aligned in {aligned.filename}.")
