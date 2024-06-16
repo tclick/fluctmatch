@@ -70,8 +70,9 @@ def write_average_structure(
     stop : int, optional
         final frame of the trajectory
     """
-    average = AverageStructure(universe)
-    average_universe: mda.AtomGroup = average.run(start=start, stop=stop).results.universe.atoms
+    average = AverageStructure(universe).run(start=start, stop=stop)
+    average_universe: mda.AtomGroup = average.results.universe.atoms
+    logger.info(f"Writing average structure to {filename}.")
     average_universe.convert_to("PARMED").save(Path(filename).as_posix(), overwrite=True)
 
 
