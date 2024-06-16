@@ -189,14 +189,6 @@ def align(
     -------
     None
 
-    Examples
-    --------
-    To align 'simulation.nc' to 'reference.pdb' using C-alpha atoms for alignment and save the aligned trajectory in
-    the 'output' directory:
-
-    >>> align(topology=Path('topology.parm7'), trajectory=Path('simulation.nc'), reference=Path('reference.pdb'),
-    ...       directory=Path('output'),  logfile=Path('alignment.log'), select='ca', mass=False, verbosity='INFO')
-
     Notes
     -----
     The function initializes the logger to record messages to the specified log file and console. It selects atoms from
