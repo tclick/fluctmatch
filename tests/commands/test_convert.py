@@ -21,7 +21,6 @@
 """Tests for conversion of molecular dynamics trajectories to a coarse-grain model."""
 
 import os
-from pathlib import Path
 from typing import Self
 
 import MDAnalysis as mda
@@ -29,8 +28,7 @@ import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 from MDAnalysisTests.datafiles import DCD2, PSF
-from testfixtures import Replacer
-from testfixtures.mock import Mock
+from testfixtures import TempDirectory
 
 
 @pytest.fixture(scope="class")
@@ -77,25 +75,58 @@ class TestConvert:
         assert "calpha:" in result.output
         assert result.exit_code == os.EX_OK
 
-    def test_conversion(self: Self, cli_runner: CliRunner, universe: mda.Universe) -> None:
-        """Test whether an all-atom trajectory is converted to a coarse-grain model.
+    @pytest.mark.slow()
+    @pytest.mark.parametrize("model", "calpha caside ncsc polar".split())
+    def test_conversion(self: Self, cli_runner: CliRunner, model: str) -> None:
+        """Test whether an all-atom topology is converted to a coarse-grain model.
 
         GIVEN an all-atom model
         WHEN flagged to convert to convert to a C-alpha model
         THEN a CHARMM PSF, CRD, and DCD file are written
         """
-        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
-            replace("fluctmatch.model.base.CoarseGrainModel.transform", lambda self: universe)  # noqa: ARG005
-            mock_write = replace("MDAnalysis.coordinates.base.WriterBase.write", Mock())
-            mock_save = replace("parmed.structure.Structure.save", Mock())
-            tmp_path = Path(ifs)
+        with TempDirectory() as tempdir:
+            tmp_path = tempdir.as_path()
             prefix = "cg"
-            log_file = tmp_path.joinpath("convert.log")
+            log_file = tempdir.as_path("convert.log")
+            traj_file = tmp_path.joinpath(f"{prefix}").with_suffix(".dcd")
+            psf_file = tmp_path.joinpath(f"{prefix}").with_suffix(".psf")
+            crd_file = tmp_path.joinpath(f"{prefix}").with_suffix(".crd")
 
             result = cli_runner.invoke(
-                main, f"convert -s {PSF} -f {DCD2} -l {log_file} -d {tmp_path} -p {prefix} -m calpha --guess --write"
+                main,
+                f"convert -s {PSF} -f {DCD2} -l {log_file} -d {tmp_path} -p {prefix} -m {model} --guess",
+                catch_exceptions=False,
             )
 
             assert result.exit_code == os.EX_OK
-            mock_write.assert_called()
-            mock_save.assert_called()
+            assert psf_file.is_file()
+            assert crd_file.is_file()
+            assert not traj_file.is_file()
+
+    @pytest.mark.slow()
+    @pytest.mark.parametrize("model", "calpha caside ncsc polar".split())
+    def test_conversion_with_trajectory(self: Self, cli_runner: CliRunner, model: str) -> None:
+        """Test whether an all-atom topology and trajectory is converted to a coarse-grain model.
+
+        GIVEN an all-atom model
+        WHEN flagged to convert to convert to a C-alpha model
+        THEN a CHARMM PSF, CRD, and DCD file are written
+        """
+        with TempDirectory() as tempdir:
+            tmp_path = tempdir.as_path()
+            prefix = "cg"
+            log_file = tempdir.as_path("convert.log")
+            traj_file = tmp_path.joinpath(f"{prefix}").with_suffix(".dcd")
+            psf_file = tmp_path.joinpath(f"{prefix}").with_suffix(".psf")
+            crd_file = tmp_path.joinpath(f"{prefix}").with_suffix(".crd")
+
+            result = cli_runner.invoke(
+                main,
+                f"convert -s {PSF} -f {DCD2} -l {log_file} -d {tmp_path} -p {prefix} -m {model} --guess --write",
+                catch_exceptions=False,
+            )
+
+            assert result.exit_code == os.EX_OK
+            assert psf_file.is_file()
+            assert crd_file.is_file()
+            assert traj_file.is_file()
