@@ -72,7 +72,7 @@ def write_average_structure(
     """
     average = AverageStructure(universe)
     average_universe: mda.AtomGroup = average.run(start=start, stop=stop).results.universe.atoms
-    average_universe.convert_to("PARMED").save(filename.as_posix(), overwrite=True)
+    average_universe.convert_to("PARMED").save(Path(filename).as_posix(), overwrite=True)
 
 
 def write_charmm_input(
