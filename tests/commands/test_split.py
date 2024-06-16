@@ -23,15 +23,13 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 from typing import Self
 
 import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 from MDAnalysisTests.datafiles import DCD2, PSF
-from testfixtures.mock import Mock
-from testfixtures.replace import Replacer
+from testfixtures import TempDirectory
 
 from tests.datafile import JSON
 
@@ -56,11 +54,6 @@ class TestSplit:
         GIVEN the init subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            CLI runner
         """
         result = cli_runner.invoke(main, "split -h")
 
@@ -73,24 +66,14 @@ class TestSplit:
         GIVEN an output subdirectory
         WHEN invoking the setup subcommand
         THEN the subcommand will complete successfully.
-
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            CLI runner
         """
-        with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
-            tmp_path = Path(ifs)
-            outdir = tmp_path.joinpath("test")
-            log_file = outdir.joinpath("split.log")
-            crd_file = outdir.joinpath(PSF).with_suffix(".crd")
+        with TempDirectory() as tempdir:
+            outdir = tempdir.as_path("test")
+            log_file = tempdir.as_path("split.log")
             traj_file = outdir.joinpath(PSF).with_suffix(".dcd")
-            mock_average = replace("fluctmatch.libs.write_files.write_average_structure", Mock())
 
-            args = f"split -s {PSF} -f {DCD2} --json {JSON} -o {traj_file} -c {crd_file} -l {log_file} --average"
-            result = cli_runner.invoke(main, args)
+            args = f"split -s {PSF} -f {DCD2} --json {JSON} -o {traj_file} -l {log_file}"
+            result = cli_runner.invoke(main, args, catch_exceptions=False)
 
             assert result.exit_code == os.EX_OK
             assert log_file.exists()
-            mock_average.assert_called()

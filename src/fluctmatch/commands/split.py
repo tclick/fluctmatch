@@ -106,15 +106,6 @@ average structure of each trajectory written to a CHARMM coordinate file."""
     help="Trajectory output file",
 )
 @click.option(
-    "-c",
-    "--crdout",
-    metavar="FILE",
-    default="cg.crd",
-    show_default=True,
-    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
-    help="Average structure file",
-)
-@click.option(
     "-l",
     "--logfile",
     metavar="FILE",
@@ -123,7 +114,6 @@ average structure of each trajectory written to a CHARMM coordinate file."""
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
-@click.option("--average", is_flag=True, help="Save the average structure of the trajectory")
 @click.option(
     "-v",
     "--verbosity",
@@ -140,8 +130,6 @@ def split(
     trajout: Path,
     windows_input: Path,
     logfile: Path,
-    average: bool,
-    crdout: Path,
     verbosity: str,
 ) -> None:
     """Split a trajectory into smaller trajectories using the JSON file created during setup.
@@ -158,10 +146,6 @@ def split(
         Location of log file
     windows_input : Path, default=$CWD/setup.json
         JSON file
-    average : bool
-        Save the average structure of the trajectory
-    crdout : Path
-        Average structure of the trajectory
     verbosity : str, default=INFO
         Level of verbosity for logging output
     """
@@ -178,12 +162,3 @@ def split(
     for traj_file, start, stop in info:
         traj_file.parent.mkdir(exist_ok=True)
         write_files.write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
-
-    if average:
-        logger.info("Saving the average structures of each trajectory...")
-        info = ((Path(outdir).joinpath(crdout), data["start"], data["stop"]) for outdir, data in setup_input.items())
-        for outdir in setup_input:
-            crd_file = Path(outdir).joinpath(crdout)
-            traj_file = Path(outdir).joinpath(trajout)
-            universe = mda.Universe(topology, traj_file)
-            write_files.write_average_structure(universe, crd_file)
