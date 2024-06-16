@@ -19,7 +19,7 @@
 #  Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportAssignmentType=false, reportAttributeAccessIssue=false, reportOperatorIssue=false
-"""Combination of force constants.
+r"""Combine force constants from multiple parameter files.
 
 This script combines the force constants from multiple parameter files. The parameter files should be within
 subdirectories. The script will load the individual parameter files and extract the force constants. The table will
@@ -37,6 +37,22 @@ residue tables will be saved as a CSV file with the following columns:
     - interresidue:   segidI resI segidJ resJ dir1 dir2 ... dirX
 
     - residue: segidI resI I dir1 dir2 ... dirX
+
+Usage
+-----
+    $ fluctmatch combine -d <directory> -f <param-file> --ic <ic-file> -o <output-file> -l <logfile> --resij \
+        --resi --filter
+
+Notes
+-----
+The CSV files will vary upon the size and shape depending upon the number of bonds, the number of interresidue
+interactions, and the number of residues. Previous versions of `fluctmatch` used ' ' as separator, but in this
+version, the ',' is used for better compatibility with other programs.
+
+Examples
+--------
+    $ fluctmatch combine -d fluctmatch -f fluctmatch.str --ic fluctmatch.fluct.ic -o combine_all.csv -l combine.log \
+        --resij --resi --filter
 """
 
 from pathlib import Path
@@ -51,10 +67,16 @@ from fluctmatch.io.charmm.intcor import CharmmInternalCoordinates
 from fluctmatch.io.charmm.parameter import CharmmParameter
 from fluctmatch.libs.logging import config_logger
 
+__help__ = """Combination of force constants.
+
+This script combines the force constants from multiple parameter files. The parameter files should be within
+subdirectories. The script will load the individual parameter files and extract the force constants. The table will
+only include data in ascending order of resI. The table will be saved as a CSV file."""
+
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\n{__doc__}",
+    help=f"{__copyright__}\n{__help__}",
     short_help="Create a table of force constants from multiple parameter files.",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -127,6 +149,7 @@ from fluctmatch.libs.logging import config_logger
 @click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
     type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split()),

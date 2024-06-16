@@ -108,7 +108,8 @@ class TestAlign:
 
             result = cli_runner.invoke(
                 main,
-                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t {selection[0]} --mass",
+                f"align -s {PSF} -f {DCD2} -r {CRD} -d {tmp_path} -l {log_file} -t {selection[0]} --mass",
+                catch_exceptions=False,
             )
 
             # Check outcome of CLI including file creation.
@@ -143,7 +144,7 @@ class TestAlign:
 
             result = cli_runner.invoke(
                 main,
-                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t sidechain --mass",
+                f"align -s {PSF} -f {DCD2} -r {CRD} -d {tmp_path} -l {log_file} -t sidechain --mass",
             )
 
             # Check outcome of CLI including file creation.
@@ -163,7 +164,7 @@ class TestAlign:
 
             result = cli_runner.invoke(
                 main,
-                f"align -s {PSF} -f {DCD2} -r {CRD} -o {tmp_path} -l {log_file} -t nucleic --mass",
+                f"align -s {PSF} -f {DCD2} -r {CRD} -d {tmp_path} -l {log_file} -t nucleic --mass",
                 catch_exceptions=False,
             )
 

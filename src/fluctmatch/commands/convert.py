@@ -20,7 +20,7 @@
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportArgumentType=false, reportAssignmentType=false, reportAttributeAccessIssue=false
 # pyright: reportPossiblyUnboundVariable=false, reportOptionalMemberAccess=false
-"""Transformation of all-atom systems.
+r"""Transform a sytem into either a coarse-grain or elastic network model.
 
 This script transforms an all-atom system to a coarse-grain (CG) system. Several models currently can be selected and
 combined. Additionally, a user can transform a CG model into an elastic network model, which contains bonds defined
@@ -28,8 +28,20 @@ by `--rmax`. The user needs to provide the location of the topology and trajecto
 trajectory files will be written with 'prefix' as the stem of the filename. The CG beads can either be based upon
 center of geometry or center of mass depending upon the inclusion of `--com`.
 
-Note: The transformation may take several minutes depending upon the size of the system, the number of models
+Usage
+-----
+    $ fluctmatch convert -s <topology> -f <trajectory> -d <directory> -p <prefix> -l <logfile> -m <model> --com \
+        --guess --write
+
+Notes
+-----
+.. warn:: The transformation may take several minutes depending upon the size of the system, the number of models
 selected, and the length of the trajectory.
+
+Examples
+--------
+    $ fluctmatch convert --list     # List model options
+    $ fluctmatch convert -s trex1.tpr -f trex1.xtc -l convert.log -d fluctmatch -p cg -m ca --write
 """
 
 import importlib
@@ -50,6 +62,14 @@ from fluctmatch.model.base import CoarseGrainModel, coarse_grain
 
 for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.model.__name__ + "."):
     importlib.import_module(name)
+
+__help__ = """Transformation of all-atom systems.
+
+This script transforms an all-atom system to a coarse-grain (CG) system. Several models currently can be selected and
+combined. Additionally, a user can transform a CG model into an elastic network model, which contains bonds defined
+by `--rmax`. The user needs to provide the location of the topology and trajectory files, and new topology and
+trajectory files will be written with 'prefix' as the stem of the filename. The CG beads can either be based upon
+center of geometry or center of mass depending upon the inclusion of `--com`."""
 
 
 @click.command(
@@ -81,20 +101,20 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option(
     "-l",
     "--logfile",
-    metavar="WARNING",
+    metavar="FILE",
     show_default=True,
     default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
 @click.option(
-    "-o",
-    "--outdir",
+    "-d",
+    "--directory",
     metavar="DIR",
     show_default=True,
     default=Path.cwd(),
     type=click.Path(exists=False, file_okay=False, resolve_path=True, path_type=Path),
-    help="Directory",
+    help="Output directory",
 )
 @click.option(
     "-p",
@@ -124,7 +144,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option(
     "--rmin",
     metavar="DIST",
-    type=click.FLOAT,
+    type=click.FloatRange(min=0.0, clamp=True),
     default=0.0,
     show_default=True,
     help="Minimum distance between bonds",
@@ -132,7 +152,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option(
     "--rmax",
     metavar="DIST",
-    type=click.FLOAT,
+    type=click.FloatRange(min=0.1, clamp=True),
     default=10.0,
     show_default=True,
     help="Maximum distance between bonds",
@@ -140,7 +160,7 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option(
     "-m",
     "--model",
-    metavar="TYPE",
+    metavar="MODEL",
     show_default=True,
     default=["calpha"],
     type=click.Choice(list(coarse_grain.keys()), case_sensitive=False),
@@ -167,8 +187,10 @@ for _, name, _ in pkgutil.iter_modules(fluctmatch.model.__path__, fluctmatch.mod
 @click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split()),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
@@ -176,7 +198,7 @@ def convert(
     topology: Path,
     trajectory: Path,
     logfile: Path,
-    outdir: Path,
+    directory: Path,
     prefix: str,
     start: int,
     stop: int,
@@ -201,7 +223,7 @@ def convert(
         trajectory file
     logfile : Path
         log file
-    outdir : Path
+    directory : Path
         output directory
     prefix : str
         filename stem
@@ -239,7 +261,7 @@ def convert(
 
     config_logger(name=__name__, logfile=logfile, level=verbosity)
 
-    filename = outdir.joinpath(prefix)
+    filename = directory.joinpath(prefix)
     universe = mda.Universe(topology, trajectory)
 
     if "enm" in model:

@@ -60,11 +60,6 @@ class TestConvert:
         GIVEN the init subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "convert -h")
 
@@ -77,11 +72,6 @@ class TestConvert:
         GIVEN the convert subcommand
         WHEN the list option is invoked
         THEN the model list should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "convert --list")
         assert "calpha:" in result.output
@@ -93,11 +83,6 @@ class TestConvert:
         GIVEN an all-atom model
         WHEN flagged to convert to convert to a C-alpha model
         THEN a CHARMM PSF, CRD, and DCD file are written
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         with cli_runner.isolated_filesystem() as ifs, Replacer() as replace:
             replace("fluctmatch.model.base.CoarseGrainModel.transform", lambda self: universe)  # noqa: ARG005
@@ -108,7 +93,7 @@ class TestConvert:
             log_file = tmp_path.joinpath("convert.log")
 
             result = cli_runner.invoke(
-                main, f"convert -s {PSF} -f {DCD2} -l {log_file} -o {tmp_path} -p {prefix} -m calpha --guess --write"
+                main, f"convert -s {PSF} -f {DCD2} -l {log_file} -d {tmp_path} -p {prefix} -m calpha --guess --write"
             )
 
             assert result.exit_code == os.EX_OK

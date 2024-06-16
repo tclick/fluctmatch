@@ -18,7 +18,27 @@
 # Timothy H. Click, Nixon Raj, and Jhih-Wei Chu. Simulation. Meth Enzymology. 578 (2016), 327-342,
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
-"""Split a trajectory into smaller trajectories."""
+"""Split a trajectory into smaller trajectories.
+
+This script splits a trajectory into smaller trajectories based on the file created during the `setup` subcommand. The
+JSON file will provide the location of the subdirectory and the frame start/stop times. The user can opt to have the
+average structure of each trajectory written to a CHARMM coordinate file.
+
+Usage
+-----
+    $ fluctmatch split -s <topology> -f <trajectory> -j <json-file> -o <trajectory> -l <logfile> --average
+
+Notes
+-----
+.. warn:: Depending upon the trajectory length and universe size, this process can take a while.
+
+The script can be run immediately after `setup` or after `convert`. If it is run after `setup`, it is recommended not to
+use '--average' because fluctuation matching will depend upon the average structure of the transformed system.
+
+Examples
+--------
+    $ fluctmatch split -s trex1.psf -f trex1.dcd -j setup.json -o trex1.dcd -l split.log --average
+"""
 
 import json
 from pathlib import Path
@@ -32,10 +52,17 @@ from fluctmatch import __copyright__
 from fluctmatch.libs import write_files
 from fluctmatch.libs.logging import config_logger
 
+__help__ = """Trajectory spliiter
+
+
+This script splits a trajectory into smaller trajectories based on the file created during the `setup` subcommand. The
+JSON file will provide the location of the subdirectory and the frame start/stop times. The user can opt to have the
+average structure of each trajectory written to a CHARMM coordinate file."""
+
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\nAlign a trajectory.",
+    help=f"{__copyright__}\n{__help__}",
     short_help="Split a trajectory into smaller trajectories.",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -60,6 +87,7 @@ from fluctmatch.libs.logging import config_logger
     help="Trajectory file",
 )
 @click.option(
+    "-j",
     "--json",
     "windows_input",
     metavar="JSON",
@@ -70,7 +98,7 @@ from fluctmatch.libs.logging import config_logger
 )
 @click.option(
     "-o",
-    "--outfile",
+    "--trajout",
     metavar="FILE",
     default="cg.dcd",
     show_default=True,
@@ -79,7 +107,7 @@ from fluctmatch.libs.logging import config_logger
 )
 @click.option(
     "-c",
-    "--crdfile",
+    "--crdout",
     metavar="FILE",
     default="cg.crd",
     show_default=True,
@@ -89,9 +117,9 @@ from fluctmatch.libs.logging import config_logger
 @click.option(
     "-l",
     "--logfile",
-    metavar="WARNING",
+    metavar="FILE",
     show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    default=Path.cwd().joinpath(__file__).with_suffix(".log"),
     type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
     help="Path to log file",
 )
@@ -99,19 +127,21 @@ from fluctmatch.libs.logging import config_logger
 @click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split(), case_sensitive=False),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
 def split(
     topology: Path,
     trajectory: Path,
-    outfile: Path,
+    trajout: Path,
     windows_input: Path,
     logfile: Path,
     average: bool,
-    crdfile: Path,
+    crdout: Path,
     verbosity: str,
 ) -> None:
     """Split a trajectory into smaller trajectories using the JSON file created during setup.
@@ -122,7 +152,7 @@ def split(
         Topology file
     trajectory : Path, default=$CWD/input.nc
         Trajectory file
-    outfile : Path, default=cg.dcd
+    trajout : Path, default=cg.dcd
         Trajectory output file
     logfile : Path, default=$CWD/setup.log
         Location of log file
@@ -130,7 +160,7 @@ def split(
         JSON file
     average : bool
         Save the average structure of the trajectory
-    crdfile : Path
+    crdout : Path
         Average structure of the trajectory
     verbosity : str, default=INFO
         Level of verbosity for logging output
@@ -139,18 +169,21 @@ def split(
     click.echo(__copyright__)
 
     with windows_input.open() as f:
-        setup_input: dict = json.load(f)
+        setup_input: dict[str, dict[str, int]] = json.load(f)
 
     universe = mda.Universe(topology, trajectory)
 
     logger.info("Splitting trajectory into smaller trajectories...")
-    info = ((Path(outdir).joinpath(outfile), data["start"], data["stop"]) for outdir, data in setup_input.items())
+    info = ((Path(outdir).joinpath(trajout), data["start"], data["stop"]) for outdir, data in setup_input.items())
     for traj_file, start, stop in info:
         traj_file.parent.mkdir(exist_ok=True)
         write_files.write_trajectory(universe.copy(), traj_file.as_posix(), start=start, stop=stop)
 
     if average:
         logger.info("Saving the average structures of each trajectory...")
-        info = ((Path(outdir).joinpath(crdfile), data["start"], data["stop"]) for outdir, data in setup_input.items())
-        for crd_file, start, stop in info:
-            write_files.write_average_structure(universe.copy(), crd_file.as_posix(), start=start, stop=stop)
+        info = ((Path(outdir).joinpath(crdout), data["start"], data["stop"]) for outdir, data in setup_input.items())
+        for outdir in setup_input:
+            crd_file = Path(outdir).joinpath(crdout)
+            traj_file = Path(outdir).joinpath(trajout)
+            universe = mda.Universe(topology, traj_file)
+            write_files.write_average_structure(universe, crd_file)

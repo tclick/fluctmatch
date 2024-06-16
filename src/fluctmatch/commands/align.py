@@ -19,7 +19,7 @@
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportAttributeAccessIssue=false
-"""Trajectory alignment.
+r"""Align a trajectory to reference coordinates.
 
 This script aligns a trajectory to a reference structure. If no reference structure is provided, the first frame of
 the trajectory will be used. The alignment will attempt to remove translational and rotational motion while seeing to
@@ -27,8 +27,18 @@ minimize the r.m.s.d. of each frame. The frames will be aligned with the referen
 provided by the `--select` option, and the alignment can be mass-weighted. The aligned trajectory will be written to
 a file with the name 'aligned_{trajectory}'
 
-Warnings: Depending upon the length of the trajectory and the size of the universe, the alignment process can take
+Usage
+-----
+    $ fluctmatch align -s <topology> -f <trajectory> -r <reference> -d <directory> -l <logfile> -s <selection> --mass
+
+Notes
+-----
+.. warn:: Depending upon the length of the trajectory and the size of the universe, the alignment process can take
 several minutes.
+
+Examples
+--------
+    $ fluctmatch align -s trex1.tpr -f trex1.xtc -r trex1.gro -d fluctmatch -l align.log -s cab --mass
 """
 
 from pathlib import Path
@@ -55,10 +65,18 @@ SELECTION: dict[str, str] = {
     "nucleic": "nucleic and not name H*",
 }
 
+__help__ = """Trajectory alignment
+
+This script aligns a trajectory to a reference structure. If no reference structure is provided, the first frame of
+the trajectory will be used. The alignment will attempt to remove translational and rotational motion while seeing to
+minimize the r.m.s.d. of each frame. The frames will be aligned with the reference structure according to the atom(s)
+provided by the `--select` option, and the alignment can be mass-weighted. The aligned trajectory will be written to
+a file with the name 'aligned_{trajectory}'"""
+
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\n{__doc__}",
+    help=f"{__copyright__}\n{__help__}",
     short_help="Align a trajectory to the first frame or to a reference structure",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -93,8 +111,8 @@ SELECTION: dict[str, str] = {
     help="Reference file",
 )
 @click.option(
-    "-o",
-    "--outdir",
+    "-d",
+    "--directory",
     metavar="DIR",
     default=Path.cwd(),
     show_default=True,
@@ -123,6 +141,7 @@ SELECTION: dict[str, str] = {
 @click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
     type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split(), case_sensitive=False),
@@ -133,7 +152,7 @@ def align(
     topology: Path,
     trajectory: Path,
     reference: Path,
-    outdir: Path,
+    directory: Path,
     logfile: Path,
     select: str,
     mass: bool,
@@ -155,11 +174,11 @@ def align(
     reference : Path, default: $CWD/ref.pdb
         Path to the reference structure file. If the reference does not exist, the first frame of the trajectory
         will be used.
-    outdir : Path, default: $CWD/output
+    directory : Path, default: $CWD/output
         Path to the output directory where the aligned trajectory will be saved.
     logfile : Path, default: $CWD/logging.log
         Path to the log file for recording the process.
-    select : {'ca', 'all', 'cab', 'backbone'}
+    select : {'ca', 'protein', 'all', 'cab', 'backbone', 'nucleic', 'sugar'}
         Atom selection type for alignment.
     mass : bool, default: False
         Perform a mass-weighted alignment if True.
@@ -176,7 +195,7 @@ def align(
     the 'output' directory:
 
     >>> align(topology=Path('topology.parm7'), trajectory=Path('simulation.nc'), reference=Path('reference.pdb'),
-    ...       outdir=Path('output'),  logfile=Path('alignment.log'), select='ca', mass=False, verbosity='INFO')
+    ...       directory=Path('output'),  logfile=Path('alignment.log'), select='ca', mass=False, verbosity='INFO')
 
     Notes
     -----
@@ -188,8 +207,8 @@ def align(
     click.echo(__copyright__)
 
     weight = "mass" if mass else None
-    outdir.mkdir(mode=FILE_MODE, parents=True, exist_ok=True)
-    prefix = outdir.joinpath("aligned_").as_posix()
+    directory.mkdir(mode=FILE_MODE, parents=True, exist_ok=True)
+    prefix = directory.joinpath("aligned_").as_posix()
 
     universe = mda.Universe(topology, trajectory)
     ref = mda.Universe(topology, reference) if reference.is_file() else universe
@@ -207,8 +226,8 @@ def align(
         )
     except ValueError as exception:
         exception.add_note(
-            "Could not align trajectory to reference structure. Please ensure that you provided a valid "
-            "selection criteria for your system."
+            "Could not align trajectory to reference structure. Please ensure that you provided a valid selection "
+            "criteria for your system."
         )
         logger.exception(exception)
         raise

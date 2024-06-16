@@ -53,11 +53,6 @@ class TestSimulate:
         GIVEN the simulate subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "simulate -h")
 
@@ -70,11 +65,6 @@ class TestSimulate:
         GIVEN the simulate subcommand
         WHEN additional arguments are provided
         THEN the simulation should run.
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         with TempDirectory(create=True) as tempdir, Replacer() as replace:
             tmp_path = tempdir.as_path()
@@ -86,7 +76,7 @@ class TestSimulate:
 
             result = cli_runner.invoke(
                 main,
-                f"simulate -s {PSF_ENM} -f {DCD_CG} -o {tmp_path}  -l {log_file} --target {IC_FLUCT} --param {STR} --max 5",
+                f"simulate -s {PSF_ENM} -f {DCD_CG} -d {tmp_path}  -l {log_file} --target {IC_FLUCT} --param {STR} --max 5",
                 catch_exceptions=False,
             )
 

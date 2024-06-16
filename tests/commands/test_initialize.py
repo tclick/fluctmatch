@@ -52,11 +52,6 @@ class TestInitialize:
         GIVEN the init subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "initialize -h")
 
@@ -70,11 +65,6 @@ class TestInitialize:
         GIVEN a coarse-grain model
         WHEN given an output directory and filename prefix
         THEN a CHARMM topology, parameter, and stream file are written
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         with TempDirectory() as tmpdir, Replacer() as replace:
             tmp_path = tmpdir.as_path()

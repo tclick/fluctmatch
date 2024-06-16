@@ -18,7 +18,29 @@
 # Timothy H. Click, Nixon Raj, and Jhih-Wei Chu. Simulation. Meth Enzymology. 578 (2016), 327-342,
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
-"""Prepare subdirectories for fluctuation matching."""
+r"""Create subdirectories representing individual windows for fluctuation matching.
+
+This script determines the number of windows needed for fluctuation matching by analysis of the provided trajectory
+and the given window size, `winsize`. From this analysis, the number of frames within the trajectory is calculated
+and the respective start and stop numbers are noted. Additionally, subdirectories will be created for the number of
+windows. Depending upon the number of windows, smaller numbered subdirectories will begin with a '0' to ensure proper
+sorting when either listed using commands like `ls` or globbed in other scripts. A JSON file will be written with the
+style: {'<subdir>': {'start': start, 'stop': stop},}
+
+Usage
+-----
+    fluctmatch setup -s <topology> -f <trajectory> -d <directory> -o <json-output> -l <logfile> -w <win-size>
+
+Notes
+-----
+Windows will have overlapping frames to ensure that information is not lost. For instance, a window with 10,000 frames
+will have starting frames at 0, 5000, 10000, 15000, etc. This means that a 1-ns trajectory with output ever 1 ps and
+a window size of 10,000 will have 99 windows: :math:`n_windows = \frac{n_frames}/{winsize} - 1`
+
+Examples
+--------
+    $ fluctmatch setup -s trex1.tpr -f trex1.xtc -d fluctmatch -o cg.json -l setup.log -w 10000
+"""
 
 import json
 from itertools import zip_longest
@@ -33,10 +55,19 @@ from fluctmatch import __copyright__
 from fluctmatch.commands import FILE_MODE
 from fluctmatch.libs.logging import config_logger
 
+__help__ = """Setup subdirectories
+
+This script determines the number of windows needed for fluctuation matching by analysis of the provided trajectory
+and the given window size, `winsize`. From this analysis, the number of frames within the trajectory is calculated
+and the respective start and stop numbers are noted. Additionally, subdirectories will be created for the number of
+windows. Depending upon the number of windows, smaller numbered subdirectories will begin with a '0' to ensure proper
+sorting when either listed using commands like `ls` or globbed in other scripts. A JSON file will be written with the
+style: {'<subdir>': {'start': start, 'stop': stop},}."""
+
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\nCreate simulation directories.",
+    help=f"{__copyright__}\n{__help__}",
     short_help="Create directories for fluctuation matching",
     help_headers_color="yellow",
     help_options_color="blue",
@@ -61,13 +92,32 @@ from fluctmatch.libs.logging import config_logger
     help="Trajectory file",
 )
 @click.option(
-    "-o",
-    "--outdir",
+    "-d",
+    "--directory",
     metavar="DIR",
     default=Path.cwd().joinpath("fluctmatch"),
     show_default=True,
     type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
     help="Parent directory",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output",
+    metavar="JSON",
+    show_default=True,
+    default=Path.cwd().joinpath("setup.json"),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    help="JSON file",
+)
+@click.option(
+    "-l",
+    "--logfile",
+    metavar="FILE",
+    show_default=True,
+    default=Path.cwd() / Path(__file__).with_suffix(".log"),
+    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
+    help="Path to log file",
 )
 @click.option(
     "-w",
@@ -79,33 +129,17 @@ from fluctmatch.libs.logging import config_logger
     help="Size of each window",
 )
 @click.option(
-    "--json",
-    "windows_output",
-    metavar="JSON",
-    show_default=True,
-    default=Path.cwd().joinpath("setup.json"),
-    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
-    help="JSON file",
-)
-@click.option(
-    "-l",
-    "--logfile",
-    metavar="WARNING",
-    show_default=True,
-    default=Path.cwd() / Path(__file__).with_suffix(".log"),
-    type=click.Path(exists=False, file_okay=True, dir_okay=False, path_type=Path),
-    help="Path to log file",
-)
-@click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split()),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
 def setup(
-    topology: Path, trajectory: Path, outdir: Path, winsize: int, windows_output: Path, logfile: Path, verbosity: str
+    topology: Path, trajectory: Path, directory: Path, winsize: int, output: Path, logfile: Path, verbosity: str
 ) -> None:
     """Create simulation directories.
 
@@ -115,13 +149,13 @@ def setup(
         Topology file
     trajectory : Path, default=$CWD/input.nc
         Trajectory file
-    outdir : Path, default=$CWD/fluctmatch
+    directory : Path, default=$CWD/fluctmatch
         Output directory
     logfile : Path, default=$CWD/setup.log
         Location of log file
     winsize : int, default=10000
         Window size
-    windows_output : Path, default=$CWD/setup.json
+    output : Path, default=$CWD/setup.json
         JSON file
     verbosity : str, default=INFO
         Level of verbosity for logging output
@@ -160,15 +194,15 @@ def setup(
     trajectory_range = zip_longest(beginning, end)
     width = len(str(total_windows))
     ranges = {
-        str(outdir.joinpath(f"{n:>0{width}d}")): {"start": i, "stop": j}
+        directory.joinpath(f"{n:>0{width}d}").as_posix(): {"start": i, "stop": j}
         for n, (i, j) in enumerate(trajectory_range, 1)
         if j is not None
     }
 
     # Create the parent subdirectory
-    with windows_output.open(mode="w", newline="") as json_file:
-        logger.info(f"Writing {windows_output}")
-        json.dump(ranges, json_file)
+    with directory.joinpath(output).open(mode="w", newline="") as json_file:
+        logger.info(f"Writing {output}")
+        json.dump(ranges, json_file, sort_keys=True, indent=4)
 
     # Create subdirectories
     for subdirectory in ranges:

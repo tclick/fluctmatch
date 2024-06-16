@@ -22,7 +22,6 @@
 """Test for mdsetup.commands.cmd_setup subcommand."""
 
 import os
-from pathlib import Path
 from typing import Self
 
 import MDAnalysis as mda
@@ -30,8 +29,7 @@ import pytest
 from click.testing import CliRunner
 from fluctmatch.cli import main
 from MDAnalysisTests.datafiles import DCD2, PSF
-from testfixtures import Replacer, ShouldRaise, TempDirectory
-from testfixtures.mock import Mock
+from testfixtures import ShouldRaise, TempDirectory
 
 
 class TestSetup:
@@ -54,11 +52,6 @@ class TestSetup:
         GIVEN the init subcommand
         WHEN the help option is invoked
         THEN the help output should be displayed
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            Command-line cli_runner
         """
         result = cli_runner.invoke(main, "setup -h")
 
@@ -72,34 +65,26 @@ class TestSetup:
         GIVEN an output subdirectory
         WHEN invoking the setup subcommand
         THEN the subcommand will complete successfully.
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            CLI runner
-        winsize : int
-            window size
         """
         n_frames: int = mda.Universe(PSF, DCD2).trajectory.n_frames
         half_size = winsize // 2
         total_windows = (n_frames // half_size) - 1
 
-        with TempDirectory(create=True) as ifs, Replacer() as replace:
-            mock_dump = replace("json.dump", Mock())
-            tmp_path = ifs.as_path()
-            outdir = tmp_path.joinpath("test")
-            log_file = outdir.joinpath("setup.log")
+        with TempDirectory(create=True) as tempdir:
+            outdir = tempdir.as_path("test")
+            log_file = tempdir.as_path("setup.log")
             json_file = log_file.with_suffix(".json")
 
             result = cli_runner.invoke(
                 main,
-                f"setup -s {PSF} -f {DCD2} -o {outdir} --json {json_file}  -w {winsize} -l {log_file}",
+                f"setup -s {PSF} -f {DCD2} -d {outdir} -o {json_file}  -w {winsize} -l {log_file}",
                 catch_exceptions=False,
             )
             n_subdirs = len([_ for _ in outdir.glob("*") if _.is_dir()])
 
-            mock_dump.assert_called()
             assert result.exit_code == os.EX_OK
+            assert log_file.is_file()
+            assert json_file.is_file()
             assert (
                 n_subdirs == total_windows
             ), f"{n_subdirs} created subdirectories not equal to expected {total_windows} subdirectories"
@@ -110,22 +95,16 @@ class TestSetup:
         GIVEN a large window size
         WHEN invoking the setup subcommand
         THEN an exception is raised
-
-        Parameters
-        ----------
-        cli_runner : CliRunner
-            CLI runner
         """
         n_frames: int = mda.Universe(PSF, DCD2).trajectory.n_frames * 2
-        with cli_runner.isolated_filesystem() as ifs:
-            tmp_path = Path(ifs)
-            outdir = tmp_path / "test"
-            log_file = outdir / "setup.log"
+        with TempDirectory() as tempdir:
+            outdir = tempdir.as_path("test")
+            log_file = tempdir.as_path("setup.log")
             json_file = log_file.with_suffix(".json")
 
             with ShouldRaise(ValueError):
                 cli_runner.invoke(
                     main,
-                    f"setup -s {PSF} -f {DCD2} -o {outdir} --json {json_file}  -w {n_frames} -l {log_file}",
+                    f"setup -s {PSF} -f {DCD2} -d {outdir} -o {json_file}  -w {n_frames} -l {log_file}",
                     catch_exceptions=False,
                 )

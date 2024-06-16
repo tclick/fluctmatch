@@ -19,15 +19,26 @@
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
 # pyright: reportGeneralTypeIssues=false, reportAttributeAccessIssue=false, reportArgumentType=false
-"""Simulation initialization.
+r"""Prepare the CHARMM input scripts.
 
 This script allows the user to automate the creation of the simulation file that will be used for fluctuation
 matching. Using `--directory` and `--prefix`, the user can set the location of the input file. `--temperature` is
 specific to the calculation of thermodynamic properties. `--topology` and `--trajectory` specify the locations of the
 topology and trajectory files that will be used during the simulation.
 
-Note: Currently, this script will create an input file specific for CHARMM. A future version of this script should have
+Usage
+-----
+    $ fluctmatch initialize -s <topology> -f <trajectory> -d <directory> -p <prefix> -l <logfile> -t <temperature>
+
+Notes
+-----
+Currently, this script will create an input file specific for CHARMM. A future version of this script should have
 options for other software packages like Amber or Gromacs.
+
+Examples
+--------
+    $ fluctmatch initialize -s fluctmatch.psf -f cg.dcd -d . -p fluctmatch -l fluctmatch.log -t 300.0
+
 """
 
 from pathlib import Path
@@ -41,10 +52,17 @@ from fluctmatch import __copyright__
 from fluctmatch.fm.charmm.fluctmatch import CharmmFluctuationMatching
 from fluctmatch.libs.logging import config_logger
 
+__help__ = """Simulation initialization
+
+This script allows the user to automate the creation of the simulation file that will be used for fluctuation
+matching. Using `--directory` and `--prefix`, the user can set the location of the input file. `--temperature` is
+specific to the calculation of thermodynamic properties. `--topology` and `--trajectory` specify the locations of the
+topology and trajectory files that will be used during the simulation."""
+
 
 @click.command(
     cls=HelpColorsCommand,
-    help=f"{__copyright__}\n{__doc__}",
+    help=f"{__copyright__}\n{__help__}",
     short_help="Initialize files for fluctuation matching.",
     help_headers_color="yellow",
     help_options_color="blue",

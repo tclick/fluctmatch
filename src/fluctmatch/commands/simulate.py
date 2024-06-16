@@ -18,7 +18,33 @@
 # Timothy H. Click, Nixon Raj, and Jhih-Wei Chu. Simulation. Meth Enzymology. 578 (2016), 327-342,
 # Calculation of Enzyme Fluctuograms from All-Atom Molecular Dynamics doi:10.1016/bs.mie.2016.05.024.
 # ---------------------------------------------------------------------------------------------------------------------
-"""Simulation for fluctuation matching."""
+r"""Perform self-consistent fluctuation matching.
+
+This script performs self-consistent fluctuation matching using CHARMM.
+
+Usage
+-----
+    $ fluctmatch simulate -s <topology> -f <trajectory> -d <directory> -l <logfile> --target <target-ic> \
+        --param <param-file> --exec <exec-file> -p <prefix> -t <temperature> --max <max-cycles> --tol <tolerance>
+
+Notes
+-----
+Depending upon the size of the model and the number of bonds, a single simulation can take several minutes. The
+simulation will complete either when the maximum number of cycles has been reached, or when the tolerance level has
+been achieved. The parameter file will be overwritten throughout the process with the varying force constants.
+
+For CHARMM to work with the fluctuation matching code, it must be recompiled with some modifications to the source code.
+`ATBMX`, `MAXATC`, `MAXCB` (located in dimens.fcm [c35] or dimens_ltm.src [c39]) must be increased. `ATBMX` determines
+the number of bonds allowed per atom, `MAXATC` describes the maximum number of atom core, and `MAXCB` determines the
+maximum number of bond parameters in the CHARMM parameter file. Additionally, `CHSIZE` may need to be increased if
+using an earlier version (< c36).
+
+
+Examples
+--------
+    $ fluctmatch simulate -s fluctmatch.psf -f cg.dcd -d fluctmatch/1 -l fluctmatch.log --target target.ic \
+        --param fluctmatch.str --exec /opt/local/bin/charmm -p fluctmatch -t 300.0 --max 200 --tol 0.001
+"""
 
 import csv
 from pathlib import Path
@@ -60,8 +86,8 @@ from fluctmatch.libs.logging import config_logger
     help="Trajectory file",
 )
 @click.option(
-    "-o",
-    "--outdir",
+    "-d",
+    "--directory",
     metavar="DIR",
     default=Path.cwd().joinpath("fluctmatch"),
     show_default=True,
@@ -137,18 +163,21 @@ from fluctmatch.libs.logging import config_logger
     show_default=True,
     help="Tolerance level between simulations",
 )
+@click.option("--restart", is_flag=True, help="Restart simulation")
 @click.option(
     "-v",
     "--verbosity",
+    metavar="LEVEL",
     default="INFO",
     show_default=True,
+    type=click.Choice("INFO DEBUG WARNING ERROR CRITICAL".split(), case_sensitive=False),
     help="Minimum severity level for log messages",
 )
 @click.help_option("-h", "--help", help="Show this help message and exit")
 def simulate(
     topology: Path,
     trajectory: Path,
-    outdir: Path,
+    directory: Path,
     logfile: Path,
     target: Path,
     param: Path,
@@ -157,6 +186,7 @@ def simulate(
     temperature: float,
     max_cycles: int,
     tolerance: float,
+    restart: bool,
     verbosity: str,
 ) -> None:
     """Run fluctuation matching simulation.
@@ -167,7 +197,7 @@ def simulate(
         Topology file
     trajectory : Path, default=$CWD/input.nc
         Trajectory file
-    outdir : Path, default=$CWD/fluctmatch
+    directory : Path, default=$CWD/fluctmatch
         Output directory
     logfile : Path, default=$CWD/setup.log
         Location of log file
@@ -185,7 +215,9 @@ def simulate(
         Number of fluctuation matching cycles to complete
     tolerance : float, default=0.0001
         Tolerance level for r.m.s.e. if simulation should stop prior to `max_cycles`
-    verbosity : str, default=INFO
+    restart : bool
+        Restart the simulation from a previous run
+    verbosity : {'INFO', 'DEBUG', 'WARNING', 'ERROR', 'CRITICAL'}
         Level of verbosity for logging output
     """
     config_logger(name=__name__, logfile=logfile, level=verbosity)
@@ -193,11 +225,12 @@ def simulate(
 
     universe = mda.Universe(topology, trajectory)
 
-    fm = CharmmFluctuationMatching(universe, output_dir=outdir, temperature=temperature, prefix=prefix)
+    fm = CharmmFluctuationMatching(universe, output_dir=directory, temperature=temperature, prefix=prefix)
     fm.load_target(target).load_parameters(param)
 
-    error_file = outdir.joinpath("rmse.csv")
-    with error_file.open("w") as error_stream:
+    error_file = directory.joinpath("rmse.csv")
+    mode = "a" if restart else "w"
+    with error_file.open(mode=mode) as error_stream:
         writer = csv.writer(error_stream)
         writer.writerow("cycle rmse".split())
         for i in range(max_cycles):
