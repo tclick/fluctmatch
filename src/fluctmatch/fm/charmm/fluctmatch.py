@@ -179,7 +179,8 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
             logger.exception(e)
             raise
 
-        self._optimized.read(self._stem.with_suffix(".ic"))
+        self._optimized.read(self._stem.with_suffix(".fluct.ic"))
+        self._average_dist.read(self._stem.with_suffix(".average.ic"))
 
     def load_target(self: Self, filename: str | Path, /) -> Self:
         """Load target bond fluctuations.
@@ -231,9 +232,13 @@ class CharmmFluctuationMatching(FluctuationMatchingBase):
         forces: pd.Series = (optimized - target).multiply(self.BOLTZMANN * self.K_FACTOR)
         forces[forces < 0] = 0.0
         self._parameters.forces = forces.to_dict(into=OrderedDict)
+        self._param_ddist.forces = forces.to_dict(into=OrderedDict)
+        self._param_ddist.distances = pd.Series(self._average_dist.data).to_dict(into=OrderedDict)
 
         logger.info(f"Writing the updated parameter file to {self._stem.with_suffix('.str')}.")
         self._parameters.write(self._stem, stream=True)
+        logger.info(f"Writing the updated parameter file to {self._stem.with_suffix('.str')}.")
+        self._param_ddist.write(self._stem.as_posix() + "_dist", stream=True)
 
         rmse = root_mean_squared_error(target, optimized)
         logger.info(f"Root mean squared error: {rmse:.4f}")
