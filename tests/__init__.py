@@ -13,3 +13,24 @@
 #  You should have received a copy of the GNU General Public License along with this program.  If not, see
 #  <https://www.gnu.org/licenses/>.
 # ------------------------------------------------------------------------------
+"""Test suite initialization module for the $project.Name package.
+
+This module marks the `tests` directory as a recognizable Python package. It establishes the root test namespace and
+ensure proper test discovery, package isolation, and test-environment consistency across the entire test suite.
+
+Notes
+-----
+While this initialization file remains sparse to maintain test isolation and prevent unintended side effects during
+module collection, it acts as the baseline configuration entry point for test runners like `pytest` or `unittest`.
+
+For advanced runtime fixtures, global test configuration hooks, or shared cross-module testing utilities, prefer
+defining them inside a dedicated `conftest.py` file or a specialized `tests.helpers` submodule rather than adding
+heavy executable logic directly within this package initializer.
+
+Examples
+--------
+To discover and execute all unit, integration, and functional tests registered under this namespace, run the following
+command from the root directory of the repository:
+
+$ pytest tests/
+"""
