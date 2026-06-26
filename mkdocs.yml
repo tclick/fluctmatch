@@ -1,7 +1,7 @@
-site_name: "python-project"
+site_name: "fluctmatch"
 site_description: "AMBER MD simulation directory, input file, and script generator for protein/protein-ligand allostery studies"
 site_author: "Timothy H. Click"
-repo_url: "https://github.com/tclick/python-project"
+repo_url: "https://github.com/tclick/fluctmatch"
 
 theme:
   name: material

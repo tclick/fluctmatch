@@ -29,7 +29,7 @@ classifiers = [
 ]
 
 [project.scripts]
-mdscaffold = "python-project.cli:app"
+mdscaffold = "fluctmatch.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/python_project"]

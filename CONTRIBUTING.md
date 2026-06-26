@@ -1,15 +1,15 @@
-# Contributing to python-project
+# Contributing to fluctmatch
 
-Thanks for your interest in contributing. `python-project` is currently a solo personal project in early development, so the contribution bar is intentionally low — bug reports, suggestions, and fixes are all welcome.
+Thanks for your interest in contributing. `fluctmatch` is currently a solo personal project in early development, so the contribution bar is intentionally low — bug reports, suggestions, and fixes are all welcome.
 
 ---
 
 ## Reporting Bugs
 
-Open a [GitHub issue](https://github.com/tclick/python-project/issues) and include:
+Open a [GitHub issue](https://github.com/tclick/fluctmatch/issues) and include:
 
 - Your Python version (`python --version`)
-- Your `python-project` version or commit hash
+- Your `fluctmatch` version or commit hash
 - The exact command you ran
 - The full output or error traceback
 - Your operating system
@@ -31,8 +31,8 @@ Open an issue with the label `enhancement`. Describe:
 ### Setup
 
 ```bash
-git clone https://github.com/tclick/python-project.git
-cd python-project
+git clone https://github.com/tclick/fluctmatch.git
+cd fluctmatch
 python -m venv .venv
 source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
@@ -42,20 +42,20 @@ pip install -e ".[dev]"
 
 - Format with [Ruff](https://docs.astral.sh/ruff/): `ruff format .`
 - Lint with Ruff: `ruff check .`
-- Type-check with [mypy](https://mypy-lang.org/): `mypy python-project`
+- Type-check with [mypy](https://mypy-lang.org/): `mypy fluctmatch`
 
 These are not yet enforced in CI (there is no CI yet), but keeping to them makes diffs easier to review.
 
 ### Adding a Subcommand
 
-`python-project` uses an auto-discovery registry. To add a new subcommand module:
+`fluctmatch` uses an auto-discovery registry. To add a new subcommand module:
 
-1. Create `python-project/commands/your_command.py`
+1. Create `fluctmatch/commands/your_command.py`
 2. Define a `typer.Typer()` app and register it:
 
 ```python
 import typer
-from python-project.registry import registry
+from fluctmatch.registry import registry
 
 app = typer.Typer()
 registry.register(name="your-command", help="What it does.")(app)

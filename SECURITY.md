@@ -2,7 +2,7 @@
 
 ## Scope
 
-`python-project` is a local command-line tool that reads user-supplied arguments and writes files to disk. It does not run a server, handle network connections, process authentication credentials, or manage sensitive user data.
+`fluctmatch` is a local command-line tool that reads user-supplied arguments and writes files to disk. It does not run a server, handle network connections, process authentication credentials, or manage sensitive user data.
 
 The practical attack surface is narrow, but the following are still considered in scope:
 
@@ -14,7 +14,7 @@ The practical attack surface is narrow, but the following are still considered i
 
 ## Supported Versions
 
-`python-project` is pre-1.0 and under active development. Only the latest commit on the `main` branch receives fixes. There are no maintained release branches at this time.
+`fluctmatch` is pre-1.0 and under active development. Only the latest commit on the `main` branch receives fixes. There are no maintained release branches at this time.
 
 ---
 
