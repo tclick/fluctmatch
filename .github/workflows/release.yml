@@ -1,0 +1,39 @@
+# .github/workflows/release.yml
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on any tag starting with 'v' (e.g., v4.0.0-alpha.1)
+
+jobs:
+  publish:
+    name: Build and Publish Package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to create a GitHub Release
+      id-token: write # Required for secure PyPI Trusted Publishing if applicable
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Pixi
+        uses: prefix-dev/setup-pixi@v0.9.6
+        with:
+          cache: true
+
+      # 1. Build wheels and source distribution using your Pixi environment
+      - name: Build Package
+        run: pixi run pyproject-build # Assumes build package is in your dev environment
+
+      # 2. Automatically generate a GitHub Release with auto-compiled changelogs
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true # Extracts commit summaries automatically
+          prerelease: ${{ contains(github.ref, '-alpha') || contains(github.ref, '-beta') || contains(github.ref, '-rc') }}
+
+      # 3. Optional: Publish to PyPI (Configure Trusted Publishing in PyPI settings)
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypackage-release@release/v1
