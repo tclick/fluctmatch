@@ -29,7 +29,7 @@ classifiers = [
 ]
 
 [project.scripts]
-mdscaffold = "fluctmatch.cli:app"
+fluctmatch = "fluctmatch.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/python_project"]
@@ -150,7 +150,7 @@ markers      = [
 # coverage
 # ---------------------------------------------------------------------------
 [tool.coverage.run]
-source   = ["src/mdscaffold"]
+source   = ["src/fluctmatch"]
 branch   = true
 
 [tool.coverage.report]

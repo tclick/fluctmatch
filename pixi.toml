@@ -29,7 +29,7 @@ license = "GPL-3.0-or-later"
 license-file = "LICENSE.md"
 
 # Link to your source control repository
-repository = "https://github.com/thclick/mdscaffold"
+repository = "https://github.com/thclick/fluctmatch"
 
 # We are using `pixi-build-python` in order to build a Python package
 [package.build]
@@ -54,7 +54,7 @@ rich = ">=15.0.0,<16"
 typer = ">=0.26.7,<0.27"
 
 [pypi-dependencies]
-mdscaffold = { path = ".", editable = true }
+fluctmatch = { path = ".", editable = true }
 
 [environments]
 default = { solve-group = "default" }
