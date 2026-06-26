@@ -1,0 +1,122 @@
+[workspace]
+name = "python-github-template"
+version = "0.1.0"
+description = "GitHub template for Python projects"
+authors = ["Timothy H. Click <thclick@umary.edu>"]
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+readme = "README.md"
+license = "GPL-3.0-or-later"
+preview = ["pixi-build"]
+
+[package]
+# The unique name of your package on a Conda channel (lowercase recommended)
+name = "python-github-template"
+
+# The current semantic version of your project
+version = "0.1.0"
+
+# A short, single-line summary of what your scientific CLI tool does
+description = "GitHub template for Python projects"
+
+# An array of authorship credits
+authors = ["Timothy H. Click <thclick@umary.edu>"]
+
+# The license identifier (use standard SPDX format like MIT, BSD-3-Clause, GPL-3.0)
+license = "GPL-3.0-or-later"
+
+# A path relative to pyproject.toml/pixi.toml pointing to your license document
+license-file = "LICENSE.md"
+
+# Link to your source control repository
+repository = "https://github.com/thclick/mdscaffold"
+
+# We are using `pixi-build-python` in order to build a Python package
+[package.build]
+backend = { name = "pixi-build-python", version = "0.*" }
+
+
+# The Python package `python_rich` uses `hatchling` as Python build backend
+[package.host-dependencies]
+hatchling = "*"
+
+# The Python package `python_rich` has a run dependency on `rich`
+[package.run-dependencies]
+rich = "15.0.*"
+
+[dependencies]
+loguru = ">=0.7.3,<0.8"
+pixi-pycharm = ">=0.0.11,<0.0.12"
+pydantic = ">=2.13.4,<3"
+pydantic-settings = ">=2.14.1,<3"
+python = ">=3.14.6,<3.15"
+rich = ">=15.0.0,<16"
+typer = ">=0.26.7,<0.27"
+
+[pypi-dependencies]
+mdscaffold = { path = ".", editable = true }
+
+[environments]
+default = { solve-group = "default" }
+test    = { features = ["test"], solve-group = "default" }
+docs    = { features = ["docs"], solve-group = "default"}
+dev     = { features = ["test", "dev", "docs"], solve-group = "default" }
+
+# --- 1. GLOBAL / CORE TASKS ---
+# Only put tasks here if they rely strictly on core dependencies or basic shell commands
+[tasks]
+clear-cache = "rm -rf .pytest_cache .ruff_cache site/ build/"
+
+# --- DEVELOPMENT FEATURE ---
+[feature.dev.dependencies]
+basedpyright = ">=1.39.8,<2"
+black = ">=26.5.1,<27"
+pre-commit = ">=4.6.0,<5"
+pre-commit-hooks = ">=5.0.0,<6"
+ruff = ">=0.15.18,<0.16"
+
+[feature.dev.tasks]
+lint-fix = "ruff check --fix src tests"
+fmt = { cmd = "black src tests", depends-on = ["lint-fix"] }
+types    = "basedpyright src"
+
+# --- TEST FEATURE ---
+[feature.test.dependencies]
+hypothesis = ">=6.155.2,<7"
+nox = ">=2026.4.10,<2027"
+pytest = ">=9.0.3,<10"
+pytest-check = ">=2.8.0,<3"
+pytest-cov = ">=7.1.0,<8"
+pytest-github-actions-annotate-failures = ">=0.4.0,<0.5"
+pytest-loguru = ">=0.4.1,<0.5"
+pytest-xdist = ">=3.8.0,<4"
+typeguard = ">=4.5.2,<5"
+
+[feature.test.pypi-dependencies]
+pytest-random-order = ">=1.2.0, <2"
+
+[feature.test.tasks]
+# 1. Run all test sessions defined in your noxfile.py
+test = "nox"
+
+# 2. Run a single default session quickly (saves time locally)
+test-quick = "nox -s tests"
+
+# 3. Clean up any leftover virtualenvs cached by nox
+test-clean = "nox -cw"
+
+# --- DOCUMENTATION FEATURE ---
+[feature.docs.dependencies]
+mkdocs = ">=1.6.1,<2"
+mkdocs-material = ">=9.7.6,<10"
+mkdocstrings-python = ">=2.0.4,<3"  # Safely extracts your docstrings
+
+[feature.docs.tasks]
+# 1. Local Development Server
+docs-serve = "mkdocs serve"
+
+# 2. Production Build
+docs-build = "mkdocs build --clean"
+
+# 3. Strict Build (Great for CI/CD pipelines)
+docs-lint = "mkdocs build --strict"

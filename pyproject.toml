@@ -1,0 +1,173 @@
+[build-system]
+requires      = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name            = "python-github-template"
+version         = "0.1.0"
+description     = "GitHub template for Python projects"
+readme          = "README.md"
+license         = { text = "GPL-3.0-or-later" }
+requires-python = ">=3.13"
+keywords = [
+    "python",
+    "cli",
+    "scaffold",
+    "template",
+    "github",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.scripts]
+mdscaffold = "python-project.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python_project"]
+
+# ---------------------------------------------------------------------------
+# Black
+# ---------------------------------------------------------------------------
+[tool.black]
+line-length    = 120
+target-version = ["py313", "py314"]
+include = '\.pyi?$'
+exclude = '''
+(
+  /(
+      \.eggs         # exclude a few common directories in the
+    | \.git          # root of the project
+    | \.hg
+    | \.mypy_cache
+    | \.tox
+    | \.pixi
+    | \.venv
+    | _build
+    | buck-out
+    | build
+    | dist
+  )/
+  | foo.py           # also separately exclude a file named foo.py in
+                     # the root of the project
+)
+'''
+
+# ---------------------------------------------------------------------------
+# Ruff
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length    = 120
+target-version = "py314"
+src            = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle (style boundaries)
+    "F",        # pyflakes (invalid code syntax/unused imports)
+    "I",        # isort (clean, structured import grouping)
+    "UP",       # pyupgrade (automated modern python conventions)
+    "B",        # flake8-bugbear (runtime design flaws)
+    "C4",       # flake8-comprehensions (optimized loops and generation)
+    "SIM",      # flake8-simplify (collapses redundant nested conditions)
+    "TCH",      # flake8-type-checking (isolates typing imports)
+    "D",        # pydocstyle (strict NumPy docstring alignment)
+    "N",        # pep8-naming (casing consistency)
+    "NPY",      # NUMPY-SPECIFIC PERFORMANCE & DEPRECATION SAFETY
+    "RUF",      # ruff internal system checks
+]
+ignore = [
+    # --- Formatting Disconnect Protections (Crucial for Black) ---
+    "E501",     # Line too long (Defer all word-wrapping choices to Black)
+    "E203",     # Whitespace before ':' (Black adds structural spacing here)
+
+    # --- Docstring Layout Rule Selection (Standard NumPy Selection) ---
+    "D203",     # 1 blank line before class (We prefer D211: no blank line before class)
+    "D213",     # Multi-line summary second line (We prefer D212: summary on line 1)
+
+    # --- Scientific/NumPy Optional Adjustments ---
+    "D100",     # Missing docstring in public module (Optional: turn off if file headers are tedious)
+    "D104",     # Missing docstring in public package (Prevents needing docstrings inside empty __init__.py files)]
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+# Protects your test suite from tedious documentation rules and security false-positives
+"tests/**" = [
+    "D",     # Missing/unformatted docstrings are completely fine in test suites
+    "S101",  # Allow standard 'assert' statements (suppresses Bandit security warnings)
+    "ARG001", # Allow unused function arguments (useful if using complex pytest fixtures)
+]
+
+# ---------------------------------------------------------------------------
+# basedpyright
+# ---------------------------------------------------------------------------
+[tool.basedpyright]
+venvPath = ".pixi/envs"
+venv = "dev"
+pythonVersion = "3.14"
+include = ["src", "tests"]
+
+# 1. Set global baseline to standard (perfect for keeping tests happy)
+typeCheckingMode = "standard"
+
+# 2. Global path configurations
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+# 3. Manually toggle strict diagnostics on for your code base
+# By default, these flags will apply to everything.
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+
+# 4. Target your src folder explicitly for strict rule checking
+# This forces the rule checks onto src/ without breaking execution environment schemas.
+[[tool.basedpyright.executionEnvironments]]
+root = "src"
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths    = ["tests"]
+addopts      = "-v --tb=short --strict-markers --hypothesis-profile=default"
+markers      = [
+    "integration: tests that touch the filesystem",
+    "slow: tests that take more than a second",
+]
+
+# ---------------------------------------------------------------------------
+# coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source   = ["src/mdscaffold"]
+branch   = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+# Fail the build if coverage drops below a healthy development threshold
+fail_under = 80
+
+# ---------------------------------------------------------------------------
+# typeguard rules
+# ---------------------------------------------------------------------------
+[tool.typeguard]
+collection-check-strategy = "ALL_ITEMS"
+
+# ---------------------------------------------------------------------------
+# hypothesis rules
+# ---------------------------------------------------------------------------
+[tool.hypothesis]
+max_examples = 40
+deadline = 500

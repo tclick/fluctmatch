@@ -1,0 +1,82 @@
+# .pre-commit-config.yaml
+# Managed entirely through local Pixi system binaries for speed and lockfile consistency.
+# Install hooks once via: pixi run pre-commit install
+# Run manually via: pixi run pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      # ==============================================================================
+      # 1. LOW-LEVEL FILESYSTEM & METADATA SANITY CHECKS
+      # ==============================================================================
+      - id: check-added-large-files
+        name: check added large files (local pixi)
+        entry: pixi run check-added-large-files --maxkb=500
+        language: system
+        stages: [pre-commit]
+
+      - id: check-merge-conflict
+        name: check merge conflict (local pixi)
+        entry: pixi run check-merge-conflict
+        language: system
+        types: [text]
+        stages: [pre-commit]
+
+      - id: check-case-conflict
+        name: check case conflict (local pixi)
+        entry: pixi run check-case-conflict
+        language: system
+        stages: [pre-commit]
+
+      - id: check-toml
+        name: check toml syntax (local pixi)
+        entry: pixi run check-toml
+        language: system
+        types: [toml]
+        stages: [pre-commit]
+
+      - id: check-yaml
+        name: check yaml syntax (local pixi)
+        entry: pixi run check-yaml
+        language: system
+        types: [yaml]
+        stages: [pre-commit]
+
+      - id: end-of-file-fixer
+        name: end of file fixer (local pixi)
+        entry: pixi run end-of-file-fixer
+        language: system
+        types: [text]
+        stages: [pre-commit]
+
+      - id: trailing-whitespace
+        name: trailing whitespace trimmer (local pixi)
+        entry: pixi run trailing-whitespace-fixer
+        language: system
+        types: [text]
+        stages: [pre-commit]
+
+      # ==============================================================================
+      # 2. PYTHON LOGIC, QUALITY, SECURITY & STYLE LAYERS
+      # ==============================================================================
+      - id: ruff
+        name: ruff check (local pixi)
+        entry: pixi run ruff check --fix
+        language: system
+        types: [python]
+
+      - id: black
+        name: black formatting (local pixi)
+        entry: pixi run black
+        language: system
+        types: [python]
+
+      # ==============================================================================
+      # 3. STRICT STATIC TYPE VERIFICATION LAYER
+      # ==============================================================================
+      - id: basedpyright
+        name: basedpyright (local pixi)
+        entry: pixi run basedpyright
+        language: system
+        types: [python]
+        pass_filenames: true
