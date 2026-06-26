@@ -1,5 +1,5 @@
 # ------------------------------------------------------------------------------
-#  Copyright (c) 2026 Timothy H. Click
+#  Copyright (c) 2013-2026 Timothy H. Click
 #  Project: fluctmatch
 #
 #  This program is free software: you can redistribute it and/or modify it under the terms of the GNU General
