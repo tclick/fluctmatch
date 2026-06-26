@@ -1,6 +1,6 @@
 [workspace]
-name = "python-github-template"
-version = "0.1.0"
+name = "fluctmatch"
+version = "4.0.0-dev"
 description = "GitHub template for Python projects"
 authors = ["Timothy H. Click <thclick@umary.edu>"]
 channels = ["conda-forge"]
@@ -14,7 +14,7 @@ preview = ["pixi-build"]
 name = "python-github-template"
 
 # The current semantic version of your project
-version = "0.1.0"
+version = "4.0.0-dev"
 
 # A short, single-line summary of what your scientific CLI tool does
 description = "GitHub template for Python projects"
