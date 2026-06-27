@@ -59,7 +59,7 @@ jobs:
 
       # Runs pytest within the environment sandbox
       - name: Execute Tests with Coverage
-        run: pixi run pytest --cov=src/ --cov-report=xml
+        run: pixi run -e test pytest --cov=src/ --cov-report=xml
 
       - name: Upload Coverage to Artifacts
         uses: actions/upload-artifact@v4

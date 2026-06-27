@@ -24,7 +24,7 @@ jobs:
 
       # 1. Build wheels and source distribution using your Pixi environment
       - name: Build Package
-        run: pixi run pyproject-build # Assumes build package is in your dev environment
+        run: pixi run -e default pyproject-build # Assumes build package is in your dev environment
 
       # 2. Automatically generate a GitHub Release with auto-compiled changelogs
       - name: Create GitHub Release
